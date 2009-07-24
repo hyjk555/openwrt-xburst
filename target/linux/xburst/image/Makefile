@@ -7,6 +7,8 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
+JFFS2_BLOCKSIZE=256k 512k
+
 ifneq ($(CONFIG_XBURST_UBOOT),)
   define Build/Clean
 	$(MAKE) -C u-boot clean
