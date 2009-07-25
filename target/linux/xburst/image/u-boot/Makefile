@@ -31,7 +31,7 @@ endef
 
 define Build/InstallDev
 	mkdir -p $(BIN_DIR)
-	dd if=$(PKG_BUILD_DIR)/u-boot-nand.bin of=$(BIN_DIR)/u-boot-$(UBOOT_CONFIG).bin
+	cp $(PKG_BUILD_DIR)/u-boot-nand.bin $(BIN_DIR)/openwrt-$(BOARD)-u-boot-$(UBOOT_CONFIG).bin
 endef
 
 $(eval $(call Build/DefaultTargets))
