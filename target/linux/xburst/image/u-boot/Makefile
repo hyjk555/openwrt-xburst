@@ -1,7 +1,8 @@
 #
-# Copyright (C) 2009 Qi hardware inc.,
+# Copyright (C) 2009 Qi Hardware, Inc.
 #
-# This is free software, licensed under the GNU General Public License v3.
+# This is free software, licensed under the GNU General Public License v3 
+# or any later.
 # See /LICENSE for more information.
 #
 
