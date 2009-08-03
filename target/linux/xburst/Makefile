@@ -15,6 +15,8 @@ LINUX_VERSION:=2.6.28.10
 
 include $(INCLUDE_DIR)/target.mk
 
+KERNELNAME:=uImage
+
 DEFAULT_PACKAGES += gpioctl
 
 define Target/Description
