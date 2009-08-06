@@ -11,7 +11,7 @@ BOARD:=xburst
 BOARDNAME:=XBurst JZ47x0
 FEATURES:=squashfs jffs2
 
-LINUX_VERSION:=2.6.28.10
+LINUX_VERSION:=2.6.25.20
 
 include $(INCLUDE_DIR)/target.mk
 
