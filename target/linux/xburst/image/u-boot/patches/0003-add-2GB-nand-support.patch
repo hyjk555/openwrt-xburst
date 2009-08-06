@@ -1,107 +1,39 @@
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
-index c23534d..572d22b 100644
+index 16e8688..572d22b 100644
 --- a/board/qi_lb60/qi_lb60.c
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -45,47 +45,44 @@ static void gpio_init(void)
- 	__gpio_as_i2c();
+@@ -48,12 +48,11 @@ static void gpio_init(void)
+ 	 * Initialize MSC pins
+ 	 */
+ 	__gpio_as_msc();
+-	/* __gpio_set_pin(2 + 3 * 32); */
  
  	/*
--	 * Initialize Other pins
-+	 * Initialize MSC pins
+ 	 * Initialize Other pins
  	 */
 -/*	unsigned int i;
--	__gpio_as_output( GPIO_AUDIO_POP );
--	__gpio_set_pin( GPIO_AUDIO_POP );
--
-+	__gpio_as_msc();
- 
--	for (i = 0; i < 8; i++){
--		__gpio_as_output( GPIO_KEYOUT_BASE + i );
--		__gpio_set_pin( GPIO_KEYOUT_BASE + i );
-+	/*
-+	 * Initialize Other pins
-+	 */
 +	unsigned int i;
-+	for (i = 0; i < 8; i++) {
-+		__gpio_as_output(GPIO_KEYOUT_BASE + i);
-+		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
+ 	for (i = 0; i < 8; i++) {
+ 		__gpio_as_output(GPIO_KEYOUT_BASE + i);
+ 		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
+@@ -63,9 +62,9 @@ static void gpio_init(void)
+ 		__gpio_as_input(GPIO_KEYIN_BASE + i);
+ 		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
  	}
- 
- 	for (i = 0; i < 7; i++){
--		__gpio_as_input( GPIO_KEYIN_BASE + i );
--		__gpio_enable_pull( GPIO_KEYIN_BASE + i );
-+		__gpio_as_input(GPIO_KEYIN_BASE + i);
-+		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
- 	}
-+	/* __gpio_as_input( GPIO_KEYIN_8 ); */
-+	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
- 
 -	__gpio_as_input( GPIO_KEYIN_8 );
 -	__gpio_enable_pull( GPIO_KEYIN_8 );
--
 -*/
--	__gpio_as_output( GPIO_LCD_CS );
--	__gpio_clear_pin( GPIO_LCD_CS );
-+	__gpio_as_output(GPIO_AUDIO_POP);
-+	__gpio_set_pin(GPIO_AUDIO_POP);
++	/* __gpio_as_input( GPIO_KEYIN_8 ); */
++	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
++
+ 	__gpio_as_output(GPIO_AUDIO_POP);
+ 	__gpio_set_pin(GPIO_AUDIO_POP);
  
--	__gpio_as_output( GPIO_AMP_EN );
--	__gpio_clear_pin( GPIO_AMP_EN );
-+	__gpio_as_output(GPIO_LCD_CS);
-+	__gpio_clear_pin(GPIO_LCD_CS);
- 
--	__gpio_as_output( GPIO_SDPW_EN );
--	__gpio_set_pin( GPIO_SDPW_EN );
-+	__gpio_as_output(GPIO_AMP_EN);
-+	__gpio_clear_pin(GPIO_AMP_EN);
- 
--	__gpio_as_input( GPIO_SD_DETECT );
--	__gpio_enable_pull( GPIO_SD_DETECT );
-+	__gpio_as_output(GPIO_SDPW_EN);
-+	__gpio_disable_pull(GPIO_SDPW_EN);
-+	__gpio_clear_pin(GPIO_SDPW_EN);
- 
--	__gpio_as_input( GPIO_USB_DETECT );
--	__gpio_enable_pull( GPIO_USB_DETECT );
-+	__gpio_as_input(GPIO_SD_DETECT);
-+	__gpio_disable_pull(GPIO_SD_DETECT);
- 
--	/*
--	 * Initialize MSC pins
--	 */
--	__gpio_as_msc();
--	__gpio_set_pin(2 + 3 * 32);
-+	__gpio_as_input(GPIO_USB_DETECT);
-+	__gpio_enable_pull(GPIO_USB_DETECT);
- }
- 
- void board_early_init(void)
-diff --git a/cpu/mips/jz_mmc.c b/cpu/mips/jz_mmc.c
-index 8a7c310..ec0a518 100644
---- a/cpu/mips/jz_mmc.c
-+++ b/cpu/mips/jz_mmc.c
-@@ -61,7 +61,7 @@ do {						\
- ({						\
- 	int detected = 1;			\
- 	__gpio_as_input(GPIO_SD_CD_N);		\
--	if (__gpio_get_pin(GPIO_SD_CD_N))	\
-+	if (!__gpio_get_pin(GPIO_SD_CD_N))	\
- 		detected = 0;			\
- 	detected;				\
- })
 diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
-index 68a2e87..1e13653 100644
+index edc40bf..1e13653 100644
 --- a/include/configs/qi_lb60.h
 +++ b/include/configs/qi_lb60.h
-@@ -13,7 +13,6 @@
- #ifndef __CONFIG_H
- #define __CONFIG_H
- 
--#define DEBUG
- #define CONFIG_MIPS32		1  /* MIPS32 CPU core */
- #define CONFIG_JzRISC		1  /* JzRISC core */
- #define CONFIG_JZSOC		1  /* Jz SoC */
-@@ -23,16 +22,16 @@
+@@ -22,16 +22,16 @@
  #define CONFIG_DOS_PARTITION	1
  #define CONFIG_PCMCIA_SLOT_A	1
  
@@ -121,7 +53,7 @@ index 68a2e87..1e13653 100644
  #define CONFIG_SYS_MIPS_TIMER_FREQ	CONFIG_CPU_SPEED
  
  #define CONFIG_SYS_UART_BASE	UART0_BASE	/* Base of the UART channel */
-@@ -46,16 +45,15 @@
+@@ -45,16 +45,15 @@
  #define CONFIG_SYS_NO_FLASH	1
  
  #define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
@@ -146,7 +78,7 @@ index 68a2e87..1e13653 100644
  
  /* allow to overwrite serial and ethaddr */
  #define CONFIG_ENV_OVERWRITE
-@@ -92,10 +90,10 @@
+@@ -91,10 +90,10 @@
  
  #define CONFIG_SYS_INIT_SP_OFFSET	0x400000
  
@@ -159,7 +91,7 @@ index 68a2e87..1e13653 100644
  
  #define CONFIG_RX_ETH_BUFFER	16	/* use 16 rx buffers on jz47xx eth */
  
-@@ -107,17 +105,22 @@
+@@ -106,17 +105,22 @@
  /*
   * NAND FLASH configuration
   */
@@ -190,7 +122,7 @@ index 68a2e87..1e13653 100644
  #define CONFIG_SYS_ONENAND_BASE	CONFIG_SYS_NAND_BASE
  
  /*
-@@ -150,25 +153,8 @@
+@@ -149,25 +153,8 @@
  /* environment starts here  */
  #define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
  
