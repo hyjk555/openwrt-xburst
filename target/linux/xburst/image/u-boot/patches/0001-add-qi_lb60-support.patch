@@ -13664,7 +13664,7 @@ index 0000000..68a2e87
 +#define CONFIG_SYS_MIPS_TIMER_FREQ	CONFIG_CPU_SPEED
 +
 +#define CONFIG_SYS_UART_BASE	UART0_BASE	/* Base of the UART channel */
-+#define CONFIG_BAUDRATE		57600
++#define CONFIG_BAUDRATE		115200
 +#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 +
 +#define CONFIG_MMC      	1
@@ -13676,7 +13676,7 @@ index 0000000..68a2e87
 +#define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
 +#define CONFIG_BOOTDELAY	5
 +#define CONFIG_BOOTFILE	        "uImage"	/* file to load */
-+#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 ip=off rootfstype=yaffs2 root=/dev/mtdblock2 rw"
++#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,115200n8 ip=off rootfstype=yaffs2 root=/dev/mtdblock2 rw"
 +#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
 +#define CONFIG_AUTOLOAD		"n"		/* No autoload */
 +
