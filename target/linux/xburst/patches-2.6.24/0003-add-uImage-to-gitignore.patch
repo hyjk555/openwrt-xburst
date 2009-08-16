@@ -1,0 +1,24 @@
+From f4b9d5f6b84d8a80f37bd21d851f2f0f620cd740 Mon Sep 17 00:00:00 2001
+From: xiangfu <xiangfu.z@gmail.com>
+Date: Tue, 21 Apr 2009 22:18:02 +0800
+Subject: [PATCH] add uImage to gitignore
+
+---
+ .gitignore |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/.gitignore b/.gitignore
+index 8d14531..a79dfeb 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -52,3 +52,7 @@ cscope.*
+ 
+ *.orig
+ *.rej
++
++semantic.cache*
++uImage
++*~
+-- 
+1.6.0.4
+

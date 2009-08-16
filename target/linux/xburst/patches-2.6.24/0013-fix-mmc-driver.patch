@@ -1,0 +1,190 @@
+From 7d5623d6b172373f943ffe6d976e2830a2081050 Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu.z@gmail.com>
+Date: Wed, 15 Jul 2009 15:57:56 +0800
+Subject: [PATCH] fix mmc driver
+
+---
+ arch/mips/jz4740/board-pi.c             |   45 ++++++++++++++++++++-----------
+ drivers/mmc/host/jz_mmc.c               |   13 +++++---
+ drivers/mtd/nand/jz4740_nand.c          |   17 +++++------
+ include/asm-mips/mach-jz4740/board-pi.h |    6 ++--
+ 4 files changed, 48 insertions(+), 33 deletions(-)
+
+diff --git a/arch/mips/jz4740/board-pi.c b/arch/mips/jz4740/board-pi.c
+index 05e577e..7123352 100644
+--- a/arch/mips/jz4740/board-pi.c
++++ b/arch/mips/jz4740/board-pi.c
+@@ -61,12 +61,6 @@ static void __init board_gpio_setup(void)
+ 	/*
+ 	 * Most of the GPIO pins should have been initialized by the boot-loader
+ 	 */
+-
+-	/*
+-	 * Initialize MSC pins
+-	 */
+-	/* __gpio_as_msc(); */
+-
+ 	/*
+          * Initialize UART0 pins
+          */
+@@ -88,26 +82,45 @@ static void __init board_gpio_setup(void)
+ 	/* __gpio_as_i2c(); */
+ 
+ 	/*
++	 * Initialize MSC pins
++	 */
++	/* __gpio_as_msc(); */
++
++	/*
+ 	 * Initialize Other pins
+ 	 */
+-	/* __gpio_as_output(GPIO_SD_VCC_EN_N); */
+-	/* __gpio_clear_pin(GPIO_SD_VCC_EN_N); */
+-	/* __gpio_set_pin(GPIO_SD_VCC_EN_N); */
+ 
+-	/* __gpio_as_input(GPIO_SD_CD_N); */
+-	/* __gpio_disable_pull(GPIO_SD_CD_N); */
++	/* unsigned int i;
++	for (i = 0; i < 8; i++) {
++		__gpio_as_output(GPIO_KEYOUT_BASE + i);
++		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
++	}
+ 
+-	/* __gpio_as_input(GPIO_SD_WP); */
+-	/* __gpio_disable_pull(GPIO_SD_WP); */
++	for (i = 0; i < 7; i++){
++		__gpio_as_input(GPIO_KEYIN_BASE + i);
++		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	}
++	__gpio_as_input( GPIO_KEYIN_8 );
++	__gpio_enable_pull( GPIO_KEYIN_8 );
++	*/
+ 
+-	/* __gpio_as_output(GPIO_LED_EN); */
++	__gpio_as_output(GPIO_SD_VCC_EN_N);
++	__gpio_disable_pull(GPIO_SD_VCC_EN_N);
++	__gpio_clear_pin(GPIO_SD_VCC_EN_N);
++
++	__gpio_as_input(GPIO_SD_CD_N);
++	__gpio_disable_pull(GPIO_SD_CD_N);
++
++	__gpio_as_input(GPIO_SD_WP);
++	__gpio_disable_pull(GPIO_SD_WP);
+ 
+-	/* __gpio_as_input(GPIO_USB_DETE); */
+-	/* __gpio_as_output(GPIO_DISP_OFF_N); */
+ 
+ 	__gpio_as_input(GPIO_DC_DETE_N);
+ 	__gpio_as_input(GPIO_CHARG_STAT_N);
+ 
++	/* __gpio_as_output(GPIO_DISP_OFF_N); */
++	/* __gpio_as_input(GPIO_USB_DETE); */
++	/* __gpio_as_output(GPIO_LED_EN); */
+ }
+ 
+ void __init jz_board_setup(void)
+diff --git a/drivers/mmc/host/jz_mmc.c b/drivers/mmc/host/jz_mmc.c
+index 29ab9bb..de52028 100644
+--- a/drivers/mmc/host/jz_mmc.c
++++ b/drivers/mmc/host/jz_mmc.c
+@@ -843,9 +843,9 @@ static int jz_mmc_probe(struct platform_device *pdev)
+ 		return retval;
+ 	}
+ 	jz_mmc_slot_is_empty(0);
+-	/* Request card detect interrupt */
+ 
+-	retval = request_irq(MSC_HOTPLUG_IRQ, jz_mmc_detect_irq, 0,	//SA_INTERRUPT,
++	/* Request card detect interrupt */
++	retval = request_irq(19 /*MSC_HOTPLUG_IRQ*/, jz_mmc_detect_irq, 0,	//SA_INTERRUPT,
+ 			     "MMC card detect", host);
+ 	if (retval) {
+ 		printk(KERN_ERR "MMC/SD: can't request card detect IRQ\n");
+@@ -889,10 +889,13 @@ static int jz_mmc_probe(struct platform_device *pdev)
+ #endif
+ 	return 0;
+ 
+-err1:free_irq(IRQ_MSC, &host);
++err1:
++	free_irq(IRQ_MSC, &host);
+ #ifdef USE_DMA
+- err2:jz_free_dma(rxdmachan);
+- err3:jz_free_dma(txdmachan);
++ err2:
++	jz_free_dma(rxdmachan);
++ err3:
++	jz_free_dma(txdmachan);
+ #endif
+ out:
+ 	if (host) {
+diff --git a/drivers/mtd/nand/jz4740_nand.c b/drivers/mtd/nand/jz4740_nand.c
+index 4c9c1d9..b36ed44 100644
+--- a/drivers/mtd/nand/jz4740_nand.c
++++ b/drivers/mtd/nand/jz4740_nand.c
+@@ -118,23 +118,22 @@ static struct mtd_partition partition_info[] = {
+ 	  use_planes: 0 },
+ 	{ name: "NAND ROOTFS partition",
+ 	  offset:  8 * 0x100000,
+-	  size:    120 * 0x100000,
++	  size:    504 * 0x100000,
+ 	  use_planes: 0 },
+ 	{ name: "NAND DATA1 partition",
+-	  offset:  128 * 0x100000,
+-	  size:    128 * 0x100000,
++	  offset:  512 * 0x100000,
++	  size:    512 * 0x100000,
+ 	  use_planes: 1 },
+ 	{ name: "NAND DATA2 partition",
+-	  offset:  256 * 0x100000,
+-	  size:    256 * 0x100000,
++	  offset:  1024 * 0x100000,
++	  size:    512 * 0x100000,
+ 	  use_planes: 1 },
+ 	{ name: "NAND VFAT partition",
+-	  offset:  512 * 0x100000,
++	  offset:  (1024 + 512) * 0x100000,
+ 	  size:    512 * 0x100000,
+ 	  use_planes: 1 },
+ };
+ 
+-
+ /* Define max reserved bad blocks for each partition.
+  * This is used by the mtdblock-jz.c NAND FTL driver only.
+  *
+@@ -149,8 +148,8 @@ static int partition_reserved_badblocks[] = {
+ 					     2,		/* reserved blocks of mtd1 */
+ 					     10,	/* reserved blocks of mtd2 */
+ 					     10,	/* reserved blocks of mtd3 */
+-					     20,	/* reserved blocks of mtd4 */
+-					     20};	/* reserved blocks of mtd5 */
++					     10,	/* reserved blocks of mtd4 */
++					     10};	/* reserved blocks of mtd5 */
+ #endif /* CONFIG_JZ4740_PI */
+ 
+ #ifdef CONFIG_JZ4740_LEO
+diff --git a/include/asm-mips/mach-jz4740/board-pi.h b/include/asm-mips/mach-jz4740/board-pi.h
+index afde2ec..152147a 100644
+--- a/include/asm-mips/mach-jz4740/board-pi.h
++++ b/include/asm-mips/mach-jz4740/board-pi.h
+@@ -3,8 +3,8 @@
+  *
+  *  JZ4730-based PI definition.
+  *
+- * Copyright (c) 2009 PI.
+- *  Author: xiangfu <xiangfu.z@gmail.com>
++ * Copyright (c) 2009 Qi Hardware inc.,
++ *  Author: Xiangfu Liu<xiangfu.z@gmail.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 3 as
+@@ -75,7 +75,7 @@ do {						\
+ #define __msc_card_detected(s)			\
+ ({						\
+ 	int detected = 1;			\
+-	if (__gpio_get_pin(GPIO_SD_CD_N))	\
++	if (!__gpio_get_pin(GPIO_SD_CD_N))	\
+ 		detected = 0;			\
+ 	detected;				\
+ })
+-- 
+1.6.0.4
+

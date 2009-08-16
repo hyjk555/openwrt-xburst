@@ -1,0 +1,459 @@
+From 3e775be4242bb0301cb2024cc647988d1a51731f Mon Sep 17 00:00:00 2001
+From: xiangfu <xiangfu.z@gmail.com>
+Date: Wed, 22 Apr 2009 13:04:25 +0800
+Subject: [PATCH] lcd work
+
+---
+ arch/mips/configs/pi_defconfig          |  121 +++++--------------------------
+ arch/mips/jz4740/board-pi.c             |    6 +-
+ drivers/char/jzchar/poweroff.c          |    2 -
+ drivers/mtd/nand/jz4740_nand.c          |    1 -
+ drivers/video/jzlcd.c                   |    9 +--
+ drivers/video/jzlcd.h                   |   45 +++---------
+ include/asm-mips/mach-jz4740/board-pi.h |   35 +++++++---
+ include/asm-mips/mach-jz4740/jz4740.h   |    1 -
+ include/asm-mips/mach-jz4740/serial.h   |    9 ++-
+ 9 files changed, 68 insertions(+), 161 deletions(-)
+
+diff --git a/arch/mips/configs/pi_defconfig b/arch/mips/configs/pi_defconfig
+index f9451c7..8c0019a 100644
+--- a/arch/mips/configs/pi_defconfig
++++ b/arch/mips/configs/pi_defconfig
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+ # Linux kernel version: 2.6.24.3
+-# Tue Apr 21 17:17:32 2009
++# Wed Apr 22 12:15:04 2009
+ #
+ CONFIG_MIPS=y
+ 
+@@ -535,65 +535,7 @@ CONFIG_SCSI_LOWLEVEL=y
+ # CONFIG_SCSI_DEBUG is not set
+ # CONFIG_ATA is not set
+ # CONFIG_MD is not set
+-CONFIG_NETDEVICES=y
+-# CONFIG_NETDEVICES_MULTIQUEUE is not set
+-# CONFIG_DUMMY is not set
+-# CONFIG_BONDING is not set
+-# CONFIG_MACVLAN is not set
+-# CONFIG_EQUALIZER is not set
+-# CONFIG_TUN is not set
+-# CONFIG_VETH is not set
+-# CONFIG_NET_SB1000 is not set
+-CONFIG_PHYLIB=y
+-
+-#
+-# MII PHY device drivers
+-#
+-# CONFIG_MARVELL_PHY is not set
+-# CONFIG_DAVICOM_PHY is not set
+-# CONFIG_QSEMI_PHY is not set
+-# CONFIG_LXT_PHY is not set
+-# CONFIG_CICADA_PHY is not set
+-# CONFIG_VITESSE_PHY is not set
+-# CONFIG_SMSC_PHY is not set
+-# CONFIG_BROADCOM_PHY is not set
+-# CONFIG_ICPLUS_PHY is not set
+-# CONFIG_FIXED_PHY is not set
+-# CONFIG_MDIO_BITBANG is not set
+-CONFIG_NET_ETHERNET=y
+-CONFIG_MII=y
+-CONFIG_JZCS8900=y
+-# CONFIG_AX88796 is not set
+-# CONFIG_DM9000 is not set
+-# CONFIG_IBM_NEW_EMAC_ZMII is not set
+-# CONFIG_IBM_NEW_EMAC_RGMII is not set
+-# CONFIG_IBM_NEW_EMAC_TAH is not set
+-# CONFIG_IBM_NEW_EMAC_EMAC4 is not set
+-# CONFIG_B44 is not set
+-# CONFIG_NETDEV_1000 is not set
+-# CONFIG_NETDEV_10000 is not set
+-
+-#
+-# Wireless LAN
+-#
+-# CONFIG_WLAN_PRE80211 is not set
+-# CONFIG_WLAN_80211 is not set
+-
+-#
+-# USB Network Adapters
+-#
+-# CONFIG_USB_CATC is not set
+-# CONFIG_USB_KAWETH is not set
+-# CONFIG_USB_PEGASUS is not set
+-# CONFIG_USB_RTL8150 is not set
+-# CONFIG_USB_USBNET is not set
+-# CONFIG_WAN is not set
+-# CONFIG_PPP is not set
+-# CONFIG_SLIP is not set
+-# CONFIG_SHAPER is not set
+-# CONFIG_NETCONSOLE is not set
+-# CONFIG_NETPOLL is not set
+-# CONFIG_NET_POLL_CONTROLLER is not set
++# CONFIG_NETDEVICES is not set
+ # CONFIG_ISDN is not set
+ # CONFIG_PHONE is not set
+ 
+@@ -607,18 +549,24 @@ CONFIG_INPUT=y
+ #
+ # Userland interfaces
+ #
+-CONFIG_INPUT_MOUSEDEV=y
+-CONFIG_INPUT_MOUSEDEV_PSAUX=y
+-CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+-CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
++# CONFIG_INPUT_MOUSEDEV is not set
+ # CONFIG_INPUT_JOYDEV is not set
+-CONFIG_INPUT_EVDEV=y
++# CONFIG_INPUT_EVDEV is not set
+ # CONFIG_INPUT_EVBUG is not set
+ 
+ #
+ # Input Device Drivers
+ #
+-# CONFIG_INPUT_KEYBOARD is not set
++CONFIG_INPUT_KEYBOARD=y
++# CONFIG_KEYBOARD_ATKBD is not set
++# CONFIG_KEYBOARD_SUNKBD is not set
++# CONFIG_KEYBOARD_LKKBD is not set
++# CONFIG_KEYBOARD_XTKBD is not set
++# CONFIG_KEYBOARD_NEWTON is not set
++# CONFIG_KEYBOARD_STOWAWAY is not set
++# CONFIG_KEYBOARD_JZ is not set
++# CONFIG_5x5_KEYBOARD_JZ is not set
++CONFIG_KEYBOARD_GPIO=y
+ # CONFIG_INPUT_MOUSE is not set
+ # CONFIG_INPUT_JOYSTICK is not set
+ # CONFIG_INPUT_TABLET is not set
+@@ -628,11 +576,7 @@ CONFIG_INPUT_EVDEV=y
+ #
+ # Hardware I/O ports
+ #
+-CONFIG_SERIO=y
+-# CONFIG_SERIO_I8042 is not set
+-CONFIG_SERIO_SERPORT=y
+-# CONFIG_SERIO_LIBPS2 is not set
+-# CONFIG_SERIO_RAW is not set
++# CONFIG_SERIO is not set
+ # CONFIG_GAMEPORT is not set
+ 
+ #
+@@ -724,33 +668,7 @@ CONFIG_SSB_POSSIBLE=y
+ #
+ # Multimedia devices
+ #
+-CONFIG_VIDEO_DEV=y
+-CONFIG_VIDEO_V4L1=y
+-CONFIG_VIDEO_V4L1_COMPAT=y
+-CONFIG_VIDEO_V4L2=y
+-CONFIG_VIDEO_CAPTURE_DRIVERS=y
+-# CONFIG_VIDEO_ADV_DEBUG is not set
+-CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+-# CONFIG_VIDEO_VIVI is not set
+-# CONFIG_VIDEO_CPIA is not set
+-# CONFIG_VIDEO_CPIA2 is not set
+-CONFIG_VIDEO_JZ_CIM=y
+-CONFIG_VIDEO_JZ_SENSOR=y
+-CONFIG_V4L_USB_DRIVERS=y
+-# CONFIG_USB_VICAM is not set
+-# CONFIG_USB_IBMCAM is not set
+-# CONFIG_USB_KONICAWC is not set
+-# CONFIG_USB_QUICKCAM_MESSENGER is not set
+-# CONFIG_USB_ET61X251 is not set
+-# CONFIG_USB_OV511 is not set
+-# CONFIG_USB_SE401 is not set
+-# CONFIG_USB_SN9C102 is not set
+-# CONFIG_USB_STV680 is not set
+-# CONFIG_USB_ZC0301 is not set
+-# CONFIG_USB_PWC is not set
+-# CONFIG_USB_ZR364XX is not set
+-CONFIG_RADIO_ADAPTERS=y
+-# CONFIG_USB_DSBR is not set
++# CONFIG_VIDEO_DEV is not set
+ # CONFIG_DVB_CORE is not set
+ # CONFIG_DAB is not set
+ 
+@@ -819,7 +737,7 @@ CONFIG_JZLCD_FOXCONN_PT035TN01=y
+ # CONFIG_VGA_CONSOLE is not set
+ CONFIG_DUMMY_CONSOLE=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+-# CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY is not set
++CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+ # CONFIG_FRAMEBUFFER_CONSOLE_CURSOR_FLASH is not set
+ # CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
+ CONFIG_FONTS=y
+@@ -833,10 +751,7 @@ CONFIG_FONT_8x16=y
+ # CONFIG_FONT_SUN8x16 is not set
+ # CONFIG_FONT_SUN12x22 is not set
+ # CONFIG_FONT_10x18 is not set
+-CONFIG_LOGO=y
+-CONFIG_LOGO_LINUX_MONO=y
+-CONFIG_LOGO_LINUX_VGA16=y
+-CONFIG_LOGO_LINUX_CLUT224=y
++# CONFIG_LOGO is not set
+ 
+ #
+ # Sound
+diff --git a/arch/mips/jz4740/board-pi.c b/arch/mips/jz4740/board-pi.c
+index 309ed9f..298d853 100644
+--- a/arch/mips/jz4740/board-pi.c
++++ b/arch/mips/jz4740/board-pi.c
+@@ -33,10 +33,10 @@ static void dancing(void)
+ 
+ 	count ++;
+ 	count &= 1;
+-	/* if (count)
++	if (count)
+ 		__gpio_set_pin(GPIO_LED_EN);
+ 	else
+-		__gpio_clear_pin(GPIO_LED_EN); */
++		__gpio_clear_pin(GPIO_LED_EN);
+ }
+ 
+ static void pi_timer_callback(void)
+@@ -65,7 +65,7 @@ static void __init board_gpio_setup(void)
+ 	/*
+ 	 * Initialize MSC pins
+ 	 */
+-	/* __gpio_as_msc(); */
++	__gpio_as_msc();
+ 
+ 	/*
+ 	 * Initialize LCD pins
+diff --git a/drivers/char/jzchar/poweroff.c b/drivers/char/jzchar/poweroff.c
+index 66b9f5c..8651f89 100644
+--- a/drivers/char/jzchar/poweroff.c
++++ b/drivers/char/jzchar/poweroff.c
+@@ -78,8 +78,6 @@ do { \
+ 	    SET_POWEROFF_PIN_AS_IRQ;\
+ 	}
+ 
+-#define GPIO_DISP_OFF_N		118
+-#define GPIO_PWM    123	
+ #define __lcd_close_backlight() \
+ do { \
+ __gpio_as_output(GPIO_PWM); \
+diff --git a/drivers/mtd/nand/jz4740_nand.c b/drivers/mtd/nand/jz4740_nand.c
+index 0fe5b36..4c9c1d9 100644
+--- a/drivers/mtd/nand/jz4740_nand.c
++++ b/drivers/mtd/nand/jz4740_nand.c
+@@ -153,7 +153,6 @@ static int partition_reserved_badblocks[] = {
+ 					     20};	/* reserved blocks of mtd5 */
+ #endif /* CONFIG_JZ4740_PI */
+ 
+-
+ #ifdef CONFIG_JZ4740_LEO
+ static struct mtd_partition partition_info[] = {
+ 	{ name: "NAND BOOT partition",
+diff --git a/drivers/video/jzlcd.c b/drivers/video/jzlcd.c
+index 93b9e6f..50d91f3 100644
+--- a/drivers/video/jzlcd.c
++++ b/drivers/video/jzlcd.c
+@@ -1501,7 +1501,7 @@ static int __init jzfb_init(void)
+ 	}
+ 
+ 	__lcd_enable_ofu_intr(); /* enable OutFifo underrun */
+-//	__lcd_enable_ifu0_intr(); /* needn't enable InFifo underrun */
++	/* __lcd_enable_ifu0_intr(); */ /* needn't enable InFifo underrun */
+ 
+ #if defined(CONFIG_JZLCD_FRAMEBUFFER_ROTATE_SUPPORT)
+ 	jzfb_rotate_change(rotate_angle);
+@@ -1526,8 +1526,7 @@ static int __init jzfb_init(void)
+ 		cfb->pm->data = cfb;
+ #endif
+ 
+-	__lcd_display_on();
+-
++	__lcd_display_off();
+ 	return 0;
+ 
+ failed:
+@@ -1563,8 +1562,8 @@ static void __exit jzfb_cleanup(void)
+ #if defined(CONFIG_JZLCD_FRAMEBUFFER_ROTATE_SUPPORT)
+ 	kthread_stop(jzlcd_info->rotate_daemon_thread);
+ #endif
+-//	driver_unregister(&jzfb_driver);
+-//	jzfb_remove();
++	/* driver_unregister(&jzfb_driver); */
++	/* jzfb_remove(); */
+ }
+ 
+ module_init(jzfb_init);
+diff --git a/drivers/video/jzlcd.h b/drivers/video/jzlcd.h
+index d441d97..352506d 100644
+--- a/drivers/video/jzlcd.h
++++ b/drivers/video/jzlcd.h
+@@ -663,21 +663,21 @@ do { \
+ #endif /* CONFIG_JZ4730_PMP */
+ 
+ #if defined(CONFIG_SOC_JZ4740)
+-#if defined(CONFIG_JZ4740_PAVO) || defined(CONFIG_JZ4740_LYRA)
+-#define GPIO_PWM    123		/* GP_D27 */
+-#define PWM_CHN 4    /* pwm channel */
+-#define PWM_FULL 101
++#if defined(CONFIG_JZ4740_PAVO) || defined(CONFIG_JZ4740_LYRA) || defined(CONFIG_JZ4740_PI)
++#define GPIO_PWM	123 /* GP_D27 */
++#define PWM_CHN		4 /* pwm channel */
++#define PWM_FULL	101
+ /* 100 level: 0,1,...,100 */
+ #define __lcd_set_backlight_level(n)\
+ do { \
+-__gpio_as_output(32*3+27); \
+-__gpio_set_pin(32*3+27); \
++	__gpio_as_output(GPIO_PWM); \
++	__gpio_set_pin(GPIO_PWM); \
+ } while (0)
+ 
+ #define __lcd_close_backlight() \
+ do { \
+-__gpio_as_output(GPIO_PWM); \
+-__gpio_clear_pin(GPIO_PWM); \
++	__gpio_as_output(GPIO_PWM); \
++	__gpio_clear_pin(GPIO_PWM); \
+ } while (0)
+ 
+ #elif defined(CONFIG_JZ4720_VIRGO)
+@@ -712,31 +712,10 @@ do {							\
+ 
+ #define __lcd_close_backlight() \
+ do { \
+-__gpio_as_output(GPIO_PWM); \
+-__gpio_clear_pin(GPIO_PWM); \
+-} while (0)
+-
+-#elif defined(CONFIG_JZ4740_PI)
+-#define GPIO_PWM    123		/* GP_D27 */
+-#define PWM_CHN 4    /* pwm channel */
+-#define PWM_FULL 101
+-#define __lcd_set_backlight_level(n)\
+-do { \
+-__gpio_as_output(32*3+27); \
+-__gpio_set_pin(32*3+27); \
++	__gpio_as_output(GPIO_PWM); \
++	__gpio_clear_pin(GPIO_PWM); \
+ } while (0)
+ 
+-#define __lcd_close_backlight() \
+-do { \
+-__gpio_as_output(GPIO_PWM); \
+-__gpio_clear_pin(GPIO_PWM); \
+-} while (0)
+-#define __lcd_display_pin_init() \
+-do { \
+-        __gpio_as_output(GPIO_DISP_OFF_N); \
+-        __cpm_start_tcu(); \
+-        __lcd_special_pin_init(); \
+-} while (0) /* CONFIG_MIPS_JZ4740_PI) */
+ #else
+ #define __lcd_set_backlight_level(n)
+ #define __lcd_close_backlight()
+@@ -749,12 +728,12 @@ do { \
+ 	__cpm_start_tcu(); \
+ 	__lcd_special_pin_init(); \
+ } while (0)
+-/*	__lcd_set_backlight_level(100); \*/
++
+ #define __lcd_display_on() \
+ do { \
+ 	__gpio_set_pin(GPIO_DISP_OFF_N); \
+ 	__lcd_special_on(); \
+-	__lcd_set_backlight_level(80); \
++	__lcd_set_backlight_level(20); \
+ } while (0)
+ 
+ #define __lcd_display_off() \
+diff --git a/include/asm-mips/mach-jz4740/board-pi.h b/include/asm-mips/mach-jz4740/board-pi.h
+index 54a7c95..afde2ec 100644
+--- a/include/asm-mips/mach-jz4740/board-pi.h
++++ b/include/asm-mips/mach-jz4740/board-pi.h
+@@ -1,13 +1,13 @@
+ /*
+  *  linux/include/asm-mips/mach-jz4740/board-pi.h
+  *
+- *  JZ4730-based PI ver 2.x definition.
++ *  JZ4730-based PI definition.
+  *
+  * Copyright (c) 2009 PI.
+  *  Author: xiangfu <xiangfu.z@gmail.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
++ * it under the terms of the GNU General Public License version 3 as
+  * published by the Free Software Foundation.
+  */
+ 
+@@ -23,16 +23,31 @@
+ /*====================================================================== 
+  * GPIO
+  */
+-#define GPIO_SD_VCC_EN_N	98 /* GPD2 */
+-#define GPIO_SD_CD_N		96 /* GPD0 */
+-#define GPIO_SD_WP		112 /* GPD16 */
+-#define GPIO_USB_DETE		124 /* GPD28 */
+-#define GPIO_DISP_OFF_N		117 /* GPD21 */
+-#define GPIO_LED_EN       	124 
+-#define GPIO_DC_DETE_N		100 
+-#define GPIO_CHARG_STAT_N	91 /* GPC27 */
++#define GPIO_DC_DETE_N		(2 * 32 + 26)
++#define GPIO_CHARG_STAT_N	(2 * 32 + 27)
++#define GPIO_LED_EN       	(2 * 32 + 28)
+ 
++#define GPIO_LCD_CS		(2 * 32 + 21)
++#define GPIO_DISP_OFF_N		(3 * 32 + 21)
++#define GPIO_PWM		(3 * 32 + 27)
++
++#define GPIO_AMP_EN		(3 * 32 + 4)
++
++#define GPIO_SD_CD_N		(3 * 32 + 0)
++#define GPIO_SD_VCC_EN_N	(3 * 32 + 2)
++#define GPIO_SD_WP		(3 * 32 + 16) /* SD Card wirte protect */ 
++
++#define GPIO_USB_DETE		(3 * 32 + 28)
++#define GPIO_BUZZ_PWM		(3 * 32 + 27)
+ #define GPIO_UDC_HOTPLUG	GPIO_USB_DETE
++
++#define GPIO_AUDIO_POP		(1 * 32 + 29)
++#define GPIO_COB_TEST		(1 * 32 + 30)
++
++#define GPIO_KEYOUT_BASE	(2 * 32 + 10)
++#define GPIO_KEYIN_BASE		(3 * 32 + 18)
++#define GPIO_KEYIN_8		(3 * 32 + 26)
++
+ /*====================================================================== 
+  * MMC/SD
+  */
+diff --git a/include/asm-mips/mach-jz4740/jz4740.h b/include/asm-mips/mach-jz4740/jz4740.h
+index b2c3872..4787814 100644
+--- a/include/asm-mips/mach-jz4740/jz4740.h
++++ b/include/asm-mips/mach-jz4740/jz4740.h
+@@ -49,7 +49,6 @@
+ 
+ /* Add other platform definition here ... */
+ 
+-
+ /*------------------------------------------------------------------
+  * Follows are related to platform definitions
+  */
+diff --git a/include/asm-mips/mach-jz4740/serial.h b/include/asm-mips/mach-jz4740/serial.h
+index c4819b9..534234a 100644
+--- a/include/asm-mips/mach-jz4740/serial.h
++++ b/include/asm-mips/mach-jz4740/serial.h
+@@ -23,8 +23,11 @@
+ #define JZ_BASE_BAUD	(12000000/16)
+ 
+ #define JZ_SERIAL_PORT_DEFNS \
+-	{ .baud_base = JZ_BASE_BAUD, .irq = IRQ_UART0, \
+-	  .flags = STD_COM_FLAGS, .iomem_base = (u8 *)UART0_BASE, \
+-	  .iomem_reg_shift = 2, .io_type = SERIAL_IO_MEM },
++	{ .baud_base = JZ_BASE_BAUD, \
++	  .irq = IRQ_UART0, \
++	  .flags = STD_COM_FLAGS, \
++	  .iomem_base = (u8 *)UART0_BASE, \
++	  .iomem_reg_shift = 2, \
++	  .io_type = SERIAL_IO_MEM },
+ 
+ #endif /* __ASM_BORAD_SERIAL_H__ */
+-- 
+1.6.0.4
+
