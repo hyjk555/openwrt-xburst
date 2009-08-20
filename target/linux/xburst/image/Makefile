@@ -20,7 +20,7 @@ ifneq ($(CONFIG_XBURST_UBOOT),)
 endif
 
 define Image/BuildKernel
-	cp $(KDIR)/linux-$(LINUX_VERSION)/arch/mips/boot/uImage $(BIN_DIR)/openwrt-$(BOARD)-uImage
+	cp $(KDIR)/linux-$(LINUX_VERSION)/arch/mips/boot/uImage $(BIN_DIR)/openwrt-$(BOARD)-uImage.bin
 endef
 
 define Image/Build/squashfs
