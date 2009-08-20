@@ -27,7 +27,6 @@
 
 #include <asm/io.h>
 #include <asm/scatterlist.h>
-#include <asm/sizes.h>
 #include <asm/jzsoc.h>
 
 #include "jz_mmc.h"
