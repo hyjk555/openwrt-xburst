@@ -1,0 +1,268 @@
+From 1a6fa6adbd597171648c7cb308cc9e3efe488668 Mon Sep 17 00:00:00 2001
+From: Lars-Peter Clausen <lars@metafoo.de>
+Date: Wed, 19 Aug 2009 14:54:29 +0200
+Subject: [PATCH] sound
+
+---
+ include/sound/pcm.h       |   26 ++++++------
+ sound/core/pcm_lib.c      |   94 +++++++++++++++++++++++++++++++++++++++++++++
+ sound/core/pcm_native.c   |   15 ++++++-
+ sound/soc/Kconfig         |    1 +
+ sound/soc/Makefile        |    1 +
+ sound/soc/codecs/Kconfig  |   12 ++++++
+ sound/soc/codecs/Makefile |    2 +
+ 7 files changed, 135 insertions(+), 16 deletions(-)
+
+diff --git a/include/sound/pcm.h b/include/sound/pcm.h
+index 2389352..24dcb18 100644
+--- a/include/sound/pcm.h
++++ b/include/sound/pcm.h
+@@ -113,23 +113,23 @@ struct snd_pcm_ops {
+ #define SNDRV_PCM_RATE_5512		(1<<0)		/* 5512Hz */
+ #define SNDRV_PCM_RATE_8000		(1<<1)		/* 8000Hz */
+ #define SNDRV_PCM_RATE_11025		(1<<2)		/* 11025Hz */
+-#define SNDRV_PCM_RATE_16000		(1<<3)		/* 16000Hz */
+-#define SNDRV_PCM_RATE_22050		(1<<4)		/* 22050Hz */
+-#define SNDRV_PCM_RATE_32000		(1<<5)		/* 32000Hz */
+-#define SNDRV_PCM_RATE_44100		(1<<6)		/* 44100Hz */
+-#define SNDRV_PCM_RATE_48000		(1<<7)		/* 48000Hz */
+-#define SNDRV_PCM_RATE_64000		(1<<8)		/* 64000Hz */
+-#define SNDRV_PCM_RATE_88200		(1<<9)		/* 88200Hz */
+-#define SNDRV_PCM_RATE_96000		(1<<10)		/* 96000Hz */
+-#define SNDRV_PCM_RATE_176400		(1<<11)		/* 176400Hz */
+-#define SNDRV_PCM_RATE_192000		(1<<12)		/* 192000Hz */
++#define SNDRV_PCM_RATE_12000		(1<<3)		/* 12000Hz */
++#define SNDRV_PCM_RATE_16000		(1<<4)		/* 16000Hz */
++#define SNDRV_PCM_RATE_22050		(1<<5)		/* 22050Hz */
++#define SNDRV_PCM_RATE_24000		(1<<6)		/* 24000Hz */
++#define SNDRV_PCM_RATE_32000		(1<<7)		/* 32000Hz */
++#define SNDRV_PCM_RATE_44100		(1<<8)		/* 44100Hz */
++#define SNDRV_PCM_RATE_48000		(1<<9)		/* 48000Hz */
++#define SNDRV_PCM_RATE_64000		(1<<10)		/* 64000Hz */
++#define SNDRV_PCM_RATE_88200		(1<<11)		/* 88200Hz */
++#define SNDRV_PCM_RATE_96000		(1<<12)		/* 96000Hz */
++#define SNDRV_PCM_RATE_176400		(1<<13)		/* 176400Hz */
++#define SNDRV_PCM_RATE_192000		(1<<14)		/* 192000Hz */
+ 
+ #define SNDRV_PCM_RATE_CONTINUOUS	(1<<30)		/* continuous range */
+ #define SNDRV_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
+ 
+-#define SNDRV_PCM_RATE_8000_44100	(SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|\
+-					 SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|\
+-					 SNDRV_PCM_RATE_32000|SNDRV_PCM_RATE_44100)
++#define SNDRV_PCM_RATE_8000_44100	(SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|SNDRV_PCM_RATE_12000|SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|SNDRV_PCM_RATE_24000|SNDRV_PCM_RATE_32000|SNDRV_PCM_RATE_44100)
+ #define SNDRV_PCM_RATE_8000_48000	(SNDRV_PCM_RATE_8000_44100|SNDRV_PCM_RATE_48000)
+ #define SNDRV_PCM_RATE_8000_96000	(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
+ 					 SNDRV_PCM_RATE_88200|SNDRV_PCM_RATE_96000)
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 72cfd47..5ae0a2d 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -2076,6 +2076,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
+ 	return xfer > 0 ? (snd_pcm_sframes_t)xfer : err;
+ }
+ 
++#if 0
+ snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __user *buf, snd_pcm_uframes_t size)
+ {
+ 	struct snd_pcm_runtime *runtime;
+@@ -2091,6 +2092,99 @@ snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __u
+ 		return -EINVAL;
+ 	return snd_pcm_lib_read1(substream, (unsigned long)buf, size, nonblock, snd_pcm_lib_read_transfer);
+ }
++#else
++snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __user *buf, snd_pcm_uframes_t size)
++{
++	struct snd_pcm_runtime *runtime;
++	int nonblock;
++
++	snd_pcm_sframes_t tmp_frames;
++	snd_pcm_sframes_t final_frames;
++	int channels;
++
++	snd_assert(substream != NULL, return -ENXIO);
++	runtime = substream->runtime;
++	snd_assert(runtime != NULL, return -ENXIO);
++	snd_assert(substream->ops->copy != NULL || runtime->dma_area != NULL, return -EINVAL);
++	if (runtime->status->state == SNDRV_PCM_STATE_OPEN)
++		return -EBADFD;
++
++	nonblock = !!(substream->f_flags & O_NONBLOCK);
++	if (runtime->access != SNDRV_PCM_ACCESS_RW_INTERLEAVED)
++		return -EINVAL;
++
++	/* 
++	 * mono capture process for no mono codec 
++	 * function codec such as ipcood and dlv 
++	 */
++	
++	tmp_frames = snd_pcm_lib_read1(substream, (unsigned long)buf, size, nonblock, snd_pcm_lib_read_transfer);
++	
++	channels = runtime->channels;
++
++	if (channels == 1) {
++		short *tmpbuf = kcalloc(tmp_frames, sizeof(short), GFP_KERNEL);
++		short *src, *dst, *end;
++		
++		memcpy(tmpbuf, buf, frames_to_bytes(runtime, tmp_frames));
++		
++		src = (short *)buf;
++		dst = (short *)tmpbuf;
++		end = dst + tmp_frames - 1;
++	
++		src++;
++		dst++;
++		dst++;
++		final_frames = 1;
++		while (dst <= end) {
++			*src = *dst;
++			final_frames++;
++			src++;
++			dst++;
++			dst++;
++		}
++		tmp_frames = final_frames;
++		kfree(tmpbuf);
++
++#if 0
++		/* when i have time, i will try the code, no kcalloc */
++		snd_assert(runtime->dma_area, return -EFAULT);
++		if (copy_to_user(buf, hwbuf, frames_to_bytes(runtime, frames)))
++			return -EFAULT;
++		
++		unsigned int up_bytes = frames_to_bytes(runtime, frames);
++		
++		int while_cnt = 4;
++		int while_all = up_bytes - 2;
++		
++		while (while_cnt <= while_all) {
++			//printk("[%d = %d]\n",(while_cnt/2),while_cnt);
++			buf[(while_cnt/2)] = buf[while_cnt];
++			//printk("[%d = %d]\n",((while_cnt/2)+1),(while_cnt+1));
++			buf[((while_cnt/2)+1)] = buf[(while_cnt+1)];
++			while_cnt += 4;
++#if 0				       
++			buf[2] = buf[4];
++			buf[3] = buf[5];
++			
++			buf[4] = buf[8];
++			buf[5] = buf[9];
++			
++			buf[6] = buf[12];
++			buf[7] = buf[13];
++			
++			buf[8] = buf[16];
++			buf[9] = buf[17];
++#endif
++		}
++		/* when i have time, i will try the code, no kcalloc */
++#endif
++
++	}
++
++	return tmp_frames;
++}
++#endif
+ 
+ EXPORT_SYMBOL(snd_pcm_lib_read);
+ 
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index ac2150e..2a57ab7 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1748,12 +1748,13 @@ static int snd_pcm_hw_rule_sample_bits(struct snd_pcm_hw_params *params,
+ 	return snd_interval_refine(hw_param_interval(params, rule->var), &t);
+ }
+ 
+-#if SNDRV_PCM_RATE_5512 != 1 << 0 || SNDRV_PCM_RATE_192000 != 1 << 12
++#if SNDRV_PCM_RATE_5512 != 1 << 0 || SNDRV_PCM_RATE_192000 != 1 << 14
+ #error "Change this table"
+ #endif
+ 
+-static unsigned int rates[] = { 5512, 8000, 11025, 16000, 22050, 32000, 44100,
+-                                 48000, 64000, 88200, 96000, 176400, 192000 };
++static unsigned int rates[] = { 5512, 8000, 11025, 12000, 16000, 22050, 24000, 
++				32000, 44100, 48000, 64000, 88200, 96000, 
++				176400, 192000 };
+ 
+ const struct snd_pcm_hw_constraint_list snd_pcm_known_rates = {
+ 	.count = ARRAY_SIZE(rates),
+@@ -1764,9 +1765,17 @@ static int snd_pcm_hw_rule_rate(struct snd_pcm_hw_params *params,
+ 				struct snd_pcm_hw_rule *rule)
+ {
+ 	struct snd_pcm_hardware *hw = rule->private;
++#if 0
+ 	return snd_interval_list(hw_param_interval(params, rule->var),
+ 				 snd_pcm_known_rates.count,
+ 				 snd_pcm_known_rates.list, hw->rates);
++#else
++	//printk("hw->rates=0x%08x\n",hw->rates);//0x3b6
++	hw->rates = 0x3fe;//12KHz and 24KHz bits are all zero,you need set 1
++	return snd_interval_list(hw_param_interval(params, rule->var),
++				 snd_pcm_known_rates.count,
++				 snd_pcm_known_rates.list, hw->rates);
++#endif
+ }		
+ 
+ static int snd_pcm_hw_rule_buffer_bytes_max(struct snd_pcm_hw_params *params,
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index d3e786a..a5335f4 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -35,6 +35,7 @@ source "sound/soc/s3c24xx/Kconfig"
+ source "sound/soc/s6000/Kconfig"
+ source "sound/soc/sh/Kconfig"
+ source "sound/soc/txx9/Kconfig"
++source "sound/soc/jz4740/Kconfig"
+ 
+ # Supported codecs
+ source "sound/soc/codecs/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 6f1e28d..132772d 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -13,3 +13,4 @@ obj-$(CONFIG_SND_SOC)	+= s3c24xx/
+ obj-$(CONFIG_SND_SOC)	+= s6000/
+ obj-$(CONFIG_SND_SOC)	+= sh/
+ obj-$(CONFIG_SND_SOC)	+= txx9/
++obj-$(CONFIG_SND_SOC)	+= jz4740/
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index bbc97fd..493e216 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -176,3 +176,15 @@ config SND_SOC_WM9712
+ 
+ config SND_SOC_WM9713
+ 	tristate
++
++config SND_SOC_ICODEC
++	tristate "Jz4740 internal codec"
++	depends on SND_SOC && SND_JZ4740_SOC_PAVO && SND_JZ4740_SOC_I2S
++	help
++	  Say Y if you want to use internal codec on Ingenic Jz4740 PAVO board.
++
++config SND_SOC_DLV
++	tristate "Jz4750 internal codec"
++	depends on SND_SOC && SND_JZ4750_SOC_APUS && SND_JZ4750_SOC_I2S
++	help
++	  Say Y if you want to use internal codec on Ingenic Jz4750 APUS board.
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 8b75305..f053c15 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -34,6 +34,7 @@ snd-soc-wm9081-objs := wm9081.o
+ snd-soc-wm9705-objs := wm9705.o
+ snd-soc-wm9712-objs := wm9712.o
+ snd-soc-wm9713-objs := wm9713.o
++snd-soc-jzcodec-objs := jzcodec.o
+ 
+ obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
+ obj-$(CONFIG_SND_SOC_AD1980)	+= snd-soc-ad1980.o
+@@ -71,3 +72,4 @@ obj-$(CONFIG_SND_SOC_WM9081)	+= snd-soc-wm9081.o
+ obj-$(CONFIG_SND_SOC_WM9705)	+= snd-soc-wm9705.o
+ obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
+ obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
++obj-$(CONFIG_SND_SOC_ICODEC)	+= snd-soc-jzcodec.o
+-- 
+1.5.6.5
+
