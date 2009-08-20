@@ -1,3 +1,154 @@
+From 5125a5b4a4705f98db4a98d009a8b1c9e449ba51 Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu.z@gmail.com>
+Date: Thu, 20 Aug 2009 18:38:09 +0800
+Subject: [PATCH] qi_lb60
+
+---
+ arch/mips/Kconfig                                 |    8 ++
+ arch/mips/include/asm/mach-jz4740/board-qi_lb60.h |   79 +++++++++++++++
+ arch/mips/include/asm/mach-jz4740/jz4740.h        |    4 +
+ arch/mips/jz4740/Makefile                         |    1 +
+ arch/mips/jz4740/board-qi_lb60.c                  |  110 +++++++++++++++++++++
+ drivers/video/jzlcd.c                             |   23 +++--
+ drivers/video/jzlcd.h                             |   15 +++-
+ 7 files changed, 227 insertions(+), 13 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
+ create mode 100644 arch/mips/jz4740/board-qi_lb60.c
+
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index e8f8027..8b78107 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -656,6 +656,14 @@ config CAVIUM_OCTEON_REFERENCE_BOARD
+ 		Hikari
+ 	  Say Y here for most Octeon reference boards.
+ 
++config JZ4740_QI_LB60
++	bool "Ingenic JZ4740 QI_LB60 board"
++	select DMA_NONCOHERENT
++	select SYS_HAS_CPU_MIPS32_R1
++	select SYS_SUPPORTS_32BIT_KERNEL
++	select SYS_SUPPORTS_LITTLE_ENDIAN
++	select SOC_JZ4740
++
+ endchoice
+ 
+ source "arch/mips/alchemy/Kconfig"
+diff --git a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
+new file mode 100644
+index 0000000..b2f02f4
+--- /dev/null
++++ b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
+@@ -0,0 +1,79 @@
++/*
++ *  linux/include/asm-mips/mach-jz4740/board-qi_lb60.h
++ *
++ * Copyright (c) 2009 Qi Hardware inc.,
++ * Author: Xiangfu Liu <xiangfu@qi-hardware.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 3 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __ASM_JZ4740_QI_LB60_H__
++#define __ASM_JZ4740_QI_LB60_H__
++
++/*
++ * Frequencies of on-board oscillators
++ */
++#define JZ_EXTAL		12000000  /* Main extal freq: 12 MHz */
++#define JZ_EXTAL2		32768     /* RTC extal freq: 32.768 KHz */
++
++/*
++ * GPIO
++ */
++#define GPIO_DC_DETE_N          (2 * 32 + 26)
++#define GPIO_CHARG_STAT_N       (2 * 32 + 27)
++#define GPIO_LED_EN             (2 * 32 + 28)
++#define GPIO_LCD_CS             (2 * 32 + 21)
++#define GPIO_DISP_OFF_N         (3 * 32 + 21)
++#define GPIO_PWM                (3 * 32 + 27)
++
++#define GPIO_AMP_EN             (3 * 32 + 4)
++
++#define GPIO_SD_CD_N            (3 * 32 + 0)
++#define GPIO_SD_VCC_EN_N        (3 * 32 + 2)
++#define GPIO_SD_WP              (3 * 32 + 16)
++
++#define GPIO_USB_DETE           (3 * 32 + 28)
++#define GPIO_BUZZ_PWM           (3 * 32 + 27)
++#define GPIO_UDC_HOTPLUG        GPIO_USB_DETE
++
++#define GPIO_AUDIO_POP          (1 * 32 + 29)
++#define GPIO_COB_TEST           (1 * 32 + 30)
++
++#define GPIO_KEYOUT_BASE        (2 * 32 + 10)
++#define GPIO_KEYIN_BASE         (3 * 32 + 18)
++#define GPIO_KEYIN_8            (3 * 32 + 26)
++
++/*
++ * MMC/SD
++ */
++#define MSC_WP_PIN		GPIO_SD_WP
++#define MSC_HOTPLUG_PIN		GPIO_SD_CD_N
++#define MSC_HOTPLUG_IRQ		(IRQ_GPIO_0 + GPIO_SD_CD_N)
++
++#define __msc_init_io()				\
++do {						\
++	__gpio_as_output(GPIO_SD_VCC_EN_N);	\
++	__gpio_as_input(GPIO_SD_CD_N);		\
++} while (0)
++
++#define __msc_enable_power()			\
++do {						\
++	__gpio_clear_pin(GPIO_SD_VCC_EN_N);	\
++} while (0)
++
++#define __msc_disable_power()			\
++do {						\
++	__gpio_set_pin(GPIO_SD_VCC_EN_N);	\
++} while (0)
++
++#define __msc_card_detected(s)			\
++({						\
++	int detected = 1;			\
++	if (!__gpio_get_pin(GPIO_SD_CD_N))	\
++		detected = 0;			\
++	detected;				\
++})
++
++#endif /* __ASM_JZ4740_QI_LB60_H__ */
+diff --git a/arch/mips/include/asm/mach-jz4740/jz4740.h b/arch/mips/include/asm/mach-jz4740/jz4740.h
+index 437caf4..d38d5f1 100644
+--- a/arch/mips/include/asm/mach-jz4740/jz4740.h
++++ b/arch/mips/include/asm/mach-jz4740/jz4740.h
+@@ -43,6 +43,10 @@
+ #include <asm/mach-jz4740/board-virgo.h>
+ #endif
+ 
++#ifdef CONFIG_JZ4740_QI_LB60
++#include <asm/mach-jz4740/board-qi_lb60.h>
++#endif
++
+ /* Add other platform definition here ... */
+ 
+ 
+diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
+index ac4d3cd..03ef8fd 100644
+--- a/arch/mips/jz4740/Makefile
++++ b/arch/mips/jz4740/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_JZ4740_LEO)	+= board-leo.o
+ obj-$(CONFIG_JZ4740_LYRA)	+= board-lyra.o
+ obj-$(CONFIG_JZ4725_DIPPER)	+= board-dipper.o
+ obj-$(CONFIG_JZ4720_VIRGO)	+= board-virgo.o
++obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
+ 
+ # PM support
+ 
+diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
+new file mode 100644
+index 0000000..127fad8
 --- /dev/null
 +++ b/arch/mips/jz4740/board-qi_lb60.c
 @@ -0,0 +1,110 @@
@@ -111,36 +262,11 @@
 +
 +	jz_timer_callback = pi_timer_callback;
 +}
---- a/arch/mips/jz4740/Makefile
-+++ b/arch/mips/jz4740/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_JZ4740_LEO)	+= board-leo.o
- obj-$(CONFIG_JZ4740_LYRA)	+= board-lyra.o
- obj-$(CONFIG_JZ4725_DIPPER)	+= board-dipper.o
- obj-$(CONFIG_JZ4720_VIRGO)	+= board-virgo.o
-+obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
- 
- # PM support
- 
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -655,6 +655,14 @@ choice
- 		Kodama
- 		Hikari
- 	  Say Y here for most Octeon reference boards.
-+
-+config JZ4740_QI_LB60
-+	bool "Ingenic JZ4740 QI_LB60 board"
-+	select DMA_NONCOHERENT
-+	select SYS_HAS_CPU_MIPS32_R1
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SOC_JZ4740
- 
- endchoice
- 
+diff --git a/drivers/video/jzlcd.c b/drivers/video/jzlcd.c
+index 6df9439..2cb7114 100755
 --- a/drivers/video/jzlcd.c
 +++ b/drivers/video/jzlcd.c
-@@ -126,15 +126,18 @@ static struct jzfb_info jzfb = {
+@@ -127,15 +127,18 @@ static struct jzfb_info jzfb = {
  	MODE_TFT_GEN | HSYNC_N | VSYNC_N | PCLK_N | DE_N,
  	320, 240, 16, 60, 3, 3, 3, 3, 3, 85 /* 320x240 */
  #endif
@@ -168,15 +294,17 @@
  #if defined(CONFIG_JZLCD_INNOLUX_PT035TN01_SERIAL)
  	MODE_8BIT_SERIAL_TFT | PCLK_N | HSYNC_N | VSYNC_N,
  	320, 240, 32, 60, 1, 1, 10, 50, 10, 13
-@@ -1523,7 +1526,7 @@ static int __init jzfb_init(void)
- 		cfb->pm->data = cfb;
- #endif
+@@ -1487,7 +1490,7 @@ static int __init jzfb_probe(struct platform_device *pdev)
+ 	printk("fb%d: %s frame buffer device, using %dK of video memory\n",
+ 	       cfb->fb.node, cfb->fb.fix.id, cfb->fb.fix.smem_len>>10);
  
 -	__lcd_display_on();
 +	__lcd_display_off();
  
  	return 0;
  
+diff --git a/drivers/video/jzlcd.h b/drivers/video/jzlcd.h
+index 3676b9b..a4ef75f 100755
 --- a/drivers/video/jzlcd.h
 +++ b/drivers/video/jzlcd.h
 @@ -363,7 +363,11 @@ do { \
@@ -222,98 +350,6 @@
  } while (0)
  
  #define __lcd_display_off() \
---- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
-@@ -0,0 +1,79 @@
-+/*
-+ *  linux/include/asm-mips/mach-jz4740/board-qi_lb60.h
-+ *
-+ * Copyright (c) 2009 Qi Hardware inc.,
-+ * Author: Xiangfu Liu <xiangfu@qi-hardware.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 3 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __ASM_JZ4740_QI_LB60_H__
-+#define __ASM_JZ4740_QI_LB60_H__
-+
-+/*
-+ * Frequencies of on-board oscillators
-+ */
-+#define JZ_EXTAL		12000000  /* Main extal freq: 12 MHz */
-+#define JZ_EXTAL2		32768     /* RTC extal freq: 32.768 KHz */
-+
-+/*
-+ * GPIO
-+ */
-+#define GPIO_DC_DETE_N          (2 * 32 + 26)
-+#define GPIO_CHARG_STAT_N       (2 * 32 + 27)
-+#define GPIO_LED_EN             (2 * 32 + 28)
-+#define GPIO_LCD_CS             (2 * 32 + 21)
-+#define GPIO_DISP_OFF_N         (3 * 32 + 21)
-+#define GPIO_PWM                (3 * 32 + 27)
-+
-+#define GPIO_AMP_EN             (3 * 32 + 4)
-+
-+#define GPIO_SD_CD_N            (3 * 32 + 0)
-+#define GPIO_SD_VCC_EN_N        (3 * 32 + 2)
-+#define GPIO_SD_WP              (3 * 32 + 16)
-+
-+#define GPIO_USB_DETE           (3 * 32 + 28)
-+#define GPIO_BUZZ_PWM           (3 * 32 + 27)
-+#define GPIO_UDC_HOTPLUG        GPIO_USB_DETE
-+
-+#define GPIO_AUDIO_POP          (1 * 32 + 29)
-+#define GPIO_COB_TEST           (1 * 32 + 30)
-+
-+#define GPIO_KEYOUT_BASE        (2 * 32 + 10)
-+#define GPIO_KEYIN_BASE         (3 * 32 + 18)
-+#define GPIO_KEYIN_8            (3 * 32 + 26)
-+
-+/*
-+ * MMC/SD
-+ */
-+#define MSC_WP_PIN		GPIO_SD_WP
-+#define MSC_HOTPLUG_PIN		GPIO_SD_CD_N
-+#define MSC_HOTPLUG_IRQ		(IRQ_GPIO_0 + GPIO_SD_CD_N)
-+
-+#define __msc_init_io()				\
-+do {						\
-+	__gpio_as_output(GPIO_SD_VCC_EN_N);	\
-+	__gpio_as_input(GPIO_SD_CD_N);		\
-+} while (0)
-+
-+#define __msc_enable_power()			\
-+do {						\
-+	__gpio_clear_pin(GPIO_SD_VCC_EN_N);	\
-+} while (0)
-+
-+#define __msc_disable_power()			\
-+do {						\
-+	__gpio_set_pin(GPIO_SD_VCC_EN_N);	\
-+} while (0)
-+
-+#define __msc_card_detected(s)			\
-+({						\
-+	int detected = 1;			\
-+	if (!__gpio_get_pin(GPIO_SD_CD_N))	\
-+		detected = 0;			\
-+	detected;				\
-+})
-+
-+#endif /* __ASM_JZ4740_QI_LB60_H__ */
---- a/arch/mips/include/asm/mach-jz4740/jz4740.h
-+++ b/arch/mips/include/asm/mach-jz4740/jz4740.h
-@@ -43,6 +43,10 @@
- #include <asm/mach-jz4740/board-virgo.h>
- #endif
- 
-+#ifdef CONFIG_JZ4740_QI_LB60
-+#include <asm/mach-jz4740/board-qi_lb60.h>
-+#endif
-+
- /* Add other platform definition here ... */
- 
- 
+-- 
+1.6.0.4
+
