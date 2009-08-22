@@ -11,7 +11,7 @@ BOARD:=xburst
 BOARDNAME:=XBurst JZ47x0
 FEATURES:=jffs2 tgz
 
-LINUX_VERSION:=2.6.25.20
+LINUX_VERSION:=2.6.31-rc6
 
 include $(INCLUDE_DIR)/target.mk
 
