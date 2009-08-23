@@ -1,0 +1,60 @@
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 3d5d623..40ad167 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -281,6 +281,42 @@ config FB_JZLCD_4730_4740
+ 	depends on FB_JZSOC && (SOC_JZ4730 || SOC_JZ4740)
+ 	help
+ 	  This is the frame buffer device driver for the JZ4730 and JZ4740 LCD controller.
++config JZLCD_FRAMEBUFFER_MAX
++	int "Default FrameBuffer num"
++	depends on FB_JZLCD_4730_4740
++	default "1"
++       	---help---
++	  JZ LCD driver support multi-framebuffers for video applications.
++config JZLCD_FRAMEBUFFER_ROTATE_SUPPORT
++	bool "JZLCD FrameBuffer Rotate Support(For TEST)"
++	depends on FB_JZLCD_4730_4740
++	default n
++       	---help---
++	  JZ LCD driver framebuffer rotate support. Rotate angle can be 0,90,180,270.
++	  Note, this fearture is implemented by software, and will cost a lot of cpu capcity.
++	  That is to say, if you select this function, you system will become slowly.
++	  Rotate cost cpu about:
++	  ratate angle 0'C:    0% cpu
++	  ratate angle 90'C:  40% cpu
++	  ratate angle 180'C: 20% cpu
++	  ratate angle 270'C: 40% cpu
++
++config JZLCD_FRAMEBUFFER_DEFAULT_ROTATE_ANGLE
++	int "FrameBuffer default rotate angle"
++	depends on JZLCD_FRAMEBUFFER_ROTATE_SUPPORT
++	default 0
++       	---help---
++	  JZ LCD driver framebuffer angle value can be:
++	  	0:	0'C
++	  	1:	90'C
++	  	2:	180'C
++	  	3:	270'C
++config JZLCD_FRAMEBUFFER_BPP
++	int "FrameBuffer bit per pixel"
++	depends on JZLCD_FRAMEBUFFER_ROTATE_SUPPORT
++	default 32
++       	---help---
++	  JZ LCD driver framebuffer support 8bpp, 16bpp, 32bpp
+ choice
+ 	depends on FB_JZLCD_4730_4740
+ 	prompt "LCD Panel"
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 289b6e9..ae24d6d 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -28,7 +28,7 @@ obj-$(CONFIG_FB_DDC)           += fb_ddc.o
+ obj-$(CONFIG_FB_DEFERRED_IO)   += fb_defio.o
+ 
+ # Hardware specific drivers go first
+-obj-$(CONFIG_FB_JZLCD_4720_4740)  += jzlcd.o
++obj-$(CONFIG_FB_JZLCD_4730_4740)  += jzlcd.o
+ obj-$(CONFIG_FB_JZ4740_SLCD)      += jz4740_slcd.o
+ 
+ obj-$(CONFIG_FB_AMIGA)            += amifb.o c2p_planar.o
