@@ -656,14 +656,13 @@ do { \
 /*#if defined(CONFIG_JZ4740_LEO) || defined(CONFIG_JZ4740_PAVO)*/
 #if defined(CONFIG_SOC_JZ4740)
 #if defined(CONFIG_JZ4740_PAVO) || defined(CONFIG_JZ4740_LYRA)
-#define GPIO_PWM    123		/* GP_D27 */
 #define PWM_CHN 4    /* pwm channel */
 #define PWM_FULL 101
 /* 100 level: 0,1,...,100 */
 #define __lcd_set_backlight_level(n)\
 do { \
-__gpio_as_output(32*3+27); \
-__gpio_set_pin(32*3+27); \
+__gpio_as_output(GPIO_PWM); \
+__gpio_set_pin(GPIO_PWM); \
 } while (0)
 
 #define __lcd_close_backlight() \
