@@ -206,11 +206,11 @@ static int jz_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
 
 	switch(flow_type) {
 	case IRQ_TYPE_EDGE_RISING:
-	case IRQ_TYPE_EDGE_BOTH:
 		writel(IRQ_TO_BIT(irq), IRQ_TO_DIRECTION_SET_REG(irq));
 		writel(IRQ_TO_BIT(irq), IRQ_TO_TRIGGER_SET_REG(irq));
 		break;
 	case IRQ_TYPE_EDGE_FALLING:
+	case IRQ_TYPE_EDGE_BOTH:
 		writel(IRQ_TO_BIT(irq), IRQ_TO_DIRECTION_CLEAR_REG(irq));
 		writel(IRQ_TO_BIT(irq), IRQ_TO_TRIGGER_SET_REG(irq));
 		break;
@@ -284,7 +284,6 @@ __init int jz_gpiolib_init(void)
 
 	for (i = 0; i < ARRAY_SIZE(jz_gpio_chips); ++i, ++chip) {
 		gpiochip_add(&chip->gpio_chip);
-		enable_irq(JZ_IRQ_INTC_GPIO(i));
 		set_irq_chained_handler(JZ_IRQ_INTC_GPIO(i), jz_gpio_irq_demux_handler);
 		for (irq = chip->irq_base; irq < chip->irq_base + chip->gpio_chip.ngpio;
 		++irq)
@@ -295,3 +294,6 @@ __init int jz_gpiolib_init(void)
 
 	return 0;
 }
+
+arch_initcall(jz_gpiolib_init);
+
