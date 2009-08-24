@@ -96,6 +96,9 @@
 #define IRQ_DMA_0	32  /* 32 to 37 for DMAC channel 0 to 5 */
 #define IRQ_GPIO_0	48  /* 48 to 175 for GPIO pin 0 to 127 */
 
+#define JZ_IRQ_INTC_GPIO(x) (28 - x)
+#define JZ_IRQ_GPIO(x) (48 + x)
+
 #define NUM_DMA         6
 #define NUM_GPIO        128
 /*************************************************************************
