@@ -14,6 +14,7 @@
 #include <linux/init.h>
 #include <linux/resource.h>
 #include <linux/mtd/jz4740_nand.h>
+#include <linux/jz4740_fb.h>
 #include <linux/input/matrix_keypad.h>
 
 #include <asm/jzsoc.h>
@@ -321,6 +322,52 @@ static struct platform_device qi_lb60_keypad = {
 	},
 };
 
+static struct fb_videomode qi_lb60_video_modes[] = {
+	{
+		.name = "320x240",
+		.xres = 320,
+		.yres = 240,
+		.pixclock = 700000,
+		.left_margin = 140,
+		.right_margin = 273,
+		.upper_margin = 20,
+		.lower_margin = 1,
+		.hsync_len = 1,
+		.vsync_len = 1,
+		.sync = 0,
+		.vmode = FB_VMODE_NONINTERLACED,
+	},
+};
+
+static struct jz4740_fb_platform_data qi_lb60_fb_data = {
+	.width = 60,
+	.height = 45,
+	.num_modes = ARRAY_SIZE(qi_lb60_video_modes),
+	.modes = qi_lb60_video_modes,
+	.bpp = 24,
+	.lcd_type = JZ_LCD_TYPE_8BIT_SERIAL,
+};
+
+static struct resource fb_resources[] = {
+	[0] = {
+		.start          = CPHYSADDR(LCD_BASE),
+		.end            = CPHYSADDR(LCD_BASE) + 0x10000 - 1,
+		.flags          = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device qi_lb60_fb = {
+	.name = "jz4740-fb",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(fb_resources),
+	.resource = fb_resources,
+	.dev = {
+		.dma_mask               = &jz_lcd_dmamask,
+		.coherent_dma_mask      = 0xffffffff,
+		.platform_data = &qi_lb60_fb_data,
+	},
+};
+
 /* All */
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_ohci_device,
@@ -330,6 +377,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_nand_device,
 	&jz_i2c_device,
     &qi_lb60_keypad,
+	&qi_lb60_fb,
 };
 
 static int __init jz_platform_init(void)
