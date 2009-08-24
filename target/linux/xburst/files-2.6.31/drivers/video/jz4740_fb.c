@@ -140,15 +140,26 @@ int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue,
 	return 0;
 }
 
+static int jzfb_get_controller_bpp(struct jzfb *jzfb)
+{
+    switch(jzfb->pdata->bpp) {
+        case 18:
+        case 24:
+            return 32;
+            break;
+        default:
+            return jzfb->pdata->bpp;
+    }
+}
+
 static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 {
 	struct jzfb* jzfb = fb->par;
 	struct fb_videomode *mode = jzfb->pdata->modes;
 	int i;
 
-	if (fb->var.bits_per_pixel != jzfb->pdata->bpp &&
-		!(var->bits_per_pixel == 32 &&
-		  (jzfb->pdata->bpp == 18 || jzfb->pdata->bpp == 24)))
+	if (fb->var.bits_per_pixel != jzfb_get_controller_bpp(jzfb) &&
+        fb->var.bits_per_pixel != jzfb->pdata->bpp)
 		return -EINVAL;
 
 	for (i = 0; i < jzfb->pdata->num_modes; ++i, ++mode) {
@@ -267,6 +278,7 @@ static int jzfb_set_par(struct fb_info *info)
 	return 0;
 }
 
+
 static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 {
 	size_t devmem_size;
@@ -281,7 +293,7 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 			max_videosize = mode->xres * mode->yres;
 	}
 
-	max_videosize *= jzfb->pdata->bpp >> 3;
+	max_videosize *= jzfb_get_controller_bpp(jzfb) >> 3;
 
 	devmem_size = max_videosize + sizeof(struct jzfb_framedesc);
 
@@ -302,16 +314,16 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 
 
 	framedesc = jzfb->devmem;
+	jzfb->vidmem = jzfb->devmem + sizeof(struct jzfb_framedesc);
 
 	framedesc->next = jzfb->devmem_phys;
 	framedesc->addr = jzfb->devmem_phys + sizeof(struct jzfb_framedesc);
-	framedesc->id = 0x0;
+	framedesc->id = 0;
 	framedesc->cmd = 0;
 	framedesc->cmd |= max_videosize / 4;
 
 	jzfb->framedesc = framedesc;
 
-	jzfb->vidmem = jzfb->devmem + sizeof(struct jzfb_framedesc);
 
 	return 0;
 }
@@ -392,6 +404,7 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
 	fb->mode = pdata->modes;
 
 	fb_videomode_to_var(&fb->var, fb->mode);
+    fb->var.bits_per_pixel = pdata->bpp;
 	jzfb_check_var(&fb->var, fb);
 
 	ret = jzfb_alloc_vidmem(jzfb);
