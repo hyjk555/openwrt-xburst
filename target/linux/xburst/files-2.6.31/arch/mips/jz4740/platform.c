@@ -172,8 +172,8 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
 		30, 31, 32, 33, 34, 35, 36, 37,
 		38, 39, 40, 41},
 	.oobfree = {
-		{.offset = 0,
-		 .length = 6},
+		{.offset = 2,
+		 .length = 4},
 		{.offset = 42,
 		 .length = 22}}
 };
