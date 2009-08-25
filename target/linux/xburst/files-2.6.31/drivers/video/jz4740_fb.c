@@ -201,9 +201,9 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 		fb->var.bits_per_pixel = 32;
 		break;
 	case 32:
+	case 24:
 		var->transp.offset = 24;
 		var->transp.length = 8;
-	case 24:
 		var->red.offset = 16;
 		var->red.length = 8;
 		var->green.offset = 8;
@@ -313,11 +313,11 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 	}
 
 
-	framedesc = jzfb->devmem;
-	jzfb->vidmem = jzfb->devmem + sizeof(struct jzfb_framedesc);
+	framedesc = jzfb->devmem  + max_videosize;
+	jzfb->vidmem = jzfb->devmem;
 
-	framedesc->next = jzfb->devmem_phys;
-	framedesc->addr = jzfb->devmem_phys + sizeof(struct jzfb_framedesc);
+	framedesc->next = jzfb->devmem_phys + max_videosize;
+	framedesc->addr = jzfb->devmem_phys;
 	framedesc->id = 0;
 	framedesc->cmd = 0;
 	framedesc->cmd |= max_videosize / 4;
