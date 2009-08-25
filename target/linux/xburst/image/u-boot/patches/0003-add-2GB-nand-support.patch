@@ -30,7 +30,7 @@ index 16e8688..572d22b 100644
  	__gpio_set_pin(GPIO_AUDIO_POP);
  
 diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
-index 68a2e87..1e13653 100644
+index 68a2e87..bcd7ada 100644
 --- a/include/configs/qi_lb60.h
 +++ b/include/configs/qi_lb60.h
 @@ -13,7 +13,6 @@
@@ -99,7 +99,7 @@ index 68a2e87..1e13653 100644
  
  #define CONFIG_RX_ETH_BUFFER	16	/* use 16 rx buffers on jz47xx eth */
  
-@@ -107,17 +105,22 @@
+@@ -107,17 +105,23 @@
  /*
   * NAND FLASH configuration
   */
@@ -112,25 +112,26 @@ index 68a2e87..1e13653 100644
 -
 +#define QI_LB60_NAND_SIZE	2 /* if board nand flash is 1GB, set to 1
 +				   * if board nand flash is 2GB, set to 2
-+				   * this is for change the PAGE_SIZE and BLOCK_SIZE
-+				   * will delete when there is no 1GB flash in board
++				   * for change the PAGE_SIZE and BLOCK_SIZE
++				   * will delete when there is no 1GB flash
 +				   */
 +
-+#define CONFIG_NAND_PAGE_SIZE	2048 * QI_LB60_NAND_SIZE
-+#define CONFIG_NAND_BLOCK_SIZE	(256 * QI_LB60_NAND_SIZE << 10)	/* nand chip block size	*/
-+#define CONFIG_NAND_BADBLOCK_PAGE	127 /* nand bad block was marked at this page in a block,
-+					     * starting from 0 */
-+#define CONFIG_NAND_ECC_POS		6 /* ECC offset position in oob area,
-+					   * default value is 6 if it isn't defined */
++#define CONFIG_NAND_PAGE_SIZE	(2048 * QI_LB60_NAND_SIZE)
++/* nand chip block size	*/
++#define CONFIG_NAND_BLOCK_SIZE	(256 * QI_LB60_NAND_SIZE << 10)	
++/* nand bad block was marked at this page in a block, start from 0 */
++#define CONFIG_NAND_BADBLOCK_PAGE	127 
++/* ECC offset position in oob area, default value is 6 if it isn't defined */
++#define CONFIG_NAND_ECC_POS	(6 * QI_LB60_NAND_SIZE)
  #define CONFIG_SYS_MAX_NAND_DEVICE     1
  #define NAND_MAX_CHIPS          1
  #define CONFIG_SYS_NAND_BASE           0xB8000000
 -#define CONFIG_SYS_NAND_SELECT_DEVICE  1 /* nand driver supports mutipl. chips*/
-+#define CONFIG_SYS_NAND_SELECT_DEVICE  1 /* nand driver supports mutipl. chips */
++#define CONFIG_SYS_NAND_SELECT_DEVICE  1 /* nand driver supports mutipl.*/
  #define CONFIG_SYS_ONENAND_BASE	CONFIG_SYS_NAND_BASE
  
  /*
-@@ -150,25 +153,8 @@
+@@ -150,25 +154,8 @@
  /* environment starts here  */
  #define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
  
