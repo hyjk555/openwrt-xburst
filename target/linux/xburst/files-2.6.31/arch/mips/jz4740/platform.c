@@ -214,12 +214,10 @@ static struct platform_device jz_nand_device = {
 };
 #define KEEP_UART_ALIVE
 
-#define KEY_QI_QI	KEY_F9
-#define KEY_QI_UPBIG	KEY_F10
-#define KEY_QI_DOWNBIG	KEY_F11
-#define KEY_QI_UPRED	KEY_F12
-#define KEY_QI_VOLUP	KEY_F13
-#define KEY_QI_VOLDOWN	KEY_F14
+#define KEY_QI_QI	KEY_F13
+#define KEY_QI_UPRED	KEY_F14
+#define KEY_QI_VOLUP	KEY_F15
+#define KEY_QI_VOLDOWN	KEY_F16
 
 static const uint32_t qi_lb60_keymap[] = {
 	KEY(0, 0, KEY_F1),	/* S2 */
@@ -255,7 +253,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(3, 6, KEY_N),	/* S32 */
 	KEY(3, 7, KEY_M),	/* S33 */
 	KEY(4, 0, KEY_TAB),	/* S34 */
-	KEY(4, 1, KEY_QI_DOWNBIG),	/* S35 */
+	KEY(4, 1, KEY_CAPSLOCK),	/* S35 */
 	KEY(4, 2, KEY_BACKSLASH),	/* S36 */
 	KEY(4, 3, KEY_APOSTROPHE),	/* S37 */
 	KEY(4, 4, KEY_COMMA),	/* S38 */
@@ -280,7 +278,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(6, 7, KEY_RIGHT),	/* S57 */
 
 #ifndef KEEP_UART_ALIVE
-	KEY(7, 0, KEY_QI_UPBIG),	/* S58 */
+	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
 	KEY(7, 2, KEY_FN),	/* S60 */
 #endif
