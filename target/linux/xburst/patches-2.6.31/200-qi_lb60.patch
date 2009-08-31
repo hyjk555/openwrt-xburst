@@ -1,6 +1,6 @@
-From 5125a5b4a4705f98db4a98d009a8b1c9e449ba51 Mon Sep 17 00:00:00 2001
+From 17f15e207516c665bb080f650e04e01577069979 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu.z@gmail.com>
-Date: Thu, 20 Aug 2009 18:38:09 +0800
+Date: Mon, 31 Aug 2009 10:47:00 +0800
 Subject: [PATCH] qi_lb60
 
 ---
@@ -14,9 +14,12 @@ Subject: [PATCH] qi_lb60
  7 files changed, 227 insertions(+), 13 deletions(-)
  create mode 100644 arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
  create mode 100644 arch/mips/jz4740/board-qi_lb60.c
+ mode change 100755 => 100644 drivers/video/jz4740_slcd.c
+ mode change 100755 => 100644 drivers/video/jzlcd.c
+ mode change 100755 => 100644 drivers/video/jzlcd.h
 
 diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index e8f8027..8b78107 100644
+index 4ae3315..24e775f 100644
 --- a/arch/mips/Kconfig
 +++ b/arch/mips/Kconfig
 @@ -656,6 +656,14 @@ config CAVIUM_OCTEON_REFERENCE_BOARD
@@ -135,7 +138,7 @@ index 437caf4..d38d5f1 100644
  
  
 diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
-index ac4d3cd..03ef8fd 100644
+index 0259876..8491d5f 100644
 --- a/arch/mips/jz4740/Makefile
 +++ b/arch/mips/jz4740/Makefile
 @@ -16,6 +16,7 @@ obj-$(CONFIG_JZ4740_LEO)	+= board-leo.o
@@ -262,8 +265,13 @@ index 0000000..127fad8
 +
 +	jz_timer_callback = pi_timer_callback;
 +}
+diff --git a/drivers/video/jz4740_slcd.c b/drivers/video/jz4740_slcd.c
+old mode 100755
+new mode 100644
 diff --git a/drivers/video/jzlcd.c b/drivers/video/jzlcd.c
-index 6df9439..2cb7114 100755
+old mode 100755
+new mode 100644
+index 6df9439..2cb7114
 --- a/drivers/video/jzlcd.c
 +++ b/drivers/video/jzlcd.c
 @@ -127,15 +127,18 @@ static struct jzfb_info jzfb = {
@@ -304,7 +312,9 @@ index 6df9439..2cb7114 100755
  	return 0;
  
 diff --git a/drivers/video/jzlcd.h b/drivers/video/jzlcd.h
-index 3676b9b..a4ef75f 100755
+old mode 100755
+new mode 100644
+index 8a3d855..e2e6978
 --- a/drivers/video/jzlcd.h
 +++ b/drivers/video/jzlcd.h
 @@ -363,7 +363,11 @@ do { \
@@ -338,10 +348,10 @@ index 3676b9b..a4ef75f 100755
  #if defined(CONFIG_SOC_JZ4740)
 -#if defined(CONFIG_JZ4740_PAVO) || defined(CONFIG_JZ4740_LYRA)
 +#if defined(CONFIG_JZ4740_PAVO) || defined(CONFIG_JZ4740_LYRA) || defined(CONFIG_JZ4740_QI_LB60)
- #define GPIO_PWM    123		/* GP_D27 */
  #define PWM_CHN 4    /* pwm channel */
  #define PWM_FULL 101
-@@ -725,7 +734,7 @@ do { \
+ /* 100 level: 0,1,...,100 */
+@@ -724,7 +733,7 @@ do { \
  do { \
  	__gpio_set_pin(GPIO_DISP_OFF_N); \
  	__lcd_special_on(); \
