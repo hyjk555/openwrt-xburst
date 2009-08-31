@@ -1,12 +1,53 @@
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 6a129e7..3c069d8 100644
+index 6a129e7..b870583 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -164,6 +164,45 @@ static struct resource jz_nand_resources[] = {
+@@ -164,6 +164,7 @@ static struct resource jz_nand_resources[] = {
  	},
  };
  
-+#ifdef QI_LB60_2GB_NAND
++#ifdef QI_LB60_1GB_NAND
+ static struct nand_ecclayout qi_lb60_ecclayout = {
+ 	.eccbytes = 36,
+ 	.eccpos = {
+@@ -180,29 +181,68 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
+ };
+ 
+ static struct mtd_partition qi_lb60_partitions[] = {
+-	{ .name =	"NAND BOOT partition",
+-	  .offset =	0 * 0x100000,
+-	  .size =	4 * 0x100000,
+-	},
+-	{ .name =	"NAND KERNEL partition",
+-	  .offset =	4 * 0x100000,
+-	  .size =	4 * 0x100000,
+-	},
+-	{ .name =	"NAND ROOTFS partition",
+-	  .offset =	8 * 0x100000,
+-	  .size =	20 * 0x100000,
+-	},
+-	{ .name =	"NAND DATA partition",
+-	  .offset =	100 * 0x100000,
+-	  .size =	20 * 0x100000,
+-	},
++	{ .name = "NAND BOOT partition",
++	  .offset = 0 * 0x100000,
++	  .size = 4 * 0x100000,
++ 	},
++	{ .name = "NAND KERNEL partition",
++	  .offset = 4 * 0x100000,
++	  .size = 4 * 0x100000,
++ 	},
++	{ .name = "NAND ROOTFS partition",
++	  .offset = 8 * 0x100000,
++	  .size = 504 * 0x100000,
++ 	},
++	{ .name = "NAND DATA partition",
++	  .offset = 512 * 0x100000,
++	  .size = 512 * 0x100000,
++ 	},
+ };
++#else
 +static struct nand_ecclayout qi_lb60_ecclayout = {
 +	.eccbytes = 72,
 +        .eccpos = {
@@ -44,48 +85,7 @@ index 6a129e7..3c069d8 100644
 +	  .size = (512 + 1024) * 0x100000,
 + 	},
 +};
-+#else
- static struct nand_ecclayout qi_lb60_ecclayout = {
- 	.eccbytes = 36,
- 	.eccpos = {
-@@ -180,29 +219,30 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
- };
- 
- static struct mtd_partition qi_lb60_partitions[] = {
--	{ .name =	"NAND BOOT partition",
--	  .offset =	0 * 0x100000,
--	  .size =	4 * 0x100000,
--	},
--	{ .name =	"NAND KERNEL partition",
--	  .offset =	4 * 0x100000,
--	  .size =	4 * 0x100000,
--	},
--	{ .name =	"NAND ROOTFS partition",
--	  .offset =	8 * 0x100000,
--	  .size =	20 * 0x100000,
--	},
--	{ .name =	"NAND DATA partition",
--	  .offset =	100 * 0x100000,
--	  .size =	20 * 0x100000,
--	},
-+	{ .name = "NAND BOOT partition",
-+	  .offset = 0 * 0x100000,
-+	  .size = 4 * 0x100000,
-+ 	},
-+	{ .name = "NAND KERNEL partition",
-+	  .offset = 4 * 0x100000,
-+	  .size = 4 * 0x100000,
-+ 	},
-+	{ .name = "NAND ROOTFS partition",
-+	  .offset = 8 * 0x100000,
-+	  .size = 504 * 0x100000,
-+ 	},
-+	{ .name = "NAND DATA partition",
-+	  .offset = 512 * 0x100000,
-+	  .size = 512 * 0x100000,
-+ 	},
- };
-+#endif /* QI_LB60_2GB_NAND */
++#endif /* QI_LB60_1GB_NAND */
  
  static struct jz_nand_platform_data jz_nand_platform_data = {
  	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
