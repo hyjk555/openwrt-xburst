@@ -170,4 +170,6 @@ static inline void __cpm_select_msc_clk(int sd)
 	REG_CPM_MSCCDR = div - 1;
 }
 
+int jz_init_clocks(unsigned long ext_rate);
+
 #endif /* __ASM_JZ4740_CLOCK_H__ */
