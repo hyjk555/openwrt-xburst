@@ -16,8 +16,12 @@
 #include <linux/mtd/jz4740_nand.h>
 #include <linux/jz4740_fb.h>
 #include <linux/input/matrix_keypad.h>
+#include <linux/mtd/jz4740_nand.h>
+#include <linux/spi/spi.h>
+#include <linux/spi/spi_gpio.h>
 
 #include <asm/jzsoc.h>
+#include <asm/gpio.h>
 
 /* OHCI (USB full speed host controller) */
 static struct resource jz_usb_ohci_resources[] = {
@@ -201,7 +205,7 @@ static struct jz_nand_platform_data jz_nand_platform_data = {
 	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
 	.partitions = qi_lb60_partitions,
 	.ecc_layout = &qi_lb60_ecclayout,
-    .busy_gpio = 94,
+	.busy_gpio = 94,
 };
 
 static struct platform_device jz_nand_device = {
@@ -214,7 +218,7 @@ static struct platform_device jz_nand_device = {
 };
 #define KEEP_UART_ALIVE
 
-#define KEY_QI_QI	KEY_F13
+#define KEY_QI_QI		KEY_F13
 #define KEY_QI_UPRED	KEY_F14
 #define KEY_QI_VOLUP	KEY_F15
 #define KEY_QI_VOLDOWN	KEY_F16
@@ -285,8 +289,8 @@ static const uint32_t qi_lb60_keymap[] = {
 };
 
 static const struct matrix_keymap_data qi_lb60_keymap_data = {
-    .keymap		= qi_lb60_keymap,
-    .keymap_size	= ARRAY_SIZE(qi_lb60_keymap),
+	.keymap		= qi_lb60_keymap,
+	.keymap_size	= ARRAY_SIZE(qi_lb60_keymap),
 };
 
 static const unsigned int qi_lb60_keypad_cols[] = {
@@ -296,12 +300,12 @@ static const unsigned int qi_lb60_keypad_cols[] = {
 static const unsigned int qi_lb60_keypad_rows[] = {
 	114, 115, 116, 117, 118, 119, 120,
 #ifndef KEEP_UART_ALIVE
-    122,
+	122,
 #endif
 };
 
 static struct matrix_keypad_platform_data qi_lb60_pdata = {
-    .keymap_data = &qi_lb60_keymap_data,
+	.keymap_data = &qi_lb60_keymap_data,
 	.col_gpios	= qi_lb60_keypad_cols,
 	.row_gpios	= qi_lb60_keypad_rows,
 	.num_col_gpios	= ARRAY_SIZE(qi_lb60_keypad_cols),
@@ -309,7 +313,7 @@ static struct matrix_keypad_platform_data qi_lb60_pdata = {
 	.col_scan_delay_us	= 10,
 	.debounce_ms		= 10,
 	.wakeup			= 1,
-    .active_low = 1,
+	.active_low = 1,
 };
 
 static struct platform_device qi_lb60_keypad = {
@@ -366,20 +370,63 @@ static struct platform_device qi_lb60_fb = {
 	},
 };
 
+struct spi_gpio_platform_data spigpio_platform_data = {
+	.sck = 32 * 2 + 23,
+	.mosi = 32 * 2 + 22,
+	.miso = 32 * 2 + 22,
+	.num_chipselect = 1,
+};
+
+static struct platform_device spigpio_device = {
+	.name = "spi_gpio",
+	.id   = 1,
+	.dev = {
+		.platform_data = &spigpio_platform_data,
+	},
+};
+
+static struct spi_board_info qi_lb60_spi_board_info[] = {
+	{
+		.modalias = "gpm940b0",
+		.controller_data = (void*)(32 * 2 + 21),
+		.chip_select = 0,
+		.bus_num = 1,
+		.max_speed_hz = 30 * 1000,
+	},
+};
+
+static struct resource i2s_resources[] = {
+	[0] = {
+		.start          = CPHYSADDR(AIC_BASE),
+		.end            = CPHYSADDR(AIC_BASE) + 0x38 - 1,
+		.flags          = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device jz_i2s_device = {
+	.name = "jz4740-i2s",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(i2s_resources),
+	.resource = i2s_resources,
+};
+
 /* All */
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_ohci_device,
-	&jz_lcd_device,
 	&jz_usb_gdt_device,
 	&jz_mmc_device,
 	&jz_nand_device,
 	&jz_i2c_device,
-    &qi_lb60_keypad,
+	&qi_lb60_keypad,
 	&qi_lb60_fb,
+	&spigpio_device,
+	&jz_i2s_device,
 };
 
 static int __init jz_platform_init(void)
 {
+	spi_register_board_info(qi_lb60_spi_board_info,
+				ARRAY_SIZE(qi_lb60_spi_board_info));
 	return platform_add_devices(jz_platform_devices, ARRAY_SIZE(jz_platform_devices));
 }
 

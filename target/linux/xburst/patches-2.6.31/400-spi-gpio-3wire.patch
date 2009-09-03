@@ -1,0 +1,37 @@
+--- /opt/Projects/linux-2.6/drivers/spi/spi_gpio.c	2009-09-03 11:56:54.000000000 +0200
++++ ./spi_gpio.c	2009-08-24 17:00:21.000000000 +0200
+@@ -254,9 +254,11 @@
+ 	if (value)
+ 		goto done;
+ 
+-	value = spi_gpio_alloc(SPI_MISO_GPIO, label, true);
+-	if (value)
+-		goto free_mosi;
++	if (SPI_MISO_GPIO != SPI_MOSI_GPIO) {
++		value = spi_gpio_alloc(SPI_MISO_GPIO, label, true);
++		if (value)
++			goto free_mosi;
++	}
+ 
+ 	value = spi_gpio_alloc(SPI_SCK_GPIO, label, false);
+ 	if (value)
+@@ -319,7 +321,8 @@
+ 	if (status < 0) {
+ 		spi_master_put(spi_gpio->bitbang.master);
+ gpio_free:
+-		gpio_free(SPI_MISO_GPIO);
++		if (SPI_MISO_GPIO != SPI_MOSI_GPIO)
++			gpio_free(SPI_MISO_GPIO);
+ 		gpio_free(SPI_MOSI_GPIO);
+ 		gpio_free(SPI_SCK_GPIO);
+ 		spi_master_put(master);
+@@ -343,7 +346,8 @@
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-	gpio_free(SPI_MISO_GPIO);
++	if (SPI_MISO_GPIO != SPI_MOSI_GPIO)
++		gpio_free(SPI_MISO_GPIO);
+ 	gpio_free(SPI_MOSI_GPIO);
+ 	gpio_free(SPI_SCK_GPIO);
+ 
