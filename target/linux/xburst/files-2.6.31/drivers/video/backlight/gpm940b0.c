@@ -74,6 +74,23 @@ int gpm940b0_bl_update_status(struct backlight_device *bl)
 	return 0;
 }
 
+static size_t reg_write(struct device *dev, struct device_attribute *attr,
+                        const char *buf, size_t count)
+{
+    char *buf2;
+    uint32_t reg = simple_strtoul(buf, &buf2, 10);
+    uint32_t val = simple_strtoul(buf2 + 1, NULL, 10);
+	struct gpm940b0 *gpm940b0 = dev_get_drvdata(dev);
+
+    if (reg < 0 || val < 0)
+        return -EINVAL;
+
+    gpm940b0_write_reg(gpm940b0->spi, reg, val);
+    return count;
+}
+
+static DEVICE_ATTR(reg, 0644, NULL, reg_write);
+
 static struct lcd_ops gpm940b0_lcd_ops = {
     .set_power = gpm940b0_set_power,
     .set_contrast = gpm940b0_set_contrast,
@@ -125,7 +142,11 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 		gpm940b0->bl->props.brightness = 0;
 		gpm940b0->bl->props.power = FB_BLANK_UNBLANK;
 	}
+    device_create_file(&spi->dev, &dev_attr_reg);
 
+    dev_set_drvdata(&spi->dev, gpm940b0);
+
+    gpm940b0_write_reg(spi, 0x13, 0x1);
 	return 0;
 err_free_gpm940b0:
 	return ret;
