@@ -1,16 +1,8 @@
---- /opt/Projects/linux-2.6/drivers/video/backlight/Makefile	2009-09-02 16:48:24.000000000 +0200
-+++ ./Makefile	2009-08-24 13:51:57.000000000 +0200
-@@ -9,6 +9,7 @@
- obj-$(CONFIG_LCD_VGG2432A4)	   += vgg2432a4.o
- obj-$(CONFIG_LCD_TDO24M)	   += tdo24m.o
- obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o
-+obj-$(CONFIG_LCD_GPM940B0)	   += gpm940b0.o
- 
- obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE) += backlight.o
- obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)    += atmel-pwm-bl.o
---- /opt/Projects/linux-2.6/drivers/video/backlight/Kconfig	2009-09-02 16:48:24.000000000 +0200
-+++ ./Kconfig	2009-08-24 13:49:46.000000000 +0200
-@@ -93,6 +93,13 @@
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index f9d19be..4299648 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -93,6 +93,13 @@ config LCD_HP700
  	  If you have an HP Jornada 700 series handheld (710/720/728)
  	  say Y to enable LCD control driver.
  
@@ -24,3 +16,15 @@
  #
  # Backlight
  #
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index 4eb178c..c2fd42c 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_LCD_PLATFORM)	   += platform_lcd.o
+ obj-$(CONFIG_LCD_VGG2432A4)	   += vgg2432a4.o
+ obj-$(CONFIG_LCD_TDO24M)	   += tdo24m.o
+ obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o
++obj-$(CONFIG_LCD_GPM940B0)	   += gpm940b0.o
+ 
+ obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE) += backlight.o
+ obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)    += atmel-pwm-bl.o

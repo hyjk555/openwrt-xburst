@@ -1,16 +1,17 @@
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 6a129e7..b870583 100644
+index 62409ed..c435df5 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -164,6 +164,7 @@ static struct resource jz_nand_resources[] = {
+@@ -167,6 +167,8 @@ static struct resource jz_nand_resources[] = {
  	},
  };
  
++
 +#ifdef QI_LB60_1GB_NAND
  static struct nand_ecclayout qi_lb60_ecclayout = {
  	.eccbytes = 36,
  	.eccpos = {
-@@ -180,29 +181,68 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
+@@ -183,23 +185,62 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
  };
  
  static struct mtd_partition qi_lb60_partitions[] = {
@@ -89,14 +90,7 @@ index 6a129e7..b870583 100644
  
  static struct jz_nand_platform_data jz_nand_platform_data = {
  	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
- 	.partitions = qi_lb60_partitions,
- 	.ecc_layout = &qi_lb60_ecclayout,
--    .busy_gpio = 94,
-+	.busy_gpio = 94,
- };
- 
- static struct platform_device jz_nand_device = {
-@@ -213,7 +253,9 @@ static struct platform_device jz_nand_device = {
+@@ -216,7 +257,9 @@ static struct platform_device jz_nand_device = {
  		.platform_data = &jz_nand_platform_data,
  	}
  };
@@ -105,57 +99,13 @@ index 6a129e7..b870583 100644
 + * don't define this. the keyboard and keyboard both work
 + */
  
- #define KEY_QI_QI	KEY_F13
+ #define KEY_QI_QI		KEY_F13
  #define KEY_QI_UPRED	KEY_F14
-@@ -286,8 +328,8 @@ static const uint32_t qi_lb60_keymap[] = {
- };
- 
- static const struct matrix_keymap_data qi_lb60_keymap_data = {
--    .keymap		= qi_lb60_keymap,
--    .keymap_size	= ARRAY_SIZE(qi_lb60_keymap),
-+	.keymap		= qi_lb60_keymap,
-+	.keymap_size	= ARRAY_SIZE(qi_lb60_keymap),
- };
- 
- static const unsigned int qi_lb60_keypad_cols[] = {
-@@ -297,12 +339,12 @@ static const unsigned int qi_lb60_keypad_cols[] = {
- static const unsigned int qi_lb60_keypad_rows[] = {
- 	114, 115, 116, 117, 118, 119, 120,
- #ifndef KEEP_UART_ALIVE
--    122,
-+	122,
- #endif
- };
- 
- static struct matrix_keypad_platform_data qi_lb60_pdata = {
--    .keymap_data = &qi_lb60_keymap_data,
-+	.keymap_data = &qi_lb60_keymap_data,
- 	.col_gpios	= qi_lb60_keypad_cols,
- 	.row_gpios	= qi_lb60_keypad_rows,
- 	.num_col_gpios	= ARRAY_SIZE(qi_lb60_keypad_cols),
-@@ -310,7 +352,7 @@ static struct matrix_keypad_platform_data qi_lb60_pdata = {
- 	.col_scan_delay_us	= 10,
- 	.debounce_ms		= 10,
- 	.wakeup			= 1,
--    .active_low = 1,
-+	.active_low		= 1,
- };
- 
- static struct platform_device qi_lb60_keypad = {
-@@ -375,7 +417,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
- 	&jz_mmc_device,
- 	&jz_nand_device,
- 	&jz_i2c_device,
--    &qi_lb60_keypad,
-+	&qi_lb60_keypad,
- 	&qi_lb60_fb,
- };
- 
 diff --git a/include/mtd/mtd-abi.h b/include/mtd/mtd-abi.h
-index f86db5a..b19fffa 100644
+index be51ae2..cf90168 100644
 --- a/include/mtd/mtd-abi.h
 +++ b/include/mtd/mtd-abi.h
-@@ -135,7 +135,7 @@ struct nand_oobfree {
+@@ -134,7 +134,7 @@ struct nand_oobfree {
   */
  struct nand_ecclayout {
  	__u32 eccbytes;
