@@ -209,11 +209,11 @@ static int jz_nand_correct_ecc_rs(struct mtd_info* mtd, uint8_t *dat,
 
 	if (status & JZ_NAND_STATUS_ERROR) {
 		if (status & JZ_NAND_STATUS_UNCOR_ERROR) {
-            printk("uncorreclteble ecc:");
+            printk("uncorrectable ecc:");
             for(i = 0; i < 9; ++i)
                 printk(" 0x%x", read_ecc[i]);
             printk("\n");
-            printk("uncorreclteble data:");
+            printk("uncorrectable data:");
             for(i = 0; i < 32; ++i)
                 printk(" 0x%x", dat[i]);
             printk("\n");
