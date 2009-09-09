@@ -30,7 +30,7 @@ index 16e8688..572d22b 100644
  	__gpio_set_pin(GPIO_AUDIO_POP);
  
 diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
-index 68a2e87..8939794 100644
+index 68a2e87..3944eca 100644
 --- a/include/configs/qi_lb60.h
 +++ b/include/configs/qi_lb60.h
 @@ -13,7 +13,6 @@
@@ -61,7 +61,7 @@ index 68a2e87..8939794 100644
  #define CONFIG_SYS_MIPS_TIMER_FREQ	CONFIG_CPU_SPEED
  
  #define CONFIG_SYS_UART_BASE	UART0_BASE	/* Base of the UART channel */
-@@ -46,16 +45,15 @@
+@@ -46,16 +45,16 @@
  #define CONFIG_SYS_NO_FLASH	1
  
  #define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
@@ -76,6 +76,7 @@ index 68a2e87..8939794 100644
 +#define CONFIG_BOOTDELAY	0
 +#define CONFIG_BOOTFILE		"uImage"	/* file to load */
 +#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 rootfstype=jffs2 root=/dev/mtdblock2 rw rootdelay=2"
++				/* "mem=32M console=ttyS0,57600n8 rootfstype=ext2 root=/dev/mmcblk0p2 rw rootdelay=2" */
 +#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x300000;bootm"
 +
 +#define CONFIG_DRIVER_CS8900   1
@@ -86,7 +87,7 @@ index 68a2e87..8939794 100644
  
  /* allow to overwrite serial and ethaddr */
  #define CONFIG_ENV_OVERWRITE
-@@ -92,10 +90,10 @@
+@@ -92,10 +91,10 @@
  
  #define CONFIG_SYS_INIT_SP_OFFSET	0x400000
  
@@ -99,7 +100,7 @@ index 68a2e87..8939794 100644
  
  #define CONFIG_RX_ETH_BUFFER	16	/* use 16 rx buffers on jz47xx eth */
  
-@@ -107,17 +105,23 @@
+@@ -107,17 +106,23 @@
  /*
   * NAND FLASH configuration
   */
@@ -131,7 +132,7 @@ index 68a2e87..8939794 100644
  #define CONFIG_SYS_ONENAND_BASE	CONFIG_SYS_NAND_BASE
  
  /*
-@@ -150,25 +154,8 @@
+@@ -150,25 +155,8 @@
  /* environment starts here  */
  #define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
  
