@@ -90,32 +90,4 @@ extern struct jz4740_udc *the_controller;
 #define ep_index(EP) 		((EP)->bEndpointAddress&0xF)
 #define usb_set_index(i)	(REG8(USB_REG_INDEX) = (i))
 
-/*-------------------------------------------------------------------------*/
-
-/* 2.5 stuff that's sometimes missing in 2.4 */
-
-#ifndef container_of
-#define	container_of	list_entry
-#endif
-
-#ifndef likely
-#define likely(x)	(x)
-#define unlikely(x)	(x)
-#endif
-
-#ifndef BUG_ON
-#define BUG_ON(condition) do { if (unlikely((condition)!=0)) BUG(); } while(0)
-#endif
-
-#ifndef WARN_ON
-#define	WARN_ON(x)	do { } while (0)
-#endif
-
-#ifndef	IRQ_NONE
-typedef void irqreturn_t;
-#define IRQ_NONE
-#define IRQ_HANDLED
-#define IRQ_RETVAL(x)
-#endif
-
 #endif /* __USB_GADGET_JZ4740_H__ */
