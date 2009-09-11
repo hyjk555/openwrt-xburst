@@ -1,0 +1,121 @@
+diff --git a/arch/mips/boot/uImage b/arch/mips/boot/uImage
+index 97d87c8..c46201a 100644
+Binary files a/arch/mips/boot/uImage and b/arch/mips/boot/uImage differ
+diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
+index c435df5..1a95266 100644
+--- a/arch/mips/jz4740/platform.c
++++ b/arch/mips/jz4740/platform.c
+@@ -262,9 +262,10 @@ static struct platform_device jz_nand_device = {
+  */
+ 
+ #define KEY_QI_QI		KEY_F13
+-#define KEY_QI_UPRED	KEY_F14
++#define KEY_QI_UPRED	KEY_RIGHTCTRL
+ #define KEY_QI_VOLUP	KEY_F15
+ #define KEY_QI_VOLDOWN	KEY_F16
++#define KEY_QI_FN	KEY_F17
+ 
+ static const uint32_t qi_lb60_keymap[] = {
+ 	KEY(0, 0, KEY_F1),	/* S2 */
+@@ -327,7 +328,7 @@ static const uint32_t qi_lb60_keymap[] = {
+ #ifndef KEEP_UART_ALIVE
+ 	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
+ 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
+-	KEY(7, 2, KEY_FN),	/* S60 */
++	KEY(7, 2, KEY_QI_FN),	/* S60 */
+ #endif
+ };
+ 
+diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
+index 50b30ca..936c03a 100644
+--- a/drivers/char/defkeymap.map
++++ b/drivers/char/defkeymap.map
+@@ -45,24 +45,23 @@ keycode  12 = minus            underscore       backslash
+ 	control	keycode  12 = Control_underscore
+ 	shift	control	keycode  12 = Control_underscore
+ 	alt	keycode  12 = Meta_minus      
+-keycode  13 = equal            plus            
++keycode  13 = equal            plus             asciitilde
+ 	alt     keycode  13 = Meta_equal      
+ keycode  14 = Delete           Delete          
+ 	control keycode  14 = BackSpace
+ 	alt     keycode  14 = Meta_Delete     
+ keycode  15 = Tab              Tab             
+ 	alt     keycode  15 = Meta_Tab        
+-keycode  16 = q               
+-keycode  17 = w               
+-keycode  18 = e
+-	altgr   keycode  18 = Hex_E   
+-keycode  19 = r               
+-keycode  20 = t               
+-keycode  21 = y               
+-keycode  22 = u               
+-keycode  23 = i               
+-keycode  24 = o               
+-keycode  25 = p               
++keycode  16 = q                Q                exclam 
++keycode  17 = w                W                at
++keycode  18 = e                E                numbersign
++keycode  19 = r                R                dollar
++keycode  20 = t                T                percent
++keycode  21 = y                Y                asciicircum
++keycode  22 = u                U                ampersand
++keycode  23 = i                I                asterisk
++keycode  24 = o                O                parenleft
++keycode  25 = p                P                parenright
+ keycode  26 = bracketleft      braceleft       
+ 	control keycode  26 = Escape          
+ 	alt     keycode  26 = Meta_bracketleft
+@@ -72,18 +71,15 @@ keycode  27 = bracketright     braceright       asciitilde
+ keycode  28 = Return          
+ 	alt     keycode  28 = Meta_Control_m  
+ keycode  29 = Control         
+-keycode  30 = a
+-	altgr   keycode  30 = Hex_A
+-keycode  31 = s               
+-keycode  32 = d
+-	altgr   keycode  32 = Hex_D   
+-keycode  33 = f
+-	altgr   keycode  33 = Hex_F               
+-keycode  34 = g               
+-keycode  35 = h               
+-keycode  36 = j               
+-keycode  37 = k               
+-keycode  38 = l               
++keycode  30 = a                A                
++keycode  31 = s                S                
++keycode  32 = d                D                
++keycode  33 = f                F                minus
++keycode  34 = g                G                underscore
++keycode  35 = h                H                braceleft
++keycode  36 = j                J                bracketleft
++keycode  37 = k                K                bracketright
++keycode  38 = l                L                braceright
+ keycode  39 = semicolon        colon           
+ 	alt     keycode  39 = Meta_semicolon  
+ keycode  40 = apostrophe       quotedbl        
+@@ -103,11 +99,11 @@ keycode  46 = c
+ keycode  47 = v               
+ keycode  48 = b
+ 	altgr   keycode  48 = Hex_B
+-keycode  49 = n               
+-keycode  50 = m               
+-keycode  51 = comma            less            
++keycode  49 = n                N                 less
++keycode  50 = m                M                 greater
++keycode  51 = comma            semicolon         apostrophe
+ 	alt     keycode  51 = Meta_comma      
+-keycode  52 = period           greater         
++keycode  52 = period           colon             quotedbl
+ 	control keycode  52 = Compose         
+ 	alt     keycode  52 = Meta_period     
+ keycode  53 = slash            question        
+@@ -220,7 +216,7 @@ keycode  93 =
+ keycode  94 =
+ keycode  95 =
+ keycode  96 = KP_Enter        
+-keycode  97 = Control         
++keycode  97 = AltGr
+ keycode  98 = KP_Divide       
+ keycode  99 = Control_backslash
+ 	control keycode  99 = Control_backslash
