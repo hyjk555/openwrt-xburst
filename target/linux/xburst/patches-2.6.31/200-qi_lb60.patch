@@ -18,25 +18,6 @@ Subject: [PATCH] qi_lb60
  mode change 100755 => 100644 drivers/video/jzlcd.c
  mode change 100755 => 100644 drivers/video/jzlcd.h
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 4ae3315..24e775f 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -656,6 +656,14 @@ config CAVIUM_OCTEON_REFERENCE_BOARD
- 		Hikari
- 	  Say Y here for most Octeon reference boards.
- 
-+config JZ4740_QI_LB60
-+	bool "Ingenic JZ4740 QI_LB60 board"
-+	select DMA_NONCOHERENT
-+	select SYS_HAS_CPU_MIPS32_R1
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SOC_JZ4740
-+
- endchoice
- 
- source "arch/mips/alchemy/Kconfig"
 diff --git a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
 new file mode 100644
 index 0000000..b2f02f4

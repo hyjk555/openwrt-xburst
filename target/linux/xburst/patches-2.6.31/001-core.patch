@@ -26,39 +26,24 @@ diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
 index 3ca0fe1..e8f8027 100644
 --- a/arch/mips/Kconfig
 +++ b/arch/mips/Kconfig
-@@ -671,6 +671,32 @@ source "arch/mips/cavium-octeon/Kconfig"
+@@ -158,6 +158,9 @@
+ 	 Members include the Acer PICA, MIPS Magnum 4000, MIPS Millennium and
+ 	 Olivetti M700-10 workstations.
  
- endmenu
- 
-+#####################################################
-+# Ingenic SOC series
-+#####################################################
++config MACH_JZ
++	bool "Ingenic JZ4720/JZ4740 based machines"
 +
-+config SOC_JZ4720
-+	bool
-+	select JZSOC
-+
-+config SOC_JZ4740
-+	bool
-+	select JZSOC
-+	select GENERIC_GPIO
-+	select ARCH_REQUIRE_GPIOLIB
-+	select SYS_HAS_EARLY_PRINTK
-+
-+config JZSOC
-+	bool
-+	select JZRISC
-+	select SYS_HAS_CPU_MIPS32_R1
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+
-+config JZRISC
-+	bool
-+
-+####################################################
-+
- config RWSEM_GENERIC_SPINLOCK
- 	bool
- 	default y
+ config LASAT
+ 	bool "LASAT Networks platforms"
+ 	select CEVT_R4K
+@@ -661,6 +664,7 @@
+ source "arch/mips/alchemy/Kconfig"
+ source "arch/mips/basler/excite/Kconfig"
+ source "arch/mips/jazz/Kconfig"
++source "arch/mips/jz4740/Kconfig"
+ source "arch/mips/lasat/Kconfig"
+ source "arch/mips/pmc-sierra/Kconfig"
+ source "arch/mips/sgi-ip27/Kconfig"
 @@ -1893,6 +1919,14 @@ config NR_CPUS
  
  source "kernel/time/Kconfig"
