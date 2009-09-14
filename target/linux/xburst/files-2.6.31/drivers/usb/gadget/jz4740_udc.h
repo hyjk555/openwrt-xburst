@@ -35,18 +35,18 @@ struct jz4740_ep {
 	struct jz4740_udc *dev;
 
 	const struct usb_endpoint_descriptor *desc;
-	struct list_head queue;
 	unsigned long pio_irqs;
 
-	u8 stopped;
-	u8 bEndpointAddress;
-	u8 bmAttributes;
+	uint8_t stopped;
+	uint8_t bEndpointAddress;
+	uint8_t bmAttributes;
 
-	ep_type_t ep_type;
-	u32 fifo;
+	ep_type_t type;
+	size_t fifo;
 	u32 csr;
 
-	u32 reg_addr;
+	uint32_t reg_addr;
+	struct list_head queue;
 };
 
 struct jz4740_request {
@@ -79,8 +79,13 @@ struct jz4740_udc {
 
 	unsigned char usb_address;
 	
-	/* UDC state - Added by River */
 	udc_state_t state;
+
+	struct resource *mem;
+	void __iomem *base;
+	int irq;
+	uint32_t in_mask;
+	uint32_t out_mask;
 };
 
 extern struct jz4740_udc *the_controller;
@@ -88,6 +93,5 @@ extern struct jz4740_udc *the_controller;
 #define ep_is_in(EP) 		(((EP)->bEndpointAddress&USB_DIR_IN)==USB_DIR_IN)
 #define ep_maxpacket(EP) 	((EP)->ep.maxpacket)
 #define ep_index(EP) 		((EP)->bEndpointAddress&0xF)
-#define usb_set_index(i)	(REG8(USB_REG_INDEX) = (i))
 
 #endif /* __USB_GADGET_JZ4740_H__ */
