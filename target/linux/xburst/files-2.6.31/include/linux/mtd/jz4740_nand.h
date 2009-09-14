@@ -16,8 +16,8 @@
 #ifndef __JZ_NAND_H__
 #define __JZ_NAND_H__
 
-#include <linux/mtd/partitions.h>
 #include <linux/mtd/nand.h>
+#include <linux/mtd/partitions.h>
 
 struct jz_nand_platform_data {
 	int			num_partitions;
