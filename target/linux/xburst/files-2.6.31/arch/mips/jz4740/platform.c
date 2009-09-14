@@ -263,7 +263,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(6, 7, KEY_RIGHT),	/* S57 */
 
 #ifndef KEEP_UART_ALIVE
-	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
+	KEY(7, 0, KEY_QI_LEFTSHIFT),	/* S58 */
 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
 	KEY(7, 2, KEY_FN),	/* S60 */
 #endif
