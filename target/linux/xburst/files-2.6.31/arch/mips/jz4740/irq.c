@@ -32,6 +32,8 @@
 #include <asm/mipsregs.h>
 #include <asm/system.h>
 #include <asm/jzsoc.h>
+#include <asm/mach-generic/irq.h>
+#include <asm/irq_cpu.h>
 
 static void __iomem *jz_intc_base;
 
@@ -43,23 +45,21 @@ static void __iomem *jz_intc_base;
 #define JZ_REG_INTC_CLEAR_MASK	0x0c
 #define JZ_REG_INTC_PENDING	0x10
 
-/*
- * INTC irq type
- */
+#define IRQ_BIT(x) BIT((x) - JZ_IRQ_BASE)
 
 static void intc_irq_unmask(unsigned int irq)
 {
-	writel(BIT(irq), jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
+	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
 }
 
 static void intc_irq_mask(unsigned int irq)
 {
-	writel(BIT(irq), jz_intc_base + JZ_REG_INTC_SET_MASK);
+	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_SET_MASK);
 }
 
 static void intc_irq_ack(unsigned int irq)
 {
-	writel(BIT(irq), jz_intc_base + JZ_REG_INTC_PENDING);
+	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_PENDING);
 }
 
 static void intc_irq_end(unsigned int irq)
@@ -77,74 +77,46 @@ static struct irq_chip intc_irq_type = {
 	.end =	    intc_irq_end,
 };
 
-/*
- * DMA irq type
- */
-
-static void enable_dma_irq(unsigned int irq)
+static irqreturn_t jz4740_cascade(int irq, void *data)
 {
-	__intc_unmask_irq(IRQ_DMAC);
-	__dmac_channel_enable_irq(irq - IRQ_DMA_0);
+	uint32_t irq_reg;
+	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
+
+	if (irq_reg) {
+	    generic_handle_irq(ffs(irq_reg) - 1 + JZ_IRQ_BASE);
+        return IRQ_HANDLED;
+    }
+
+    return 0;
 }
 
-static void disable_dma_irq(unsigned int irq)
-{
-	__dmac_channel_disable_irq(irq - IRQ_DMA_0);
-}
-
-static void mask_and_ack_dma_irq(unsigned int irq)
-{
-	__intc_ack_irq(IRQ_DMAC);
-	__dmac_channel_disable_irq(irq - IRQ_DMA_0);
-}
-
-static void end_dma_irq(unsigned int irq)
-{
-	if (!(irq_desc[irq].status & (IRQ_DISABLED|IRQ_INPROGRESS))) {
-		enable_dma_irq(irq);
-	}
-}
-
-static struct irq_chip dma_irq_type = {
-	.name = "DMA",
-	.unmask = enable_dma_irq,
-	.mask = disable_dma_irq,
-	.ack = mask_and_ack_dma_irq,
-	.end = end_dma_irq,
+static struct irqaction jz4740_cascade_action = {
+	.handler = jz4740_cascade,
+	.name = "JZ4740 cascade interrupt"
 };
-
-//----------------------------------------------------------------------
 
 void __init arch_init_irq(void)
 {
 	int i;
-
-	clear_c0_status(0xff04); /* clear ERL */
-	set_c0_status(0x0400);   /* set IP2 */
+    mips_cpu_irq_init();
 
 	jz_intc_base = ioremap(JZ_REG_BASE_INTC, 0x14);
 
-	for (i = 0; i < 32; i++) {
+	for (i = JZ_IRQ_BASE; i < JZ_IRQ_BASE + 32; i++) {
 		intc_irq_mask(i);
 		set_irq_chip_and_handler(i, &intc_irq_type, handle_level_irq);
 	}
 
-
-	/* Set up DMAC irq
-	 */
-	for (i = 0; i < NUM_DMA; i++) {
-		disable_dma_irq(IRQ_DMA_0 + i);
-        set_irq_chip_and_handler(IRQ_DMA_0 + i, &dma_irq_type, handle_level_irq);
-	}
-
+	setup_irq(2, &jz4740_cascade_action);
 }
 
 asmlinkage void plat_irq_dispatch(void)
 {
-	uint32_t irq_reg;
-
-	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
-
-	if (irq_reg)
-	    do_IRQ(ffs(irq_reg) - 1);
+	unsigned int pending = read_c0_status() & read_c0_cause() & ST0_IM;
+    if (pending & STATUSF_IP2)
+        jz4740_cascade(2, NULL);
+    else if(pending & STATUSF_IP3)
+        do_IRQ(3);
+    else
+		spurious_interrupt();
 }

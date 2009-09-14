@@ -26,14 +26,14 @@
 /* OHCI (USB full speed host controller) */
 static struct resource jz_usb_ohci_resources[] = {
 	[0] = {
-		.start		= CPHYSADDR(UHC_BASE), // phys addr for ioremap
-		.end		= CPHYSADDR(UHC_BASE) + 0x10000 - 1,
-		.flags		= IORESOURCE_MEM,
+		.start	= CPHYSADDR(UHC_BASE),
+		.end	= CPHYSADDR(UHC_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 	[1] = {
-		.start		= IRQ_UHC,
-		.end		= IRQ_UHC,
-		.flags		= IORESOURCE_IRQ,
+		.start	= JZ_IRQ_UHC,
+		.end	= JZ_IRQ_UHC,
+		.flags	= IORESOURCE_IRQ,
 	},
 };
 
@@ -51,44 +51,18 @@ static struct platform_device jz_usb_ohci_device = {
 	.resource	= jz_usb_ohci_resources,
 };
 
-/*** LCD controller ***/
-static struct resource jz_lcd_resources[] = {
-	[0] = {
-		.start          = CPHYSADDR(LCD_BASE),
-		.end            = CPHYSADDR(LCD_BASE) + 0x10000 - 1,
-		.flags          = IORESOURCE_MEM,
-	},
-	[1] = {
-		.start          = IRQ_LCD,
-		.end            = IRQ_LCD,
-		.flags          = IORESOURCE_IRQ,
-	}
-};
-
-static u64 jz_lcd_dmamask = ~(u32)0;
-
-static struct platform_device jz_lcd_device = {
-	.name           = "jz-lcd",
-	.id             = 0,
-	.dev = {
-		.dma_mask               = &jz_lcd_dmamask,
-		.coherent_dma_mask      = 0xffffffff,
-	},
-	.num_resources  = ARRAY_SIZE(jz_lcd_resources),
-	.resource       = jz_lcd_resources,
-};
 
 /* UDC (USB gadget controller) */
 static struct resource jz_usb_gdt_resources[] = {
 	[0] = {
-		.start		= CPHYSADDR(UDC_BASE),
-		.end		= CPHYSADDR(UDC_BASE) + 0x10000 - 1,
-		.flags		= IORESOURCE_MEM,
+		.start	= CPHYSADDR(UDC_BASE),
+		.end	= CPHYSADDR(UDC_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 	[1] = {
-		.start		= IRQ_UDC,
-		.end		= IRQ_UDC,
-		.flags		= IORESOURCE_IRQ,
+		.start	= JZ_IRQ_UDC,
+		.end	= JZ_IRQ_UDC,
+		.flags	= IORESOURCE_IRQ,
 	},
 };
 
@@ -96,7 +70,7 @@ static u64 udc_dmamask = ~(u32)0;
 
 static struct platform_device jz_usb_gdt_device = {
 	.name		= "jz-udc",
-	.id		= 0,
+	.id		= -1,
 	.dev = {
 		.dma_mask		= &udc_dmamask,
 		.coherent_dma_mask	= 0xffffffff,
@@ -104,18 +78,24 @@ static struct platform_device jz_usb_gdt_device = {
 	.num_resources	= ARRAY_SIZE(jz_usb_gdt_resources),
 	.resource	= jz_usb_gdt_resources,
 };
+/*
+static struct jz_mmc_platform_data jz_mmc_pdata = {
+	.card_detect_gpio = JZ_GPIO_PORTD(0),
+	.read_only_gpio = JZ_GPIO_PORTD(16),
+	.power_gpio = JZ_GPIO_PORTD(2),
+};*/
 
 /** MMC/SD controller **/
 static struct resource jz_mmc_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(MSC_BASE),
-		.end            = CPHYSADDR(MSC_BASE) + 0x10000 - 1,
-		.flags          = IORESOURCE_MEM,
+		.start	= CPHYSADDR(MSC_BASE),
+		.end	= CPHYSADDR(MSC_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 	[1] = {
-		.start          = IRQ_MSC,
-		.end            = IRQ_MSC,
-		.flags          = IORESOURCE_IRQ,
+		.start	= JZ_IRQ_MSC,
+		.end	= JZ_IRQ_MSC,
+		.flags	= IORESOURCE_IRQ,
 	}
 };
 
@@ -127,6 +107,7 @@ static struct platform_device jz_mmc_device = {
 	.dev = {
 		.dma_mask               = &jz_mmc_dmamask,
 		.coherent_dma_mask      = 0xffffffff,
+/*		.platform_data			= &jz_mmc_pdata,*/
 	},
 	.num_resources  = ARRAY_SIZE(jz_mmc_resources),
 	.resource       = jz_mmc_resources,
@@ -135,14 +116,14 @@ static struct platform_device jz_mmc_device = {
 /** I2C controller **/
 static struct resource jz_i2c_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(I2C_BASE),
-		.end            = CPHYSADDR(I2C_BASE) + 0x10000 - 1,
-		.flags          = IORESOURCE_MEM,
+		.start	= CPHYSADDR(I2C_BASE),
+		.end	= CPHYSADDR(I2C_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 	[1] = {
-		.start          = IRQ_I2C,
-		.end            = IRQ_I2C,
-		.flags          = IORESOURCE_IRQ,
+		.start	= JZ_IRQ_I2C,
+		.end	= JZ_IRQ_I2C,
+		.flags	= IORESOURCE_IRQ,
 	}
 };
 
@@ -161,9 +142,9 @@ static struct platform_device jz_i2c_device = {
 
 static struct resource jz_nand_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(EMC_BASE),
-		.end            = CPHYSADDR(EMC_BASE) + 0x10000 - 1,
-		.flags          = IORESOURCE_MEM,
+		.start	= CPHYSADDR(EMC_BASE),
+		.end	= CPHYSADDR(EMC_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 };
 
@@ -282,7 +263,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(6, 7, KEY_RIGHT),	/* S57 */
 
 #ifndef KEEP_UART_ALIVE
-	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
+	KEY(7, 0, KEY_QI_LEFTSHIFT),	/* S58 */
 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
 	KEY(7, 2, KEY_FN),	/* S60 */
 #endif
@@ -313,7 +294,7 @@ static struct matrix_keypad_platform_data qi_lb60_pdata = {
 	.col_scan_delay_us	= 10,
 	.debounce_ms		= 10,
 	.wakeup			= 1,
-	.active_low = 1,
+	.active_low		= 1,
 };
 
 static struct platform_device qi_lb60_keypad = {
@@ -333,7 +314,7 @@ static struct fb_videomode qi_lb60_video_modes[] = {
 		.left_margin = 140,
 		.right_margin = 273,
 		.upper_margin = 20,
-		.lower_margin = 1,
+		.lower_margin = 2,
 		.hsync_len = 1,
 		.vsync_len = 1,
 		.sync = 0,
@@ -342,21 +323,23 @@ static struct fb_videomode qi_lb60_video_modes[] = {
 };
 
 static struct jz4740_fb_platform_data qi_lb60_fb_data = {
-	.width = 60,
-	.height = 45,
-	.num_modes = ARRAY_SIZE(qi_lb60_video_modes),
-	.modes = qi_lb60_video_modes,
-	.bpp = 24,
-	.lcd_type = JZ_LCD_TYPE_8BIT_SERIAL,
+	.width	    = 60,
+	.height	    = 45,
+	.num_modes  = ARRAY_SIZE(qi_lb60_video_modes),
+	.modes	    = qi_lb60_video_modes,
+	.bpp	    = 24,
+	.lcd_type   = JZ_LCD_TYPE_8BIT_SERIAL,
 };
 
 static struct resource fb_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(LCD_BASE),
-		.end            = CPHYSADDR(LCD_BASE) + 0x10000 - 1,
-		.flags          = IORESOURCE_MEM,
+		.start	= CPHYSADDR(LCD_BASE),
+		.end	= CPHYSADDR(LCD_BASE) + 0x10000 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 };
+
+static u64 jz_fb_dmamask = ~(u32)0;
 
 static struct platform_device qi_lb60_fb = {
 	.name = "jz4740-fb",
@@ -364,31 +347,31 @@ static struct platform_device qi_lb60_fb = {
 	.num_resources = ARRAY_SIZE(fb_resources),
 	.resource = fb_resources,
 	.dev = {
-		.dma_mask               = &jz_lcd_dmamask,
-		.coherent_dma_mask      = 0xffffffff,
+		.dma_mask = &jz_fb_dmamask,
+		.coherent_dma_mask = 0xffffffff,
 		.platform_data = &qi_lb60_fb_data,
 	},
 };
 
 struct spi_gpio_platform_data spigpio_platform_data = {
-	.sck = 32 * 2 + 23,
-	.mosi = 32 * 2 + 22,
-	.miso = 32 * 2 + 22,
-	.num_chipselect = 1,
+    .sck = JZ_GPIO_PORTC(23),
+    .mosi = JZ_GPIO_PORTC(22),
+    .miso = JZ_GPIO_PORTC(22),
+    .num_chipselect = 1,
 };
 
 static struct platform_device spigpio_device = {
-	.name = "spi_gpio",
-	.id   = 1,
-	.dev = {
-		.platform_data = &spigpio_platform_data,
-	},
+    .name = "spi_gpio",
+    .id   = 1,
+    .dev = {
+        .platform_data = &spigpio_platform_data,
+    },
 };
 
 static struct spi_board_info qi_lb60_spi_board_info[] = {
 	{
 		.modalias = "gpm940b0",
-		.controller_data = (void*)(32 * 2 + 21),
+		.controller_data = (void*)JZ_GPIO_PORTC(21),
 		.chip_select = 0,
 		.bus_num = 1,
 		.max_speed_hz = 30 * 1000,
@@ -397,9 +380,9 @@ static struct spi_board_info qi_lb60_spi_board_info[] = {
 
 static struct resource i2s_resources[] = {
 	[0] = {
-		.start          = CPHYSADDR(AIC_BASE),
-		.end            = CPHYSADDR(AIC_BASE) + 0x38 - 1,
-		.flags          = IORESOURCE_MEM,
+		.start	= CPHYSADDR(AIC_BASE),
+		.end	= CPHYSADDR(AIC_BASE) + 0x38 - 1,
+		.flags	= IORESOURCE_MEM,
 	},
 };
 
@@ -410,6 +393,21 @@ static struct platform_device jz_i2s_device = {
 	.resource = i2s_resources,
 };
 
+static struct resource codec_resources[] = {
+	[0] = {
+		.start	= CPHYSADDR(AIC_BASE) + 0x80,
+		.end	= CPHYSADDR(AIC_BASE) + 0x88 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device jz_codec_device = {
+	.name		= "jz4740-codec",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(codec_resources),
+	.resource	= codec_resources,
+};
+
 /* All */
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_ohci_device,
@@ -418,9 +416,10 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_nand_device,
 	&jz_i2c_device,
 	&qi_lb60_keypad,
-	&qi_lb60_fb,
 	&spigpio_device,
+	&qi_lb60_fb,
 	&jz_i2s_device,
+	&jz_codec_device,
 };
 
 static int __init jz_platform_init(void)

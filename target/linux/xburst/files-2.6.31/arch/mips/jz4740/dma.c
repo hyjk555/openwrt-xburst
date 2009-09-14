@@ -30,6 +30,56 @@
 #include <asm/addrspace.h>
 #include <asm/jzsoc.h>
 
+#define JZ_REG_DMA_SRC_ADDR(x)		((x) * 0x20 + 0x00)
+#define JZ_REG_DMA_DEST_ADDR(x)		((x) * 0x20 + 0x04)
+#define JZ_REG_DMA_COUNT(x)		((x) * 0x20 + 0x08)
+#define JZ_REG_DMA_TYPE(x)		((x) * 0x20 + 0x0c)
+#define JZ_REG_DMA_STATUS(x)		((x) * 0x20 + 0x10)
+#define JZ_REG_DMA_CMD(x)		((x) * 0x20 + 0x14)
+#define JZ_REG_DMA_DESC_ADDR(x)		((x) * 0x20 + 0x18)
+#define JZ_REG_DMA_CTRL			0x300
+#define JZ_REG_DMA_IRQ			0x304
+#define JZ_REG_DMA_DOORBELL		0x308
+#define JZ_REG_DMA_DOORBELL_SET		0x30C
+
+#define JZ_DMA_STATUS_NO_DESC		BIT(31)
+#define JZ_DMA_STATUS_CDOA_MASK		(0xff << 16)
+#define JZ_DMA_STATUS_INV_DESC		BIT(6)
+#define JZ_DMA_STATUS_ADDR_ERROR	BIT(4)
+#define JZ_DMA_STATUS_TERMINATE_TRANSFER	BIT(3)
+#define JZ_DMA_STATUS_HALT		BIT(2)
+#define JZ_DMA_STATUS_CT		BIT(1)
+#define JZ_DMA_STATUS_ENABLE		BIT(0)
+
+#define JZ_DMA_CMD_SAI			BIT(23)
+#define JZ_DMA_CMD_DAI			BIT(22)
+#define JZ_DMA_CMD_RDIL_MASK		(0xf << 16)
+#define JZ_DMA_CMD_SRC_WIDTH_MASK	(0x3 << 14)
+#define JZ_DMA_CMD_DEST_WIDTH_MASK	(0x3 << 12)
+#define JZ_DMA_CMD_TRANSFER_SIZE_MASK	(0x7 << 8)
+#define JZ_DMA_CMD_BLOCK_MODE		BIT(7)
+#define JZ_DMA_CMD_VALID		BIT(4)
+#define JZ_DMA_CMD_VALID_MODE		BIT(3)
+#define JZ_DMA_CMD_VALID_IRQ_ENABLE	BIT(2)
+#define JZ_DMA_CMD_TRANSFER_IRQ_ENABLE	BIT(1)
+#define JZ_DMA_CMD_LINK			BIT(0)
+
+
+static void __iomem *jz_dma_base;
+static spinlock_t jz_dma_lock;
+
+static inline uint32_t jz_dma_read(size_t reg)
+{
+	return readl(jz_dma_base + reg);
+}
+
+static inline void jz_dma_write(size_t reg, uint32_t val)
+{
+	writel(val, jz_dma_base + reg);
+}
+
+
+
 /*
  * A note on resource allocation:
  *
@@ -163,7 +213,7 @@ int jz_request_dma(int dev_id, const char *dev_str,
 	chan = &jz_dma_table[i];
 
 	if (irqhandler) {
-		chan->irq = IRQ_DMA_0 + i;	// allocate irq number
+		chan->irq = JZ_IRQ_DMA(i);	// allocate irq number
 		chan->irq_dev = irq_dev_id;
 		if ((ret = request_irq(chan->irq, irqhandler, irqflags,
 				       dev_str, chan->irq_dev))) {
@@ -304,6 +354,7 @@ int jz_set_dma_mode(unsigned int dmanr, unsigned int mode,
 
 	if (dmanr > MAX_DMA_NUM)
 		return -ENODEV;
+
 	for (i = 0; i < MAX_DMA_NUM; i++) {
 		if (jz_dma_table[i].dev_id < 0)
 			break;
@@ -398,8 +449,8 @@ void set_dma_mode(unsigned int dmanr, unsigned int mode)
 	} else {
 		printk(KERN_DEBUG "set_dma_mode() just supports DMA_MODE_READ or DMA_MODE_WRITE!\n");
 	}
-	REG_DMAC_DCMD(chan->io) = chan->mode & ~DMA_MODE_MASK;
-	REG_DMAC_DRSR(chan->io) = chan->source;
+	jz_dma_write(JZ_REG_DMA_CMD(chan->io), chan->mode & ~DMA_MODE_MASK);
+	jz_dma_write(JZ_REG_DMA_TYPE(chan->io), chan->source);
 }
 
 void set_dma_addr(unsigned int dmanr, unsigned int phyaddr)
@@ -412,11 +463,11 @@ void set_dma_addr(unsigned int dmanr, unsigned int phyaddr)
 
 	mode = chan->mode & DMA_MODE_MASK;
 	if (mode == DMA_MODE_READ) {
-		REG_DMAC_DSAR(chan->io) = chan->fifo_addr;
-		REG_DMAC_DTAR(chan->io) = phyaddr;
+		jz_dma_write(JZ_REG_DMA_SRC_ADDR(chan->io), chan->fifo_addr);
+		jz_dma_write(JZ_REG_DMA_DEST_ADDR(chan->io), phyaddr);
 	} else if (mode == DMA_MODE_WRITE) {
-		REG_DMAC_DSAR(chan->io) = phyaddr;
-		REG_DMAC_DTAR(chan->io) = chan->fifo_addr;
+		jz_dma_write(JZ_REG_DMA_SRC_ADDR(chan->io), phyaddr);
+		jz_dma_write(JZ_REG_DMA_DEST_ADDR(chan->io), chan->fifo_addr);
 	} else
 		printk(KERN_DEBUG "Driver should call set_dma_mode() ahead set_dma_addr()!\n");
 }
@@ -430,8 +481,9 @@ void set_dma_count(unsigned int dmanr, unsigned int bytecnt)
 	if (!chan)
 	       	return;
 
-       	ds = (chan->mode & DMAC_DCMD_DS_MASK) >> DMAC_DCMD_DS_BIT;
-	REG_DMAC_DTCR(chan->io) = bytecnt / dma_ds[ds]; // transfer count
+	ds = (chan->mode & DMAC_DCMD_DS_MASK) >> DMAC_DCMD_DS_BIT;
+
+	jz_dma_write(JZ_REG_DMA_COUNT(chan->io), bytecnt / dma_ds[ds]);
 }
 
 unsigned int get_dma_residue(unsigned int dmanr)
@@ -443,7 +495,7 @@ unsigned int get_dma_residue(unsigned int dmanr)
 		return 0;
 
 	ds = (chan->mode & DMAC_DCMD_DS_MASK) >> DMAC_DCMD_DS_BIT;
-	count = REG_DMAC_DTCR(chan->io);
+	count = jz_dma_read(JZ_REG_DMA_COUNT(chan->io));
 	count = count * dma_ds[ds];
 
 	return count;
@@ -476,9 +528,9 @@ void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fm
 			chan->mode &= ~DMAC_DCMD_DAI;
 		} else
 			printk("oss_dma_burst_mode() just supports DMA_MODE_READ or DMA_MODE_WRITE!\n");
-		
-		REG_DMAC_DCMD(chan->io) = chan->mode & ~DMA_MODE_MASK;
-		REG_DMAC_DRSR(chan->io) = chan->source;
+
+			jz_dma_write(JZ_REG_DMA_CMD(chan->io), chan->mode & ~DMA_MODE_MASK);
+			jz_dma_write(JZ_REG_DMA_TYPE(chan->io), chan->source);
 		break;
 	}
 }
@@ -508,11 +560,13 @@ void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_f
 			mode &= DMA_MODE_MASK;
 			chan->mode |= DMAC_DCMD_SAI;
 			chan->mode &= ~DMAC_DCMD_DAI;
-		} else
+		} else {
 			printk("alsa_dma_burst_mode() just supports DMA_MODE_READ or DMA_MODE_WRITE!\n");
+		}
+
+		jz_dma_write(JZ_REG_DMA_CMD(chan->io), chan->mode & ~DMA_MODE_MASK);
+		jz_dma_write(JZ_REG_DMA_TYPE(chan->io), chan->source);
 		
-		REG_DMAC_DCMD(chan->io) = chan->mode & ~DMA_MODE_MASK;
-		REG_DMAC_DRSR(chan->io) = chan->source;
 		break;
 	}
 }
@@ -748,6 +802,106 @@ void dma_desc_test(void)
 }
 
 #endif
+
+static void jz_dma_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
+{
+	int i;
+	uint32_t pending;
+
+	pending = jz_dma_read(JZ_REG_DMA_IRQ);
+
+	for (i = 0; i < 6; ++i) {
+		if (pending & BIT(i))
+			generic_handle_irq(JZ_IRQ_DMA(i));
+	}
+}
+
+#define IRQ_TO_DMA(irq) ((irq) - JZ_IRQ_DMA(0))
+
+static void dma_irq_unmask(unsigned int irq)
+{
+	unsigned long flags;
+	uint32_t mask;
+	unsigned int chan;
+
+	chan = IRQ_TO_DMA(irq);
+
+	spin_lock_irqsave(&jz_dma_lock, flags);
+
+	mask = jz_dma_read(JZ_REG_DMA_CMD(chan));
+	mask |= JZ_DMA_CMD_TRANSFER_IRQ_ENABLE;
+	jz_dma_write(JZ_REG_DMA_CMD(chan), mask);
+
+	spin_unlock_irqrestore(&jz_dma_lock, flags);
+}
+
+static void dma_irq_mask(unsigned int irq)
+{
+	unsigned long flags;
+	uint32_t mask;
+	unsigned int chan;
+
+	chan = IRQ_TO_DMA(irq);
+
+	spin_lock_irqsave(&jz_dma_lock, flags);
+
+	mask = jz_dma_read(JZ_REG_DMA_CMD(chan));
+	mask &= ~JZ_DMA_CMD_TRANSFER_IRQ_ENABLE;
+	jz_dma_write(JZ_REG_DMA_CMD(chan), mask);
+
+	spin_unlock_irqrestore(&jz_dma_lock, flags);
+}
+
+static void dma_irq_ack(unsigned int irq)
+{
+	unsigned long flags;
+	uint32_t pending;
+
+	spin_lock_irqsave(&jz_dma_lock, flags);
+
+	pending = jz_dma_read(JZ_REG_DMA_IRQ);
+	pending &= ~BIT(irq);
+	jz_dma_write(JZ_REG_DMA_IRQ, pending);
+
+	spin_unlock_irqrestore(&jz_dma_lock, flags);
+}
+
+static void dma_irq_end(unsigned int irq)
+{
+	if (!(irq_desc[irq].status & (IRQ_DISABLED|IRQ_INPROGRESS))) {
+		dma_irq_unmask(irq);
+	}
+}
+
+static struct irq_chip dma_irq_type = {
+	.name = "DMA",
+	.unmask = dma_irq_unmask,
+	.mask = dma_irq_mask,
+	.ack = dma_irq_ack,
+	.end = dma_irq_end,
+};
+
+static int jz_dma_init(void)
+{
+	int i;
+
+	jz_dma_base = ioremap(CPHYSADDR(DMAC_BASE), 0x400);
+
+	if (!jz_dma_base)
+		return -EBUSY;
+
+	spin_lock_init(&jz_dma_lock);
+
+	set_irq_chained_handler(JZ_IRQ_DMAC, jz_dma_irq_demux_handler);
+
+	for (i = 0; i < NUM_DMA; i++) {
+		dma_irq_mask(JZ_IRQ_DMA(i));
+		set_irq_chip_and_handler(JZ_IRQ_DMA(i), &dma_irq_type, handle_level_irq);
+	}
+
+	return 0;
+}
+arch_initcall(jz_dma_init);
 
 //EXPORT_SYMBOL_NOVERS(jz_dma_table);
 EXPORT_SYMBOL(jz_dma_table);

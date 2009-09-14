@@ -69,35 +69,37 @@
 #define REG_INTC_IPR	REG32(INTC_IPR)
 
 // 1st-level interrupts
-#define IRQ_I2C		1
-#define IRQ_UHC		3
-#define IRQ_UART1	8
-#define IRQ_UART0	9
-#define IRQ_SADC	12
-#define IRQ_MSC		14
-#define IRQ_RTC		15
-#define IRQ_SSI		16
-#define IRQ_CIM		17
-#define IRQ_AIC		18
-#define IRQ_ETH		19
-#define IRQ_DMAC	20
-#define IRQ_TCU2	21
-#define IRQ_TCU1	22
-#define IRQ_TCU0	23
-#define IRQ_UDC 	24
-#define IRQ_GPIO3	25
-#define IRQ_GPIO2	26
-#define IRQ_GPIO1	27
-#define IRQ_GPIO0	28
-#define IRQ_IPU		29
-#define IRQ_LCD		30
+#define JZ_IRQ_BASE 8
+#define JZ_IRQ(x)	(JZ_IRQ_BASE + (x))
+#define JZ_IRQ_I2C	JZ_IRQ(1)
+#define JZ_IRQ_UHC	JZ_IRQ(3)
+#define JZ_IRQ_UART1	JZ_IRQ(8)
+#define JZ_IRQ_UART0	JZ_IRQ(9)
+#define JZ_IRQ_SADC	JZ_IRQ(12)
+#define JZ_IRQ_MSC	JZ_IRQ(14)
+#define JZ_IRQ_RTC	JZ_IRQ(15)
+#define JZ_IRQ_SSI	JZ_IRQ(16)
+#define JZ_IRQ_CIM	JZ_IRQ(17)
+#define JZ_IRQ_AIC	JZ_IRQ(18)
+#define JZ_IRQ_ETH	JZ_IRQ(19)
+#define JZ_IRQ_DMAC	JZ_IRQ(20)
+#define JZ_IRQ_TCU2	JZ_IRQ(21)
+#define JZ_IRQ_TCU1	JZ_IRQ(22)
+#define JZ_IRQ_TCU0	JZ_IRQ(23)
+#define JZ_IRQ_UDC 	JZ_IRQ(24)
+#define JZ_IRQ_GPIO3	JZ_IRQ(25)
+#define JZ_IRQ_GPIO2	JZ_IRQ(26)
+#define JZ_IRQ_GPIO1	JZ_IRQ(27)
+#define JZ_IRQ_GPIO0	JZ_IRQ(28)
+#define JZ_IRQ_IPU	JZ_IRQ(29)
+#define JZ_IRQ_LCD	JZ_IRQ(30)
 
-// 2nd-level interrupts
-#define IRQ_DMA_0	32  /* 32 to 37 for DMAC channel 0 to 5 */
-#define IRQ_GPIO_0	48  /* 48 to 175 for GPIO pin 0 to 127 */
+/* 2nd-level interrupts */
+#define JZ_IRQ_DMA(x)	((x) + JZ_IRQ(32))  /* 32 to 37 for DMAC channel 0 to 5 */
+#define IRQ_GPIO_0	JZ_IRQ(48)  /* 48 to 175 for GPIO pin 0 to 127 */
 
-#define JZ_IRQ_INTC_GPIO(x) (28 - x)
-#define JZ_IRQ_GPIO(x) (48 + x)
+#define JZ_IRQ_INTC_GPIO(x)	(JZ_IRQ_GPIO0 - (x))
+#define JZ_IRQ_GPIO(x)		(IRQ_GPIO_0 + (x))
 
 #define NUM_DMA         6
 #define NUM_GPIO        128
