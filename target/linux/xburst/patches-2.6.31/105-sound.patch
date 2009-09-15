@@ -100,7 +100,7 @@ diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
 index bbc97fd..493e216 100644
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -179,3 +179,15 @@ config SND_SOC_WM9712
+@@ -179,3 +179,10 @@ config SND_SOC_WM9712
  
  config SND_SOC_WM9713
  	tristate
