@@ -4,13 +4,14 @@
  *  Free Software Foundation;  either version 2 of the  License, or (at your
  *  option) any later version.
  *
+ * Jiejing Zhang(kzjeef(at)gmail.com) 2009: Make jz soc sound card
+ * loaded by soc-core.
  */
 
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/delay.h>
-#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -42,7 +43,7 @@ static struct jz4740_pcm_dma_params jz4740_i2s_pcm_stereo_in = {
 	.dma_size	= 2,
 };
 
-static int jz4740_i2s_startup(struct snd_pcm_substream *substream)
+static int jz4740_i2s_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	/*struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	  struct snd_soc_cpu_dai *cpu_dai = rtd->dai->cpu_dai;*/
@@ -124,23 +125,22 @@ static void jz4740_snd_rx_ctrl(int on)
 }
 
 static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
-				struct snd_pcm_hw_params *params)
+				struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	//struct snd_soc_cpu_dai *cpu_dai = rtd->dai->cpu_dai;
-	int channels = params_channels(params);
-	
+	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
+	/* int channels = params_channels(params); */
+
 	jz4740_snd_rx_ctrl(0);
 	jz4740_snd_rx_ctrl(0);
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		//cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_out;
-		rtd->dai->cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_out;
-		if (channels == 1)
+		cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_out;
+		/*if (channels == 1)
 			__aic_enable_mono2stereo();
 		else
-			__aic_disable_mono2stereo();
+		__aic_disable_mono2stereo();*/
 	} else
-		rtd->dai->cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_in;
+		cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_in;
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S8:
@@ -162,7 +162,7 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int jz4740_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
+static int jz4740_i2s_trigger(struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
 	int ret = 0;
 	switch (cmd) {
@@ -189,7 +189,7 @@ static int jz4740_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
 	return ret;
 }
 
-static void jz4740_i2s_shutdown(struct snd_pcm_substream *substream)
+static void jz4740_i2s_shutdown(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 	} else {
@@ -198,7 +198,7 @@ static void jz4740_i2s_shutdown(struct snd_pcm_substream *substream)
 	return;
 }
 
-static int jz4740_i2s_probe(struct platform_device *pdev)
+static int jz4740_i2s_probe(struct platform_device *pdev, struct snd_soc_dai *dai)
 {
 	__i2s_internal_codec();
 	__i2s_as_slave();
@@ -232,8 +232,7 @@ static int jz4740_i2s_probe(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int jz4740_i2s_suspend(struct platform_device *dev,
-	struct snd_soc_dai *dai)
+static int jz4740_i2s_suspend(struct snd_soc_dai *dai)
 {
 	if (!dai->active)
 		return 0;
@@ -241,8 +240,7 @@ static int jz4740_i2s_suspend(struct platform_device *dev,
 	return 0;
 }
 
-static int jz4740_i2s_resume(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int jz4740_i2s_resume(struct snd_soc_dai *dai)
 {
 	if (!dai->active)
 		return 0;
@@ -256,15 +254,22 @@ static int jz4740_i2s_resume(struct platform_device *pdev,
 #endif
 
 #define JZ4740_I2S_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
-		SNDRV_PCM_RATE_12000 | SNDRV_PCM_RATE_16000 |\
-		SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_24000 |\
+		SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_22050 |\
 		SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |\
-			  SNDRV_PCM_RATE_48000)
+		SNDRV_PCM_RATE_48000)
+
+struct snd_soc_dai_ops snd_jz4740_i2s_dai_ops = {
+	.startup = jz4740_i2s_startup,
+	.shutdown = jz4740_i2s_shutdown,
+	.trigger = jz4740_i2s_trigger,
+	.hw_params = jz4740_i2s_hw_params,
+	.set_fmt = jz4740_i2s_set_dai_fmt,
+	.set_sysclk = jz4740_i2s_set_dai_sysclk,
+};
 
 struct snd_soc_dai jz4740_i2s_dai = {
 	.name = "jz4740-i2s",
 	.id = 0,
-	.type = SND_SOC_DAI_I2S,
 	.probe = jz4740_i2s_probe,
 	.suspend = jz4740_i2s_suspend,
 	.resume = jz4740_i2s_resume,
@@ -272,24 +277,31 @@ struct snd_soc_dai jz4740_i2s_dai = {
 		.channels_min = 1,
 		.channels_max = 2,
 		.rates = JZ4740_I2S_RATES,
-		.formats = SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE,}, 
+		.formats = SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE,
+	},
 	.capture = {
 		.channels_min = 1,
 		.channels_max = 2,
 		.rates = JZ4740_I2S_RATES,
-		.formats = SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE,},
-	.ops = {
-		.startup = jz4740_i2s_startup,
-		.shutdown = jz4740_i2s_shutdown,
-		.trigger = jz4740_i2s_trigger,
-		.hw_params = jz4740_i2s_hw_params,},
-	.dai_ops = {
-		.set_fmt = jz4740_i2s_set_dai_fmt,
-		.set_sysclk = jz4740_i2s_set_dai_sysclk,
+		.formats = SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE,
 	},
+	.ops = &snd_jz4740_i2s_dai_ops,
 };
 
 EXPORT_SYMBOL_GPL(jz4740_i2s_dai);
+
+static int __init jz4740_i2s_init(void)
+{
+	return  snd_soc_register_dai(&jz4740_i2s_dai);
+}
+
+static void __exit jz4740_i2s_exit(void)
+{
+	snd_soc_unregister_dai(&jz4740_i2s_dai);
+}
+
+module_init(jz4740_i2s_init);
+module_exit(jz4740_i2s_exit);
 
 /* Module information */
 MODULE_AUTHOR("Richard, cjfeng@ingenic.cn, www.ingenic.cn");

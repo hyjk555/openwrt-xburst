@@ -54,118 +54,6 @@ index 2389352..24dcb18 100644
  #define SNDRV_PCM_RATE_8000_48000	(SNDRV_PCM_RATE_8000_44100|SNDRV_PCM_RATE_48000)
  #define SNDRV_PCM_RATE_8000_96000	(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
  					 SNDRV_PCM_RATE_88200|SNDRV_PCM_RATE_96000)
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index 72cfd47..5ae0a2d 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -2076,6 +2076,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
- 	return xfer > 0 ? (snd_pcm_sframes_t)xfer : err;
- }
- 
-+#if 0
- snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __user *buf, snd_pcm_uframes_t size)
- {
- 	struct snd_pcm_runtime *runtime;
-@@ -2091,6 +2092,99 @@ snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __u
- 		return -EINVAL;
- 	return snd_pcm_lib_read1(substream, (unsigned long)buf, size, nonblock, snd_pcm_lib_read_transfer);
- }
-+#else
-+snd_pcm_sframes_t snd_pcm_lib_read(struct snd_pcm_substream *substream, void __user *buf, snd_pcm_uframes_t size)
-+{
-+	struct snd_pcm_runtime *runtime;
-+	int nonblock;
-+
-+	snd_pcm_sframes_t tmp_frames;
-+	snd_pcm_sframes_t final_frames;
-+	int channels;
-+
-+	snd_assert(substream != NULL, return -ENXIO);
-+	runtime = substream->runtime;
-+	snd_assert(runtime != NULL, return -ENXIO);
-+	snd_assert(substream->ops->copy != NULL || runtime->dma_area != NULL, return -EINVAL);
-+	if (runtime->status->state == SNDRV_PCM_STATE_OPEN)
-+		return -EBADFD;
-+
-+	nonblock = !!(substream->f_flags & O_NONBLOCK);
-+	if (runtime->access != SNDRV_PCM_ACCESS_RW_INTERLEAVED)
-+		return -EINVAL;
-+
-+	/* 
-+	 * mono capture process for no mono codec 
-+	 * function codec such as ipcood and dlv 
-+	 */
-+	
-+	tmp_frames = snd_pcm_lib_read1(substream, (unsigned long)buf, size, nonblock, snd_pcm_lib_read_transfer);
-+	
-+	channels = runtime->channels;
-+
-+	if (channels == 1) {
-+		short *tmpbuf = kcalloc(tmp_frames, sizeof(short), GFP_KERNEL);
-+		short *src, *dst, *end;
-+		
-+		memcpy(tmpbuf, buf, frames_to_bytes(runtime, tmp_frames));
-+		
-+		src = (short *)buf;
-+		dst = (short *)tmpbuf;
-+		end = dst + tmp_frames - 1;
-+	
-+		src++;
-+		dst++;
-+		dst++;
-+		final_frames = 1;
-+		while (dst <= end) {
-+			*src = *dst;
-+			final_frames++;
-+			src++;
-+			dst++;
-+			dst++;
-+		}
-+		tmp_frames = final_frames;
-+		kfree(tmpbuf);
-+
-+#if 0
-+		/* when i have time, i will try the code, no kcalloc */
-+		snd_assert(runtime->dma_area, return -EFAULT);
-+		if (copy_to_user(buf, hwbuf, frames_to_bytes(runtime, frames)))
-+			return -EFAULT;
-+		
-+		unsigned int up_bytes = frames_to_bytes(runtime, frames);
-+		
-+		int while_cnt = 4;
-+		int while_all = up_bytes - 2;
-+		
-+		while (while_cnt <= while_all) {
-+			//printk("[%d = %d]\n",(while_cnt/2),while_cnt);
-+			buf[(while_cnt/2)] = buf[while_cnt];
-+			//printk("[%d = %d]\n",((while_cnt/2)+1),(while_cnt+1));
-+			buf[((while_cnt/2)+1)] = buf[(while_cnt+1)];
-+			while_cnt += 4;
-+#if 0				       
-+			buf[2] = buf[4];
-+			buf[3] = buf[5];
-+			
-+			buf[4] = buf[8];
-+			buf[5] = buf[9];
-+			
-+			buf[6] = buf[12];
-+			buf[7] = buf[13];
-+			
-+			buf[8] = buf[16];
-+			buf[9] = buf[17];
-+#endif
-+		}
-+		/* when i have time, i will try the code, no kcalloc */
-+#endif
-+
-+	}
-+
-+	return tmp_frames;
-+}
-+#endif
- 
- EXPORT_SYMBOL(snd_pcm_lib_read);
- 
 diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
 index ac2150e..2a57ab7 100644
 --- a/sound/core/pcm_native.c
@@ -181,30 +69,12 @@ index ac2150e..2a57ab7 100644
  
 -static unsigned int rates[] = { 5512, 8000, 11025, 16000, 22050, 32000, 44100,
 -                                 48000, 64000, 88200, 96000, 176400, 192000 };
-+static unsigned int rates[] = { 5512, 8000, 11025, 12000, 16000, 22050, 24000, 
-+				32000, 44100, 48000, 64000, 88200, 96000, 
++static unsigned int rates[] = { 5512, 8000, 11025, 12000, 16000, 22050, 24000,
++				32000, 44100, 48000, 64000, 88200, 96000,
 +				176400, 192000 };
  
  const struct snd_pcm_hw_constraint_list snd_pcm_known_rates = {
  	.count = ARRAY_SIZE(rates),
-@@ -1764,9 +1765,17 @@ static int snd_pcm_hw_rule_rate(struct snd_pcm_hw_params *params,
- 				struct snd_pcm_hw_rule *rule)
- {
- 	struct snd_pcm_hardware *hw = rule->private;
-+#if 0
- 	return snd_interval_list(hw_param_interval(params, rule->var),
- 				 snd_pcm_known_rates.count,
- 				 snd_pcm_known_rates.list, hw->rates);
-+#else
-+	//printk("hw->rates=0x%08x\n",hw->rates);//0x3b6
-+	hw->rates = 0x3fe;//12KHz and 24KHz bits are all zero,you need set 1
-+	return snd_interval_list(hw_param_interval(params, rule->var),
-+				 snd_pcm_known_rates.count,
-+				 snd_pcm_known_rates.list, hw->rates);
-+#endif
- }		
- 
- static int snd_pcm_hw_rule_buffer_bytes_max(struct snd_pcm_hw_params *params,
 diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
 index d3e786a..a5335f4 100644
 --- a/sound/soc/Kconfig
@@ -230,22 +100,17 @@ diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
 index bbc97fd..493e216 100644
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -176,3 +176,15 @@ config SND_SOC_WM9712
+@@ -179,3 +179,15 @@ config SND_SOC_WM9712
  
  config SND_SOC_WM9713
  	tristate
 +
-+config SND_SOC_ICODEC
-+	tristate "Jz4740 internal codec"
-+	depends on SND_SOC && SND_JZ4740_SOC_PAVO && SND_JZ4740_SOC_I2S
++config SND_SOC_JZCODEC
++	tristate "JZ4720/JZ4740 SoC internal codec"
++	depends on SND_SOC && SOC_JZ4740
 +	help
-+	  Say Y if you want to use internal codec on Ingenic Jz4740 PAVO board.
-+
-+config SND_SOC_DLV
-+	tristate "Jz4750 internal codec"
-+	depends on SND_SOC && SND_JZ4750_SOC_APUS && SND_JZ4750_SOC_I2S
-+	help
-+	  Say Y if you want to use internal codec on Ingenic Jz4750 APUS board.
++	  Say Y if you want to use internal codec on Ingenic JZ4720/JZ4740 based
++	  boards.
 diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
 index 8b75305..f053c15 100644
 --- a/sound/soc/codecs/Makefile
@@ -262,7 +127,7 @@ index 8b75305..f053c15 100644
  obj-$(CONFIG_SND_SOC_WM9705)	+= snd-soc-wm9705.o
  obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
  obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
-+obj-$(CONFIG_SND_SOC_ICODEC)	+= snd-soc-jzcodec.o
++obj-$(CONFIG_SND_SOC_JZCODEC)	+= snd-soc-jzcodec.o
 -- 
 1.5.6.5
 

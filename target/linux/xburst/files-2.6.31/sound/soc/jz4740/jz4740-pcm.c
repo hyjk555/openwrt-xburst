@@ -12,7 +12,6 @@
 #include <linux/slab.h>
 #include <linux/dma-mapping.h>
 
-#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -28,6 +27,29 @@ static int tran_bit = 0;
 #ifdef CONFIG_SND_OSSEMUL
 static int hw_params_cnt = 0;
 #endif
+
+static struct jz4740_dma_client jz4740_dma_client_out = {
+	.name = "I2S PCM Stereo out"
+};
+
+static struct jz4740_dma_client jz4740_dma_client_in = {
+	.name = "I2S PCM Stereo in"
+};
+
+static struct jz4740_pcm_dma_params jz4740_i2s_pcm_stereo_out = {
+	.client		= &jz4740_dma_client_out,
+	.channel	= DMA_ID_AIC_TX,
+	.dma_addr	= AIC_DR,
+	.dma_size	= 2,
+};
+
+static struct jz4740_pcm_dma_params jz4740_i2s_pcm_stereo_in = {
+	.client		= &jz4740_dma_client_in,
+	.channel	= DMA_ID_AIC_RX,
+	.dma_addr	= AIC_DR,
+	.dma_size	= 2,
+};
+
 
 struct jz4740_dma_buf_aic {
 	struct jz4740_dma_buf_aic	*next;
@@ -66,13 +88,11 @@ static const struct snd_pcm_hardware jz4740_pcm_hardware = {
 				    SNDRV_PCM_INFO_INTERLEAVED |
 	                            SNDRV_PCM_INFO_BLOCK_TRANSFER,
 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
-				    SNDRV_PCM_FMTBIT_U16_LE |
-				    SNDRV_PCM_FMTBIT_U8 |
 				    SNDRV_PCM_FMTBIT_S8,
 	.rates                  = SNDRV_PCM_RATE_8000_48000/*0x3fe*/,
 	.rate_min               = 8000,
 	.rate_min               = 48000,
-	.channels_min		= 1,//2
+	.channels_min		= 2,
 	.channels_max		= 2,
 	.buffer_bytes_max	= 128 * 1024,//16 * 1024
 	.period_bytes_min	= PAGE_SIZE,
@@ -126,7 +146,7 @@ void audio_start_dma(struct jz4740_runtime_data *prtd, int mode)
 	unsigned long flags;
 	struct jz4740_dma_buf_aic *aic_buf;
 	int channel;
-	printk("%s:%s:%d\n",__FILE__,__FUNCTION__,__LINE__);
+
 	switch (mode) {
 	case DMA_MODE_WRITE:
 		/* free cur aic_buf */
@@ -146,13 +166,11 @@ void audio_start_dma(struct jz4740_runtime_data *prtd, int mode)
 		aic_buf = prtd->next;		
 		channel = prtd->params->channel;
 		if (aic_buf) {			
-			flags = claim_dma_lock();
 			disable_dma(channel);
 			jz_set_alsa_dma(channel, mode, tran_bit);
 			set_dma_addr(channel, aic_buf->data);
 			set_dma_count(channel, aic_buf->size);
 			enable_dma(channel);
-			release_dma_lock(flags);
 			prtd->aic_dma_flag |= AIC_START_DMA;
 		} else {
 			printk("next buffer is NULL for playback\n");
@@ -179,13 +197,11 @@ void audio_start_dma(struct jz4740_runtime_data *prtd, int mode)
 		channel = prtd->params->channel;
 
 		if (aic_buf) {			
-			flags = claim_dma_lock();
 			disable_dma(channel);
                         jz_set_alsa_dma(channel, mode, tran_bit);
 			set_dma_addr(channel, aic_buf->data);
 			set_dma_count(channel, aic_buf->size);
 			enable_dma(channel);
-			release_dma_lock(flags);
 			prtd->aic_dma_flag |= AIC_START_DMA; 
 		} else {
 			printk("next buffer is NULL for capture\n");
@@ -283,16 +299,9 @@ static int jz4740_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct jz4740_runtime_data *prtd = runtime->private_data;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct jz4740_pcm_dma_params *dma = rtd->dai->cpu_dai->dma_data;
+	struct jz4740_pcm_dma_params *dma = &jz4740_i2s_pcm_stereo_out;
 	size_t totbytes = params_buffer_bytes(params);
 	int ret;
-       
-#ifdef CONFIG_SND_OSSEMUL
-	if (hw_params_cnt)
-		return 0;
-	else
-		hw_params_cnt++ ;
-#endif
 
 	if (!dma)
 	 	return 0;
@@ -343,7 +352,6 @@ static int jz4740_pcm_hw_params(struct snd_pcm_substream *substream,
 	__dmac_disable_descriptor(prtd->params->channel);
 	__dmac_channel_disable_irq(prtd->params->channel);
 	spin_unlock_irq(&prtd->lock);
-
 	return ret;
 }
 
@@ -565,32 +573,8 @@ static int jz4740_pcm_mmap(struct snd_pcm_substream *substream,
 	unsigned long start;
 	unsigned long off;
 	u32 len;
-	int ret = -ENXIO;
-
-	off = vma->vm_pgoff << PAGE_SHIFT;
-	start = runtime->dma_addr;
-
-	len = PAGE_ALIGN((start & ~PAGE_MASK) + runtime->dma_bytes);
-	start &= PAGE_MASK;
-
-	if ((vma->vm_end - vma->vm_start + off) > len) {
-		return -EINVAL;
-	}
-
-	off += start;
-	vma->vm_pgoff = off >> PAGE_SHIFT;
-	vma->vm_flags |= VM_IO;
-
-#if defined(CONFIG_MIPS32)
-	pgprot_val(vma->vm_page_prot) &= ~_CACHE_MASK;
-	pgprot_val(vma->vm_page_prot) |= _CACHE_UNCACHED;
-	/* pgprot_val(vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT; */
-#endif
-	ret = io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
-			       vma->vm_end - vma->vm_start,
-			       vma->vm_page_prot);
-
-	return ret;
+    printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
+    return 0;
 }
 
 struct snd_pcm_ops jz4740_pcm_ops = {
@@ -645,17 +629,19 @@ static void jz4740_pcm_free_dma_buffers(struct snd_pcm *pcm)
 	}
 }
 
-static u64 jz4740_pcm_dmamask = DMA_32BIT_MASK;
+static u64 jz4740_pcm_dmamask = DMA_BIT_MASK(32);
 
 int jz4740_pcm_new(struct snd_card *card, struct snd_soc_dai *dai,
 	struct snd_pcm *pcm)
 {
 	int ret = 0;
 
+    printk("pcm new\n");
+
 	if (!card->dev->dma_mask)
 		card->dev->dma_mask = &jz4740_pcm_dmamask;
 	if (!card->dev->coherent_dma_mask)
-		card->dev->coherent_dma_mask = DMA_32BIT_MASK;
+		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
 
 	if (dai->playback.channels_min) {
 		ret = jz4740_pcm_preallocate_dma_buffer(pcm,
@@ -683,6 +669,18 @@ struct snd_soc_platform jz4740_soc_platform = {
 };
 
 EXPORT_SYMBOL_GPL(jz4740_soc_platform);
+
+static int __init jz4740_soc_platform_init(void)
+{
+    return snd_soc_register_platform(&jz4740_soc_platform);
+}
+module_init(jz4740_soc_platform_init);
+
+static void __exit jz4740_soc_platform_exit(void)
+{
+    snd_soc_unregister_platform(&jz4740_soc_platform);
+}
+module_exit(jz4740_soc_platform_exit);
 
 MODULE_AUTHOR("Richard");
 MODULE_DESCRIPTION("Ingenic Jz4740 PCM DMA module");
