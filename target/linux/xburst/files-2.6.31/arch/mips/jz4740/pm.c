@@ -271,7 +271,7 @@ static int jz_pm_do_sleep(void)
 	 */
 
 	/* enable RTC alarm */
-	__intc_unmask_irq(IRQ_RTC);
+	__intc_unmask_irq(JZ_IRQ_RTC);
 #if 0
         /* make system wake up after n seconds by RTC alarm */
 	unsigned int v, n;
@@ -289,7 +289,7 @@ static int jz_pm_do_sleep(void)
 	/* WAKEUP key */
 	__gpio_as_irq_rise_edge(GPIO_WAKEUP);
 	__gpio_unmask_irq(GPIO_WAKEUP);
-	__intc_unmask_irq(IRQ_GPIO3);  /* IRQ_GPIOn depends on GPIO_WAKEUP */
+	__intc_unmask_irq(JZ_IRQ_GPIO3);  /* IRQ_GPIOn depends on GPIO_WAKEUP */
 
  	/* Enter SLEEP mode */
 	REG_CPM_LCR &= ~CPM_LCR_LPM_MASK;

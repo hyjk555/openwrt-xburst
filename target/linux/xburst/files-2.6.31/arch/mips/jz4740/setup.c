@@ -147,14 +147,14 @@ static void __init jz_serial_setup(void)
 
 	s.line = 0;
 	s.membase = (u8 *)UART0_BASE;
-	s.irq = IRQ_UART0;
+	s.irq = JZ_IRQ_UART0;
 	if (early_serial_setup(&s) != 0) {
 		printk(KERN_ERR "Serial ttyS0 setup failed!\n");
 	}
 
 	s.line = 1;
 	s.membase = (u8 *)UART1_BASE;
-	s.irq = IRQ_UART1;
+	s.irq = JZ_IRQ_UART1;
 	if (early_serial_setup(&s) != 0) {
 		printk(KERN_ERR "Serial ttyS1 setup failed!\n");
 	}

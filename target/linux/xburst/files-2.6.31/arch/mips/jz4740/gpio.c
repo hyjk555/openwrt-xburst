@@ -217,7 +217,7 @@ static void jz_gpio_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
 	unsigned int gpio_irq;
 	unsigned int gpio_bank;
 
-	gpio_bank = IRQ_GPIO0 - irq;
+	gpio_bank = JZ_IRQ_GPIO0 - irq;
 
 	flag = readl(jz_gpio_base + (gpio_bank << 8) + 0x80);
 

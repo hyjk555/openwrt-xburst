@@ -31,7 +31,7 @@
 /* This is for machines which generate the exact clock. */
 
 #define JZ_TIMER_CHAN  0
-#define JZ_TIMER_IRQ  IRQ_TCU0
+#define JZ_TIMER_IRQ  JZ_IRQ_TCU0
 
 #define JZ_TIMER_CLOCK (JZ_EXTAL>>4) /* Jz timer clock frequency */
 

@@ -827,13 +827,13 @@ static int jz_mmc_probe(struct platform_device *pdev)
 		goto out;
 	}
 	spin_lock_init(&host->lock);
-	host->irq = IRQ_MSC;
+	host->irq = JZ_IRQ_MSC;
 	host->imask = 0xff;
 	/*
 	 * Ensure that the host controller is shut down, and setup
 	 * with our defaults.
 	 */
-	retval = request_irq(IRQ_MSC, jz_mmc_irq, 0, "MMC/SD", host);
+	retval = request_irq(JZ_IRQ_MSC, jz_mmc_irq, 0, "MMC/SD", host);
 	if (retval) {
 		printk(KERN_ERR "MMC/SD: can't request MMC/SD IRQ\n");
 		return retval;
@@ -879,7 +879,7 @@ static int jz_mmc_probe(struct platform_device *pdev)
 #endif
 	return 0;
 
-err1:free_irq(IRQ_MSC, &host);
+err1:free_irq(JZ_IRQ_MSC, &host);
 #ifdef USE_DMA
  err2:jz_free_dma(rxdmachan);
  err3:jz_free_dma(txdmachan);
@@ -913,7 +913,7 @@ static int jz_mmc_remove(struct platform_device *pdev)
 		__msc_disable_power();
 		jz_free_dma(rxdmachan);
 		jz_free_dma(txdmachan);
-		free_irq(IRQ_MSC, host);
+		free_irq(JZ_IRQ_MSC, host);
 		mmc_free_host(mmc);
 	}
 	return 0;
