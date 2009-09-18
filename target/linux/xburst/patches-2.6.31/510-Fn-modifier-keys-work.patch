@@ -1,5 +1,5 @@
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 5859589..ddd7d3f 100644
+index 5859589..8980abc 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
 @@ -242,11 +242,11 @@ static struct platform_device jz_nand_device = {
@@ -8,7 +8,7 @@ index 5859589..ddd7d3f 100644
  
 -#define KEY_QI_QI		KEY_F13
 -#define KEY_QI_UPRED	KEY_RIGHTCTRL
-+#define KEY_QI_QI	KEY_RIGHTCTRL
++#define KEY_QI_QI	KEY_F13
 +#define KEY_QI_UPRED	KEY_RIGHTSHIFT
  #define KEY_QI_VOLUP	KEY_F15
  #define KEY_QI_VOLDOWN	KEY_F16
@@ -18,10 +18,68 @@ index 5859589..ddd7d3f 100644
  static const uint32_t qi_lb60_keymap[] = {
  	KEY(0, 0, KEY_F1),	/* S2 */
 diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
-index 25d05b4..497cfc2 100644
+index 25d05b4..153f026 100644
 --- a/drivers/char/defkeymap.map
 +++ b/drivers/char/defkeymap.map
-@@ -113,9 +113,9 @@ keycode  43 = backslash        bar
+@@ -1,5 +1,5 @@
+ # Default kernel keymap. This uses 7 modifier combinations.
+-keymaps 0-2,4-5,8,12
++keymaps 0-2,4-5,8,12,128
+ # Change the above line into
+ #	keymaps 0-2,4-6,8,12
+ # in case you want the entries
+@@ -48,6 +48,7 @@ keycode  12 = minus            underscore       backslash
+ keycode  13 = equal            plus             
+ 	alt     keycode  13 = Meta_equal      
+ 	altgr   keycode  13 = asciitilde 
++	ctrlr   keycode  13 = three
+ keycode  14 = Delete           Delete          
+ 	control keycode  14 = BackSpace
+ 	alt     keycode  14 = Meta_Delete     
+@@ -67,10 +68,13 @@ keycode  21 = y
+ 	altgr   keycode  21 = asciicircum 
+ keycode  22 = u               
+ 	altgr   keycode  22 = ampersand
++	ctrlr   keycode  22 = seven
+ keycode  23 = i               
+ 	altgr   keycode  23 = asterisk
++	ctrlr   keycode  23 = eight
+ keycode  24 = o               
+ 	altgr   keycode  24 = parenleft
++	ctrlr   keycode  24 = nine
+ keycode  25 = p               
+ 	altgr   keycode  25 = parenright
+ keycode  26 = bracketleft      braceleft       
+@@ -83,11 +87,11 @@ keycode  28 = Return
+ 	alt     keycode  28 = Meta_Control_m  
+ keycode  29 = Control         
+ keycode  30 = a
+-	altgr   keycode  30 = F100
++	altgr   keycode  30 = U+00B0
+ keycode  31 = s               
+-	altgr   keycode  31 = F101
++	altgr   keycode  31 = U+00A8
+ keycode  32 = d
+-	altgr   keycode  32 = F102
++	altgr   keycode  32 = U+20AC
+ keycode  33 = f
+ 	altgr   keycode  33 = minus
+ keycode  34 = g               
+@@ -96,10 +100,13 @@ keycode  35 = h
+ 	altgr   keycode  35 = braceleft
+ keycode  36 = j               
+ 	altgr   keycode  36 = bracketleft
++	ctrlr   keycode  36 = four
+ keycode  37 = k               
+ 	altgr   keycode  37 = bracketright
++	ctrlr   keycode  37 = five
+ keycode  38 = l               
+ 	altgr   keycode  38 = braceright
++	ctrlr   keycode  38 = six
+ keycode  39 = semicolon        colon           
+ 	alt     keycode  39 = Meta_semicolon  
+ keycode  40 = apostrophe       quotedbl        
+@@ -113,9 +120,9 @@ keycode  43 = backslash        bar
  	control keycode  43 = Control_backslash
  	alt     keycode  43 = Meta_backslash  
  keycode  44 = z               
@@ -33,104 +91,43 @@ index 25d05b4..497cfc2 100644
  keycode  46 = c
  	altgr   keycode  46 = Hex_C   
  keycode  47 = v               
-@@ -133,7 +133,7 @@ keycode  52 = period           greater
+@@ -123,8 +130,10 @@ keycode  48 = b
+ 	altgr   keycode  48 = Hex_B
+ keycode  49 = n               
+ 	altgr   keycode  49 = less
++	ctrlr   keycode  49 = one
+ keycode  50 = m               
+ 	altgr   keycode  50 = greater
++	ctrlr   keycode  50 = two
+ keycode  51 = comma            less            
+ 	altgr   keycode  51 = apostrophe
+ keycode  52 = period           greater         
+@@ -133,7 +142,8 @@ keycode  52 = period           greater
  keycode  53 = slash            question        
  	control keycode  53 = Delete          
  	alt     keycode  53 = Meta_slash      
 -keycode  54 = Shift           
++	ctrlr   keycode  53 = zero
 +keycode  54 = AltGr
  keycode  55 = KP_Multiply     
  keycode  56 = Alt             
  keycode  57 = space            space           
-@@ -240,7 +240,7 @@ keycode  93 =
+@@ -240,7 +250,7 @@ keycode  93 =
  keycode  94 =
  keycode  95 =
  keycode  96 = KP_Enter        
 -keycode  97 = AltGr
-+keycode  97 = Control
++keycode  97 = CtrlR
  keycode  98 = KP_Divide       
  keycode  99 = Control_backslash
  	control keycode  99 = Control_backslash
-diff --git a/drivers/char/keyboard.c b/drivers/char/keyboard.c
-index 737be95..4cdd9ac 100644
---- a/drivers/char/keyboard.c
-+++ b/drivers/char/keyboard.c
-@@ -121,6 +121,8 @@ struct vt_spawn_console vt_spawn_con = {
- 	.sig  = 0,
- };
- 
-+static int ctrlr = 0;
-+
- /*
-  * Variables exported for vt.c
-  */
-@@ -1133,6 +1135,60 @@ static int emulate_raw(struct vc_data *vc, unsigned int keycode, unsigned char u
- }
- #endif
- 
-+static int qi_keymap(int keysym, int keycode, int up_flag)
-+{
-+	int ret;
-+	ret = keysym;
-+
-+	if (up_flag && keycode == KEY_RIGHTCTRL) {
-+		ctrlr = 0;
-+		return ret;
-+	}
-+
-+	if (ctrlr) {
-+		switch (keycode) {
-+		case KEY_SLASH:	/* 0 */
-+			ret = 61488;
-+			break;
-+		case KEY_N:	/* 1 */
-+			ret = 61489;
-+			break;
-+		case KEY_M:	/* 2 */
-+			ret = 61490;
-+			break;
-+		case KEY_B:	/* 3 */
-+			ret = 61491;
-+			break;
-+		case KEY_J:	/* 4 */
-+			ret = 61492;
-+			break;
-+		case KEY_K:	/* 5 */
-+			ret = 61493;
-+			break;
-+		case KEY_L:	/* 6 */
-+			ret = 61494;
-+			break;
-+		case KEY_U:	/* 7 */
-+			ret = 61495;
-+			break;
-+		case KEY_I:	/* 8 */
-+			ret = 61496;
-+			break;
-+		case KEY_O:	/* 9 */
-+			ret = 61497;
-+			break;
-+		default:
-+			break;
-+		}
-+	}
-+
-+	if (keycode == KEY_RIGHTCTRL) {
-+		ctrlr = 1;
-+	}
-+
-+	return ret;
-+}
-+
- static void kbd_rawcode(unsigned char data)
- {
- 	struct vc_data *vc = vc_cons[fg_console].d;
-@@ -1284,6 +1340,8 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
- 	if (raw_mode && type != KT_SPEC && type != KT_SHIFT)
- 		return;
- 
-+	keysym = qi_keymap(keysym, keycode, !down);
-+
- 	(*k_handler[type])(vc, keysym & 0xff, !down);
- 
- 	param.ledstate = kbd->ledflagstate;
+@@ -299,9 +309,6 @@ string F17 = "\033[31~"
+ string F18 = "\033[32~"
+ string F19 = "\033[33~"
+ string F20 = "\033[34~"
+-string F100 = "°"
+-string F101 = "¨"
+-string F102 = "¿"
+ string Find = "\033[1~"
+ string Insert = "\033[2~"
+ string Remove = "\033[3~"
