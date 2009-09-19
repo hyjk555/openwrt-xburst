@@ -12,6 +12,9 @@
  *
  */
 
+#ifndef __LINUX_JZ4740_FB_H
+#define __LINUX_JZ4740_FB_H
+
 #include <linux/fb.h>
 
 enum jz4740_fb_lcd_type {
@@ -45,3 +48,5 @@ struct jz4740_fb_platform_data {
 	int bpp;
     enum jz4740_fb_lcd_type lcd_type;
 };
+
+#endif
