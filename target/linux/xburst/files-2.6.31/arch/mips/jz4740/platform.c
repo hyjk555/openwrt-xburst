@@ -113,6 +113,26 @@ static struct platform_device jz_mmc_device = {
 	.resource       = jz_mmc_resources,
 };
 
+static struct resource jz_rtc_resources[] = {
+	[0] = {
+		.start	= CPHYSADDR(RTC_BASE),
+		.end	= CPHYSADDR(RTC_BASE) + 0x10,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start  = JZ_IRQ_RTC,
+		.end	= JZ_IRQ_RTC,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device jz_rtc_device = {
+	.name	= "jz4740-rtc",
+	.id	= -1,
+	.num_resources	= ARRAY_SIZE(jz_rtc_resources),
+	.resource	= jz_rtc_resources,
+};
+
 /** I2C controller **/
 static struct resource jz_i2c_resources[] = {
 	[0] = {
@@ -420,6 +440,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&qi_lb60_fb,
 	&jz_i2s_device,
 	&jz_codec_device,
+	&jz_rtc_device,
 };
 
 static int __init jz_platform_init(void)
