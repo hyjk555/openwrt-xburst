@@ -1,16 +1,3 @@
-From d6e1e759473e3b62bb2a7b906bbb27f1f1f2aff2 Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Wed, 19 Aug 2009 14:54:18 +0200
-Subject: [PATCH] usb
-
----
- drivers/usb/Kconfig               |    1 +
- drivers/usb/core/hub.c            |   43 +++++++++++++++++++++++++++++++++++++
- drivers/usb/gadget/Kconfig        |   18 ++++++++++++++-
- drivers/usb/gadget/Makefile       |    3 ++
- drivers/usb/gadget/gadget_chips.h |    9 +++++++
- 5 files changed, 73 insertions(+), 1 deletions(-)
-
 diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
 index dcd49f1..a520bed 100644
 --- a/drivers/usb/Kconfig
@@ -90,7 +77,7 @@ index 71f86c6..d3f9344 100644
  		set_port_led(hub, port1, HUB_LED_AUTO);
  		hub->indicator[port1-1] = INDICATOR_AUTO;
 diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 7f8e83a..a973ce7 100644
+index 7f8e83a..1c99cd2 100644
 --- a/drivers/usb/gadget/Kconfig
 +++ b/drivers/usb/gadget/Kconfig
 @@ -121,11 +121,25 @@ choice
@@ -119,7 +106,7 @@ index 7f8e83a..a973ce7 100644
  	help
  	   Many Atmel AT91 processors (such as the AT91RM2000) have a
  	   full speed USB Device Port with support for five configurable
-@@ -534,6 +547,10 @@ config USB_DUMMY_HCD
+@@ -534,6 +548,10 @@ config USB_DUMMY_HCD
  
  endchoice
  
@@ -130,7 +117,7 @@ index 7f8e83a..a973ce7 100644
  config USB_GADGET_DUALSPEED
  	bool
  	depends on USB_GADGET
-@@ -541,7 +558,6 @@ config USB_GADGET_DUALSPEED
+@@ -541,7 +559,6 @@ config USB_GADGET_DUALSPEED
  	help
  	  Means that gadget drivers should include extra descriptors
  	  and code to handle dual-speed controllers.
@@ -179,6 +166,3 @@ index 8e0e9a0..d9c0990 100644
  	return -ENOENT;
  }
  
--- 
-1.5.6.5
-

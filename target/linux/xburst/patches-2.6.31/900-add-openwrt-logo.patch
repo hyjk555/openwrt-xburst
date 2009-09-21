@@ -1,3 +1,5 @@
+diff --git a/drivers/video/logo/Kconfig b/drivers/video/logo/Kconfig
+index 39ac49e..03da067 100644
 --- a/drivers/video/logo/Kconfig
 +++ b/drivers/video/logo/Kconfig
 @@ -82,4 +82,8 @@ config LOGO_M32R_CLUT224
@@ -9,19 +11,23 @@
 +	default y
 +
  endif # LOGO
---- a/include/linux/linux_logo.h
-+++ b/include/linux/linux_logo.h
-@@ -35,6 +35,7 @@ extern const struct linux_logo logo_supe
- extern const struct linux_logo logo_superh_clut224;
- extern const struct linux_logo logo_m32r_clut224;
- extern const struct linux_logo logo_spe_clut224;
-+extern const struct linux_logo logo_openwrt_clut224;
+diff --git a/drivers/video/logo/Makefile b/drivers/video/logo/Makefile
+index 3b43781..cbed3a5 100644
+--- a/drivers/video/logo/Makefile
++++ b/drivers/video/logo/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_LOGO_SUPERH_MONO)		+= logo_superh_mono.o
+ obj-$(CONFIG_LOGO_SUPERH_VGA16)		+= logo_superh_vga16.o
+ obj-$(CONFIG_LOGO_SUPERH_CLUT224)	+= logo_superh_clut224.o
+ obj-$(CONFIG_LOGO_M32R_CLUT224)		+= logo_m32r_clut224.o
++obj-$(CONFIG_LOGO_OPENWRT_CLUT224)	+= logo_openwrt_clut224.o
  
- extern const struct linux_logo *fb_find_logo(int depth);
- #ifdef CONFIG_FB_LOGO_EXTRA
+ obj-$(CONFIG_SPU_BASE)			+= logo_spe_clut224.o
+ 
+diff --git a/drivers/video/logo/logo.c b/drivers/video/logo/logo.c
+index ea7a8cc..7208830 100644
 --- a/drivers/video/logo/logo.c
 +++ b/drivers/video/logo/logo.c
-@@ -115,6 +116,10 @@ const struct linux_logo * __init_refok f
+@@ -100,6 +100,10 @@ const struct linux_logo * __init_refok fb_find_logo(int depth)
  		/* M32R Linux logo */
  		logo = &logo_m32r_clut224;
  #endif
@@ -32,16 +38,9 @@
  	}
  	return logo;
  }
---- a/drivers/video/logo/Makefile
-+++ b/drivers/video/logo/Makefile
-@@ -15,6 +15,7 @@
- obj-$(CONFIG_LOGO_SUPERH_VGA16)		+= logo_superh_vga16.o
- obj-$(CONFIG_LOGO_SUPERH_CLUT224)	+= logo_superh_clut224.o
- obj-$(CONFIG_LOGO_M32R_CLUT224)		+= logo_m32r_clut224.o
-+obj-$(CONFIG_LOGO_OPENWRT_CLUT224)	+= logo_openwrt_clut224.o
- 
- obj-$(CONFIG_SPU_BASE)			+= logo_spe_clut224.o
- 
+diff --git a/drivers/video/logo/logo_openwrt_clut224.ppm b/drivers/video/logo/logo_openwrt_clut224.ppm
+new file mode 100644
+index 0000000..97f7282
 --- /dev/null
 +++ b/drivers/video/logo/logo_openwrt_clut224.ppm
 @@ -0,0 +1,9669 @@
@@ -9714,3 +9713,15 @@
 +0 0 0  0 0 0  0 0 0  0 0 0  0 0 0  0 0 0
 +0 0 0  0 0 0  0 0 0  0 0 0  0 0 0  0 0 0
 +0 0 0  0 0 0
+diff --git a/include/linux/linux_logo.h b/include/linux/linux_logo.h
+index ca5bd91..67166f3 100644
+--- a/include/linux/linux_logo.h
++++ b/include/linux/linux_logo.h
+@@ -47,6 +47,7 @@ extern const struct linux_logo logo_superh_vga16;
+ extern const struct linux_logo logo_superh_clut224;
+ extern const struct linux_logo logo_m32r_clut224;
+ extern const struct linux_logo logo_spe_clut224;
++extern const struct linux_logo logo_openwrt_clut224;
+ 
+ extern const struct linux_logo *fb_find_logo(int depth);
+ #ifdef CONFIG_FB_LOGO_EXTRA

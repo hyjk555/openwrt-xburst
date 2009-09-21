@@ -1,8 +1,8 @@
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index b22b3d6..5859589 100644
+index 04024d2..33b1181 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -243,9 +243,10 @@ static struct platform_device jz_nand_device = {
+@@ -265,9 +265,10 @@ static struct platform_device jz_nand_device = {
   */
  
  #define KEY_QI_QI		KEY_F13
@@ -14,7 +14,7 @@ index b22b3d6..5859589 100644
  
  static const uint32_t qi_lb60_keymap[] = {
  	KEY(0, 0, KEY_F1),	/* S2 */
-@@ -308,7 +309,7 @@ static const uint32_t qi_lb60_keymap[] = {
+@@ -330,7 +331,7 @@ static const uint32_t qi_lb60_keymap[] = {
  #ifndef KEEP_UART_ALIVE
  	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
  	KEY(7, 1, KEY_LEFTALT),	/* S59 */

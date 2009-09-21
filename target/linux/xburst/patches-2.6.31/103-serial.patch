@@ -1,14 +1,5 @@
-From 35d6fcb8cc04d368abef00b00e6af04b8c71ba46 Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Wed, 19 Aug 2009 14:54:02 +0200
-Subject: [PATCH] serial
-
----
- drivers/serial/8250.c |  104 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 103 insertions(+), 1 deletions(-)
-
 diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index fb867a9..d8784c3 100644
+index fb867a9..2ecd7f4 100644
 --- a/drivers/serial/8250.c
 +++ b/drivers/serial/8250.c
 @@ -194,7 +194,7 @@ static const struct serial8250_config uart_config[] = {
@@ -173,6 +164,3 @@ index fb867a9..d8784c3 100644
  
  	/*
  	 * LCR DLAB must be set to enable 64-byte FIFO mode. If the FCR
--- 
-1.5.6.5
-

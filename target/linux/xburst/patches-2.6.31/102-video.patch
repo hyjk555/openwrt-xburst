@@ -1,15 +1,5 @@
-From 2623194f73c9d272245263c8a54c7b1a63766e8e Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Wed, 19 Aug 2009 14:49:48 +0200
-Subject: [PATCH] video
-
----
- drivers/video/Kconfig  |  113 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/Makefile |    3 +
- 2 files changed, 116 insertions(+), 0 deletions(-)
-
 diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 3b54b39..3d5d623 100644
+index 2b08352..d25c6f6 100644
 --- a/drivers/video/Kconfig
 +++ b/drivers/video/Kconfig
 @@ -237,6 +237,119 @@ config FB_TILEBLITTING
@@ -133,7 +123,7 @@ index 3b54b39..3d5d623 100644
  	tristate "Cirrus Logic support"
  	depends on FB && (ZORRO || PCI)
 diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 01a819f..289b6e9 100644
+index 5af158f..c037677 100644
 --- a/drivers/video/Makefile
 +++ b/drivers/video/Makefile
 @@ -28,6 +28,9 @@ obj-$(CONFIG_FB_DDC)           += fb_ddc.o
@@ -146,6 +136,3 @@ index 01a819f..289b6e9 100644
  obj-$(CONFIG_FB_AMIGA)            += amifb.o c2p_planar.o
  obj-$(CONFIG_FB_ARC)              += arcfb.o
  obj-$(CONFIG_FB_CLPS711X)         += clps711xfb.o
--- 
-1.5.6.5
-

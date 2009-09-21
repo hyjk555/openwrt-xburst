@@ -1,18 +1,3 @@
-From 1a6fa6adbd597171648c7cb308cc9e3efe488668 Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Wed, 19 Aug 2009 14:54:29 +0200
-Subject: [PATCH] sound
-
----
- include/sound/pcm.h       |   26 ++++++------
- sound/core/pcm_lib.c      |   94 +++++++++++++++++++++++++++++++++++++++++++++
- sound/core/pcm_native.c   |   15 ++++++-
- sound/soc/Kconfig         |    1 +
- sound/soc/Makefile        |    1 +
- sound/soc/codecs/Kconfig  |   12 ++++++
- sound/soc/codecs/Makefile |    2 +
- 7 files changed, 135 insertions(+), 16 deletions(-)
-
 diff --git a/include/sound/pcm.h b/include/sound/pcm.h
 index 2389352..24dcb18 100644
 --- a/include/sound/pcm.h
@@ -55,7 +40,7 @@ index 2389352..24dcb18 100644
  #define SNDRV_PCM_RATE_8000_96000	(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
  					 SNDRV_PCM_RATE_88200|SNDRV_PCM_RATE_96000)
 diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
-index ac2150e..2a57ab7 100644
+index ac2150e..3b3183f 100644
 --- a/sound/core/pcm_native.c
 +++ b/sound/core/pcm_native.c
 @@ -1748,12 +1748,13 @@ static int snd_pcm_hw_rule_sample_bits(struct snd_pcm_hw_params *params,
@@ -97,10 +82,10 @@ index 6f1e28d..132772d 100644
  obj-$(CONFIG_SND_SOC)	+= txx9/
 +obj-$(CONFIG_SND_SOC)	+= jz4740/
 diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index bbc97fd..493e216 100644
+index bbc97fd..f28a1a4 100644
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -179,3 +179,10 @@ config SND_SOC_WM9712
+@@ -176,3 +176,10 @@ config SND_SOC_WM9712
  
  config SND_SOC_WM9713
  	tristate
@@ -112,7 +97,7 @@ index bbc97fd..493e216 100644
 +	  Say Y if you want to use internal codec on Ingenic JZ4720/JZ4740 based
 +	  boards.
 diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 8b75305..f053c15 100644
+index 8b75305..d7bd0a4 100644
 --- a/sound/soc/codecs/Makefile
 +++ b/sound/soc/codecs/Makefile
 @@ -34,6 +34,7 @@ snd-soc-wm9081-objs := wm9081.o
@@ -128,6 +113,3 @@ index 8b75305..f053c15 100644
  obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
  obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
 +obj-$(CONFIG_SND_SOC_JZCODEC)	+= snd-soc-jzcodec.o
--- 
-1.5.6.5
-

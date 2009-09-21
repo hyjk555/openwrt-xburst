@@ -1,32 +1,8 @@
-From ac50b482e2278cdff65e67c8a31079bf9c5ae289 Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Wed, 19 Aug 2009 14:47:08 +0200
-Subject: [PATCH] core
-
----
- arch/mips/Kconfig                        |   48 +++++
- arch/mips/Makefile                       |   18 ++
- arch/mips/boot/Makefile                  |   23 ++-
- arch/mips/include/asm/bootinfo.h         |    6 +
- arch/mips/include/asm/cpu.h              |   13 ++-
- arch/mips/include/asm/mach-generic/irq.h |    2 +-
- arch/mips/include/asm/r4kcache.h         |  231 ++++++++++++++++++++++
- arch/mips/include/asm/suspend.h          |    3 +
- arch/mips/kernel/cpu-probe.c             |   21 ++
- arch/mips/kernel/signal.c                |    6 +
- arch/mips/kernel/unaligned.c             |    5 +
- arch/mips/mm/c-r4k.c                     |   30 +++
- arch/mips/mm/cache.c                     |    2 +
- arch/mips/mm/tlbex.c                     |    5 +
- include/linux/suspend.h                  |  315 ------------------------------
- 15 files changed, 409 insertions(+), 319 deletions(-)
- delete mode 100644 include/linux/suspend.h
-
 diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 3ca0fe1..e8f8027 100644
+index f19dff6..b1c0b9f 100644
 --- a/arch/mips/Kconfig
 +++ b/arch/mips/Kconfig
-@@ -158,6 +158,9 @@
+@@ -158,6 +158,9 @@ config MACH_JAZZ
  	 Members include the Acer PICA, MIPS Magnum 4000, MIPS Millennium and
  	 Olivetti M700-10 workstations.
  
@@ -36,7 +12,7 @@ index 3ca0fe1..e8f8027 100644
  config LASAT
  	bool "LASAT Networks platforms"
  	select CEVT_R4K
-@@ -661,6 +664,7 @@
+@@ -661,6 +664,7 @@ endchoice
  source "arch/mips/alchemy/Kconfig"
  source "arch/mips/basler/excite/Kconfig"
  source "arch/mips/jazz/Kconfig"
@@ -44,7 +20,7 @@ index 3ca0fe1..e8f8027 100644
  source "arch/mips/lasat/Kconfig"
  source "arch/mips/pmc-sierra/Kconfig"
  source "arch/mips/sgi-ip27/Kconfig"
-@@ -1893,6 +1919,14 @@ config NR_CPUS
+@@ -1911,6 +1915,14 @@ config NR_CPUS
  
  source "kernel/time/Kconfig"
  
@@ -59,7 +35,7 @@ index 3ca0fe1..e8f8027 100644
  #
  # Timer Interrupt Frequency Configuration
  #
-@@ -2164,6 +2198,23 @@ config BINFMT_ELF32
+@@ -2182,6 +2194,23 @@ config BINFMT_ELF32
  
  endmenu
  
@@ -84,7 +60,7 @@ index 3ca0fe1..e8f8027 100644
  
  config ARCH_HIBERNATION_POSSIBLE
 diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-index 861da51..14a6f9a 100644
+index 791f1db..0f1129d 100644
 --- a/arch/mips/Makefile
 +++ b/arch/mips/Makefile
 @@ -180,6 +180,14 @@ cflags-$(CONFIG_AR7)		+= -I$(srctree)/arch/mips/include/asm/mach-ar7
@@ -102,7 +78,7 @@ index 861da51..14a6f9a 100644
  # Acer PICA 61, Mips Magnum 4000 and Olivetti M700.
  #
  core-$(CONFIG_MACH_JAZZ)	+= arch/mips/jazz/
-@@ -711,6 +719,12 @@ makeboot =$(Q)$(MAKE) $(build)=arch/mips/boot VMLINUX=$(vmlinux-32) $(1)
+@@ -714,6 +722,12 @@ makeboot =$(Q)$(MAKE) $(build)=arch/mips/boot VMLINUX=$(vmlinux-32) $(1)
  
  all:	$(all-y)
  
@@ -115,7 +91,7 @@ index 861da51..14a6f9a 100644
  vmlinux.bin: $(vmlinux-32)
  	+@$(call makeboot,$@)
  
-@@ -740,6 +754,7 @@ install:
+@@ -743,6 +757,7 @@ install:
  
  archclean:
  	@$(MAKE) $(clean)=arch/mips/boot
@@ -123,7 +99,7 @@ index 861da51..14a6f9a 100644
  	@$(MAKE) $(clean)=arch/mips/lasat
  
  define archhelp
-@@ -747,6 +762,9 @@ define archhelp
+@@ -750,6 +765,9 @@ define archhelp
  	echo '  vmlinux.ecoff        - ECOFF boot image'
  	echo '  vmlinux.bin          - Raw binary boot image'
  	echo '  vmlinux.srec         - SREC boot image'
@@ -592,7 +568,7 @@ index 294cdb6..94dc597 100644
  /* References to section boundaries */
  extern const void __nosave_begin, __nosave_end;
 diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index 1abe990..4535ae7 100644
+index 1abe990..1315cff 100644
 --- a/arch/mips/kernel/cpu-probe.c
 +++ b/arch/mips/kernel/cpu-probe.c
 @@ -160,6 +160,7 @@ void __init check_wait(void)
@@ -637,8 +613,6 @@ index 1abe990..4535ae7 100644
  	}
  
  	BUG_ON(!__cpu_name[cpu]);
-diff --git a/arch/mips/kernel/unaligned.c b/arch/mips/kernel/unaligned.c
-index 67bd626..e26ebe0 100644
 diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
 index 6721ee2..dd4b70b 100644
 --- a/arch/mips/mm/c-r4k.c
@@ -709,6 +683,3 @@ index 9a17bf8..9b80053 100644
  	default:
  		panic("No TLB refill handler yet (CPU type: %d)",
  		      current_cpu_data.cputype);
--- 
-1.5.6.5
-
