@@ -161,7 +161,7 @@ uint32_t val)
 
 	cfg = readl(adc->base + JZ_REG_ADC_CFG);
 
-	cfg &= mask;
+	cfg &= ~mask;
 	cfg |= val;
 
 	writel(cfg, adc->base + JZ_REG_ADC_CFG);
@@ -293,7 +293,7 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
 	}
 
 	ret = device_create_file(&pdev->dev, &dev_attr_adcin);
-	if (!ret) {
+	if (ret) {
 		dev_err(&pdev->dev, "Failed to create sysfs file: %d\n", ret);
 		goto err_free_irq;
 	}
