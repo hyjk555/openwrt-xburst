@@ -430,15 +430,13 @@ static struct platform_device jz_codec_device = {
 	.resource	= codec_resources,
 };
 
-#define JZ_BAT_MAX_VOLTAGE 4200000
-#define JZ_BAT_MIN_VOLTAGE 3600000
 static struct jz_batt_info jz_batt_gpio_platform_data = {
 	.dc_dect_gpio	= GPIO_DC_DETE_N,
 	.usb_dect_gpio	= GPIO_USB_DETE,
 	.charg_stat_gpio  = GPIO_CHARG_STAT_N,
 
-	.min_voltag	= JZ_BAT_MIN_VOLTAGE,
-	.max_voltag	= JZ_BAT_MAX_VOLTAGE,
+	.min_voltag	= 3600000,
+	.max_voltag	= 4200000,
 	.batt_tech	= POWER_SUPPLY_TECHNOLOGY_LIPO,
 };
 
