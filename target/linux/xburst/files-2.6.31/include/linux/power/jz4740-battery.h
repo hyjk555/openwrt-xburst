@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef JZ4740_BATT_H
-#define JZ4740_BATT_H
+#ifndef __JZ4740_BATTERY_H
+#define __JZ4740_BATTERY_H
 
 struct jz_batt_info {
 	int dc_dect_gpio;	/* GPIO port of DC charger detection */
@@ -22,6 +22,7 @@ struct jz_batt_info {
 
 	int min_voltag;		/* Mininal battery voltage in uV */
 	int max_voltag;		/* Maximum battery voltage in uV */
-	int batt_tech;		/* Battery technoledge */
-}; 
+	int batt_tech;		/* Battery technology */
+};
+
 #endif

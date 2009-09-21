@@ -20,7 +20,7 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/spi_gpio.h>
 #include <linux/power_supply.h>
-#include <linux/jz4740_batt.h>
+#include <linux/power/jz4740-battery.h>
 
 #include <asm/jzsoc.h>
 #include <asm/gpio.h>
@@ -430,7 +430,27 @@ static struct platform_device jz_codec_device = {
 	.resource	= codec_resources,
 };
 
-static struct jz_batt_info jz_batt_gpio_platform_data = {
+static struct resource adc_resources[] = {
+	[0] = {
+		.start	= CPHYSADDR(SADC_BASE),
+		.end	= CPHYSADDR(SADC_BASE) + 0x30,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= JZ_IRQ_SADC,
+		.end	= JZ_IRQ_SADC,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device jz_adc_device = {
+	.name		= "jz4740-adc",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(adc_resources),
+	.resource	= adc_resources,
+};
+
+static struct jz_batt_info jz_battery_platform_data = {
 	.dc_dect_gpio	= GPIO_DC_DETE_N,
 	.usb_dect_gpio	= GPIO_USB_DETE,
 	.charg_stat_gpio  = GPIO_CHARG_STAT_N,
@@ -440,11 +460,12 @@ static struct jz_batt_info jz_batt_gpio_platform_data = {
 	.batt_tech	= POWER_SUPPLY_TECHNOLOGY_LIPO,
 };
 
-static struct platform_device batt_gpio_device = {
-	.name = "batt_gpio",
+static struct platform_device jz_battery_device = {
+	.name = "jz4740-battery",
 	.id = -1,
 	.dev = {
-		.platform_data = &jz_batt_gpio_platform_data,
+		.platform_data	= &jz_battery_platform_data,
+		.parent		= &jz_adc_device.dev
 	},
 };
 
@@ -461,7 +482,8 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_i2s_device,
 	&jz_codec_device,
 	&jz_rtc_device,
-	&batt_gpio_device,
+	&jz_adc_device,
+	&jz_battery_device,
 };
 
 static int __init jz_platform_init(void)
