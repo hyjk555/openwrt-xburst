@@ -19,6 +19,8 @@
 #include <linux/mtd/jz4740_nand.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi_gpio.h>
+#include <linux/power_supply.h>
+#include <linux/jz4740_batt.h>
 
 #include <asm/jzsoc.h>
 #include <asm/gpio.h>
@@ -428,6 +430,26 @@ static struct platform_device jz_codec_device = {
 	.resource	= codec_resources,
 };
 
+#define JZ_BAT_MAX_VOLTAGE 4200000
+#define JZ_BAT_MIN_VOLTAGE 3600000
+static struct jz_batt_info jz_batt_gpio_platform_data = {
+	.dc_dect_gpio	= GPIO_DC_DETE_N,
+	.usb_dect_gpio	= GPIO_USB_DETE,
+	.charg_stat_gpio  = GPIO_CHARG_STAT_N,
+
+	.min_voltag	= JZ_BAT_MIN_VOLTAGE,
+	.max_voltag	= JZ_BAT_MAX_VOLTAGE,
+	.batt_tech	= POWER_SUPPLY_TECHNOLOGY_LIPO,
+};
+
+static struct platform_device batt_gpio_device = {
+	.name = "batt_gpio",
+	.id = -1,
+	.dev = {
+		.platform_data = &jz_batt_gpio_platform_data,
+	},
+};
+
 /* All */
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_ohci_device,
@@ -441,6 +463,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_i2s_device,
 	&jz_codec_device,
 	&jz_rtc_device,
+	&batt_gpio_device,
 };
 
 static int __init jz_platform_init(void)
