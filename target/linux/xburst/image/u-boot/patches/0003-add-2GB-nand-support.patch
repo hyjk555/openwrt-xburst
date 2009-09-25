@@ -75,7 +75,7 @@ index 68a2e87..3944eca 100644
 -#define CS8900_BASE             (0xa8000000)
 +#define CONFIG_BOOTDELAY	0
 +#define CONFIG_BOOTFILE		"uImage"	/* file to load */
-+#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 rootfstype=jffs2 root=/dev/mtdblock2 rw rootdelay=2"
++#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 rootfstype=jffs2 root=/dev/mtdblock2 rw rootwait"
 +				/* "mem=32M console=ttyS0,57600n8 rootfstype=ext2 root=/dev/mmcblk0p2 rw rootdelay=2" */
 +#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x300000;bootm"
 +
