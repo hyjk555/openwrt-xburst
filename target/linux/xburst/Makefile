@@ -13,6 +13,8 @@ FEATURES:=jffs2 tgz
 
 LINUX_VERSION:=2.6.31-rc6
 
+DEVICE_TYPE=other
+
 include $(INCLUDE_DIR)/target.mk
 
 KERNELNAME:=uImage
