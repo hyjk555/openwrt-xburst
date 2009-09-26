@@ -1,16 +1,18 @@
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 04024d2..33b1181 100644
+index 4575a50..dc7a832 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -265,9 +265,10 @@ static struct platform_device jz_nand_device = {
+@@ -264,10 +264,11 @@ static struct platform_device jz_nand_device = {
+  * don't define this. the keyboard and keyboard both work
   */
  
- #define KEY_QI_QI		KEY_F13
+-#define KEY_QI_QI		KEY_F13
 -#define KEY_QI_UPRED	KEY_F14
-+#define KEY_QI_UPRED	KEY_RIGHTCTRL
++#define KEY_QI_QI	KEY_F13
++#define KEY_QI_UPRED	KEY_RIGHTSHIFT
  #define KEY_QI_VOLUP	KEY_F15
  #define KEY_QI_VOLDOWN	KEY_F16
-+#define KEY_QI_FN	KEY_F17
++#define KEY_QI_FN	KEY_RIGHTCTRL
  
  static const uint32_t qi_lb60_keymap[] = {
  	KEY(0, 0, KEY_F1),	/* S2 */
@@ -24,10 +26,17 @@ index 04024d2..33b1181 100644
  };
  
 diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
-index 50b30ca..25d05b4 100644
+index 50b30ca..153f026 100644
 --- a/drivers/char/defkeymap.map
 +++ b/drivers/char/defkeymap.map
-@@ -45,24 +45,34 @@ keycode  12 = minus            underscore       backslash
+@@ -1,5 +1,5 @@
+ # Default kernel keymap. This uses 7 modifier combinations.
+-keymaps 0-2,4-5,8,12
++keymaps 0-2,4-5,8,12,128
+ # Change the above line into
+ #	keymaps 0-2,4-6,8,12
+ # in case you want the entries
+@@ -45,24 +45,38 @@ keycode  12 = minus            underscore       backslash
  	control	keycode  12 = Control_underscore
  	shift	control	keycode  12 = Control_underscore
  	alt	keycode  12 = Meta_minus      
@@ -35,6 +44,7 @@ index 50b30ca..25d05b4 100644
 +keycode  13 = equal            plus             
  	alt     keycode  13 = Meta_equal      
 +	altgr   keycode  13 = asciitilde 
++	ctrlr   keycode  13 = three
  keycode  14 = Delete           Delete          
  	control keycode  14 = BackSpace
  	alt     keycode  14 = Meta_Delete     
@@ -55,26 +65,29 @@ index 50b30ca..25d05b4 100644
 +	altgr   keycode  21 = asciicircum 
  keycode  22 = u               
 +	altgr   keycode  22 = ampersand
++	ctrlr   keycode  22 = seven
  keycode  23 = i               
 +	altgr   keycode  23 = asterisk
++	ctrlr   keycode  23 = eight
  keycode  24 = o               
 +	altgr   keycode  24 = parenleft
++	ctrlr   keycode  24 = nine
  keycode  25 = p               
 +	altgr   keycode  25 = parenright
  keycode  26 = bracketleft      braceleft       
  	control keycode  26 = Escape          
  	alt     keycode  26 = Meta_bracketleft
-@@ -73,17 +83,23 @@ keycode  28 = Return
+@@ -73,17 +87,26 @@ keycode  28 = Return
  	alt     keycode  28 = Meta_Control_m  
  keycode  29 = Control         
  keycode  30 = a
 -	altgr   keycode  30 = Hex_A
-+	altgr   keycode  30 = F100
++	altgr   keycode  30 = U+00B0
  keycode  31 = s               
-+	altgr   keycode  31 = F101
++	altgr   keycode  31 = U+00A8
  keycode  32 = d
 -	altgr   keycode  32 = Hex_D   
-+	altgr   keycode  32 = F102
++	altgr   keycode  32 = U+20AC
  keycode  33 = f
 -	altgr   keycode  33 = Hex_F               
 +	altgr   keycode  33 = minus
@@ -84,20 +97,23 @@ index 50b30ca..25d05b4 100644
 +	altgr   keycode  35 = braceleft
  keycode  36 = j               
 +	altgr   keycode  36 = bracketleft
++	ctrlr   keycode  36 = four
  keycode  37 = k               
 +	altgr   keycode  37 = bracketright
++	ctrlr   keycode  37 = five
  keycode  38 = l               
 +	altgr   keycode  38 = braceright
++	ctrlr   keycode  38 = six
  keycode  39 = semicolon        colon           
  	alt     keycode  39 = Meta_semicolon  
  keycode  40 = apostrophe       quotedbl        
-@@ -97,19 +113,23 @@ keycode  43 = backslash        bar
+@@ -97,58 +120,65 @@ keycode  43 = backslash        bar
  	control keycode  43 = Control_backslash
  	alt     keycode  43 = Meta_backslash  
  keycode  44 = z               
-+	altgr   keycode  43 = nine
++	altgr   keycode  44 = nine
  keycode  45 = x               
-+	altgr   keycode  43 = zero
++	altgr   keycode  45 = zero
  keycode  46 = c
  	altgr   keycode  46 = Hex_C   
  keycode  47 = v               
@@ -105,8 +121,10 @@ index 50b30ca..25d05b4 100644
  	altgr   keycode  48 = Hex_B
  keycode  49 = n               
 +	altgr   keycode  49 = less
++	ctrlr   keycode  49 = one
  keycode  50 = m               
 +	altgr   keycode  50 = greater
++	ctrlr   keycode  50 = two
  keycode  51 = comma            less            
 -	alt     keycode  51 = Meta_comma      
 +	altgr   keycode  51 = apostrophe
@@ -117,7 +135,12 @@ index 50b30ca..25d05b4 100644
  keycode  53 = slash            question        
  	control keycode  53 = Delete          
  	alt     keycode  53 = Meta_slash      
-@@ -120,35 +140,35 @@ keycode  57 = space            space
+-keycode  54 = Shift           
++	ctrlr   keycode  53 = zero
++keycode  54 = AltGr
+ keycode  55 = KP_Multiply     
+ keycode  56 = Alt             
+ keycode  57 = space            space           
  	control keycode  57 = nul             
  	alt     keycode  57 = Meta_space      
  keycode  58 = Caps_Lock       
@@ -161,22 +184,12 @@ index 50b30ca..25d05b4 100644
  	control keycode  66 = F8              
  	alt     keycode  66 = Console_8       
  	control alt     keycode  66 = Console_8       
-@@ -220,7 +240,7 @@ keycode  93 =
+@@ -220,7 +250,7 @@ keycode  93 =
  keycode  94 =
  keycode  95 =
  keycode  96 = KP_Enter        
 -keycode  97 = Control         
-+keycode  97 = AltGr
++keycode  97 = CtrlR
  keycode  98 = KP_Divide       
  keycode  99 = Control_backslash
  	control keycode  99 = Control_backslash
-@@ -279,6 +299,9 @@ string F17 = "\033[31~"
- string F18 = "\033[32~"
- string F19 = "\033[33~"
- string F20 = "\033[34~"
-+string F100 = "°"
-+string F101 = "¨"
-+string F102 = "¿"
- string Find = "\033[1~"
- string Insert = "\033[2~"
- string Remove = "\033[3~"
