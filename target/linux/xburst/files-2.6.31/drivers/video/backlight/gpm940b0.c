@@ -77,24 +77,24 @@ int gpm940b0_bl_update_status(struct backlight_device *bl)
 static size_t reg_write(struct device *dev, struct device_attribute *attr,
                         const char *buf, size_t count)
 {
-    char *buf2;
-    uint32_t reg = simple_strtoul(buf, &buf2, 10);
-    uint32_t val = simple_strtoul(buf2 + 1, NULL, 10);
+	char *buf2;
+	uint32_t reg = simple_strtoul(buf, &buf2, 10);
+	uint32_t val = simple_strtoul(buf2 + 1, NULL, 10);
 	struct gpm940b0 *gpm940b0 = dev_get_drvdata(dev);
 
-    if (reg < 0 || val < 0)
-        return -EINVAL;
+	if (reg < 0 || val < 0)
+		return -EINVAL;
 
-    gpm940b0_write_reg(gpm940b0->spi, reg, val);
-    return count;
+	gpm940b0_write_reg(gpm940b0->spi, reg, val);
+	return count;
 }
 
 static DEVICE_ATTR(reg, 0644, NULL, reg_write);
 
 static struct lcd_ops gpm940b0_lcd_ops = {
-    .set_power = gpm940b0_set_power,
-    .set_contrast = gpm940b0_set_contrast,
-    .set_mode = gpm940b0_set_mode,
+	.set_power = gpm940b0_set_power,
+	.set_contrast = gpm940b0_set_contrast,
+	.set_mode = gpm940b0_set_mode,
 };
 
 static struct backlight_ops gpm940b0_bl_ops = {
@@ -120,7 +120,7 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 	gpm940b0->spi = spi;
 
 	gpm940b0->lcd = lcd_device_register("gpm940b0-lcd", &spi->dev, gpm940b0,
-						&gpm940b0_lcd_ops);
+					    &gpm940b0_lcd_ops);
 
 	if (IS_ERR(gpm940b0->lcd)) {
 		ret = PTR_ERR(gpm940b0->lcd);
@@ -131,7 +131,7 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 	gpm940b0->lcd->props.max_contrast = 255;
 
 	gpm940b0->bl = backlight_device_register("gpm940b0-bl", &spi->dev, gpm940b0,
-						&gpm940b0_bl_ops);
+						 &gpm940b0_bl_ops);
 
 	if (IS_ERR(gpm940b0->bl)) {
 		ret = PTR_ERR(gpm940b0->bl);
@@ -142,11 +142,11 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 		gpm940b0->bl->props.brightness = 0;
 		gpm940b0->bl->props.power = FB_BLANK_UNBLANK;
 	}
-    device_create_file(&spi->dev, &dev_attr_reg);
+	device_create_file(&spi->dev, &dev_attr_reg);
 
-    dev_set_drvdata(&spi->dev, gpm940b0);
+	dev_set_drvdata(&spi->dev, gpm940b0);
 
-    gpm940b0_write_reg(spi, 0x13, 0x1);
+	gpm940b0_write_reg(spi, 0x13, 0x1);
 	return 0;
 err_free_gpm940b0:
 	return ret;
