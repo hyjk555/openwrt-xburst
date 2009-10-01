@@ -21,7 +21,7 @@
 
 void jz_restart(char *command)
 {
-	printk("Restarting after 4 ms\n");
+	printk(KERN_NOTICE "Restarting after 4 ms\n");
 	REG_WDT_TCSR = WDT_TCSR_PRESCALE4 | WDT_TCSR_EXT_EN;
 	REG_WDT_TCNT = 0;
 	REG_WDT_TDR = JZ_EXTAL/1000;   /* reset after 4ms */
@@ -32,7 +32,9 @@ void jz_restart(char *command)
 
 void jz_halt(void)
 {
-	printk(KERN_NOTICE "\n** You can safely turn off the power\n");
+	/* Put CPU to power down mode */
+	while (!(REG_RTC_RCR & RTC_RCR_WRDY));
+	REG_RTC_HCR = RTC_HCR_PD;
 
 	while (1)
 		__asm__(".set\tmips3\n\t"
