@@ -1,0 +1,76 @@
+diff --git a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
+index 2c3260f..aa461bd 100644
+--- a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
++++ b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
+@@ -35,6 +35,7 @@
+ #define GPIO_LCD_CS             JZ_GPIO_PORTC(21)
+ #define GPIO_DISP_OFF_N         JZ_GPIO_PORTD(21)
+ #define GPIO_PWM                JZ_GPIO_PORTD(27)
++#define GPIO_WAKEUP_N           JZ_GPIO_PORTD(29)
+ 
+ #define GPIO_AMP_EN             JZ_GPIO_PORTD(4)
+ 
+diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
+index 127fad8..c6ef60c 100644
+--- a/arch/mips/jz4740/board-qi_lb60.c
++++ b/arch/mips/jz4740/board-qi_lb60.c
+@@ -97,6 +97,7 @@ static void __init board_gpio_setup(void)
+ 
+ 	__gpio_as_input(GPIO_DC_DETE_N);
+ 	__gpio_as_input(GPIO_CHARG_STAT_N);
++	__gpio_as_input(GPIO_WAKEUP_N);
+ }
+ 
+ void __init jz_board_setup(void)
+diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
+index dc7a832..16a0008 100644
+--- a/arch/mips/jz4740/platform.c
++++ b/arch/mips/jz4740/platform.c
+@@ -21,6 +21,8 @@
+ #include <linux/spi/spi_gpio.h>
+ #include <linux/power_supply.h>
+ #include <linux/jz4740_batt.h>
++#include <linux/input.h>
++#include <linux/gpio_keys.h>
+ 
+ #include <asm/jzsoc.h>
+ #include <asm/gpio.h>
+@@ -492,6 +494,30 @@ static struct platform_device batt_gpio_device = {
+ 	},
+ };
+ 
++/* GPIO Key: power */
++static const struct gpio_keys_button qi_lb60_gpio_keys_buttons[] = {
++	[0] = {
++		.code		= KEY_POWER,
++		.gpio		= GPIO_WAKEUP_N,
++		.active_low	= 1,
++		.desc		= "power button",
++	},
++};
++
++static const struct gpio_keys_platform_data qi_lb60_gpio_keys_data = {
++	.nbuttons =	ARRAY_SIZE(qi_lb60_gpio_keys_buttons),
++	.buttons =	qi_lb60_gpio_keys_buttons,
++};
++
++static struct platform_device qi_lb60_gpio_keys = {
++	.name =	"gpio-keys",
++	.id =		-1,
++	.dev = {
++		.platform_data = (void *) &qi_lb60_gpio_keys_data,
++	}
++};
++
++
+ /* All */
+ static struct platform_device *jz_platform_devices[] __initdata = {
+ 	&jz_usb_ohci_device,
+@@ -506,6 +532,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
+ 	&jz_codec_device,
+ 	&jz_rtc_device,
+ 	&batt_gpio_device,
++	&qi_lb60_gpio_keys,
+ };
+ 
+ static int __init jz_platform_init(void)
