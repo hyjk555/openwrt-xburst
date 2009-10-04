@@ -127,7 +127,7 @@ static void jz_nand_hwctl(struct mtd_info *mtd, int mode)
 }
 
 static int jz_nand_calculate_ecc_rs(struct mtd_info* mtd, const uint8_t* dat,
-					uint8_t *ecc_code)
+				    uint8_t *ecc_code)
 {
 	struct jz_nand *nand = mtd_to_jz_nand(mtd);
 	uint32_t reg, status;
@@ -150,46 +150,46 @@ static int jz_nand_calculate_ecc_rs(struct mtd_info* mtd, const uint8_t* dat,
 
 static void correct_data(uint8_t *dat, int index, int mask)
 {
-    int offset = index & 0x7;
-    uint16_t data;
-    printk("correct: ");
+	int offset = index & 0x7;
+	uint16_t data;
+	printk("correct: ");
 
-    index += (index >> 3);
+	index += (index >> 3);
 
-    data = dat[index];
-    data |= dat[index+1] << 8;
+	data = dat[index];
+	data |= dat[index+1] << 8;
 
-    printk("0x%x -> ", data);
+	printk("0x%x -> ", data);
 
-    mask ^= (data >> offset) & 0x1ff;
-    data &= ~(0x1ff << offset);
-    data |= (mask << offset);
+	mask ^= (data >> offset) & 0x1ff;
+	data &= ~(0x1ff << offset);
+	data |= (mask << offset);
 
-    printk("0x%x\n", data);
+	printk("0x%x\n", data);
 
-    dat[index] = data & 0xff;
-    dat[index+1] = (data >> 8) & 0xff;
+	dat[index] = data & 0xff;
+	dat[index+1] = (data >> 8) & 0xff;
 }
 
 static int jz_nand_correct_ecc_rs(struct mtd_info* mtd, uint8_t *dat,
-				uint8_t *read_ecc, uint8_t *calc_ecc)
+				  uint8_t *read_ecc, uint8_t *calc_ecc)
 {
 	struct jz_nand *nand = mtd_to_jz_nand(mtd);
 	int i, error_count, index;
 	uint32_t reg, status, error;
 
 	for(i = 0; i < 9; ++i) {
-        if (read_ecc[i] != 0xff)
-            break;
-    }
-    if (i == 9) {
-        for (i = 0; i < nand->chip.ecc.size; ++i) {
-            if (dat[i] != 0xff)
-                break;
-        }
-        if (i == nand->chip.ecc.size)
-            return 0;
-    }
+		if (read_ecc[i] != 0xff)
+			break;
+	}
+	if (i == 9) {
+		for (i = 0; i < nand->chip.ecc.size; ++i) {
+			if (dat[i] != 0xff)
+				break;
+		}
+		if (i == nand->chip.ecc.size)
+			return 0;
+	}
 
 	for(i = 0; i < 9; ++i)
 		writeb(read_ecc[i], nand->base + JZ_REG_NAND_PAR0 + i);
@@ -206,30 +206,29 @@ static int jz_nand_correct_ecc_rs(struct mtd_info* mtd, uint8_t *dat,
 	reg &= ~JZ_NAND_ECC_CTRL_ENABLE;
 	writel(reg, nand->base + JZ_REG_NAND_ECC_CTRL);
 
-
 	if (status & JZ_NAND_STATUS_ERROR) {
 		if (status & JZ_NAND_STATUS_UNCOR_ERROR) {
-            printk("uncorrectable ecc:");
-            for(i = 0; i < 9; ++i)
-                printk(" 0x%x", read_ecc[i]);
-            printk("\n");
-            printk("uncorrectable data:");
-            for(i = 0; i < 32; ++i)
-                printk(" 0x%x", dat[i]);
-            printk("\n");
-            return -1;
-        }
+			printk("uncorrectable ecc:");
+			for(i = 0; i < 9; ++i)
+				printk(" 0x%x", read_ecc[i]);
+			printk("\n");
+			printk("uncorrectable data:");
+			for(i = 0; i < 32; ++i)
+				printk(" 0x%x", dat[i]);
+			printk("\n");
+			return -1;
+		}
 
 		error_count = (status & JZ_NAND_STATUS_ERR_COUNT) >> 29;
 
-        printk("error_count: %d %x\n", error_count, status);
+		printk("error_count: %d %x\n", error_count, status);
 
-		for(i = 0;i < error_count; ++i) {
+		for(i = 0; i < error_count; ++i) {
 			error = readl(nand->base + JZ_REG_NAND_ERR(i));
 			index = ((error >> 16) & 0x1ff) - 1;
 			if (index >= 0 && index < 512) {
-                correct_data(dat, index, error & 0x1ff);
-            }
+				correct_data(dat, index, error & 0x1ff);
+			}
 		}
 
 		return error_count;
