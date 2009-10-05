@@ -330,8 +330,8 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 
 static void jzfb_free_devmem(struct jzfb *jzfb)
 {
-    dma_free_coherent(&jzfb->pdev->dev, jzfb->devmem_size, jzfb->devmem,
-			jzfb->devmem_phys);
+	dma_free_coherent(&jzfb->pdev->dev, jzfb->devmem_size, jzfb->devmem,
+			  jzfb->devmem_phys);
 }
 
 static struct  fb_ops jzfb_ops = {
@@ -400,17 +400,17 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, jzfb);
 
 	fb_videomode_to_modelist(pdata->modes, pdata->num_modes,
-				    &fb->modelist);
+				 &fb->modelist);
 	fb->mode = pdata->modes;
 
 	fb_videomode_to_var(&fb->var, fb->mode);
-    fb->var.bits_per_pixel = pdata->bpp;
+	fb->var.bits_per_pixel = pdata->bpp;
 	jzfb_check_var(&fb->var, fb);
 
 	ret = jzfb_alloc_vidmem(jzfb);
 	if (ret) {
-	    dev_err(&pdev->dev, "Failed to allocate video memory\n");
-	    goto err_iounmap;
+		dev_err(&pdev->dev, "Failed to allocate video memory\n");
+		goto err_iounmap;
 	}
 
 	fb->fix = jzfb_fix;
