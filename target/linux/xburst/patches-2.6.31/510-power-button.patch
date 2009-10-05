@@ -11,19 +11,19 @@ index 2c3260f..aa461bd 100644
  #define GPIO_AMP_EN             JZ_GPIO_PORTD(4)
  
 diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index dc7a832..16a0008 100644
+index 81cfcb4..9cace99 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
 @@ -21,6 +21,8 @@
  #include <linux/spi/spi_gpio.h>
  #include <linux/power_supply.h>
- #include <linux/jz4740_batt.h>
+ #include <linux/power/jz4740-battery.h>
 +#include <linux/input.h>
 +#include <linux/gpio_keys.h>
  
  #include <asm/jzsoc.h>
  #include <asm/gpio.h>
-@@ -492,6 +494,30 @@ static struct platform_device batt_gpio_device = {
+@@ -513,6 +515,29 @@ static struct platform_device jz_battery_device = {
  	},
  };
  
@@ -33,31 +33,30 @@ index dc7a832..16a0008 100644
 +		.code		= KEY_POWER,
 +		.gpio		= GPIO_WAKEUP_N,
 +		.active_low	= 1,
-+		.desc		= "power button",
++		.desc		= "Power",
 +	},
 +};
 +
 +static const struct gpio_keys_platform_data qi_lb60_gpio_keys_data = {
-+	.nbuttons =	ARRAY_SIZE(qi_lb60_gpio_keys_buttons),
-+	.buttons =	qi_lb60_gpio_keys_buttons,
++	.nbuttons = ARRAY_SIZE(qi_lb60_gpio_keys_buttons),
++	.buttons = qi_lb60_gpio_keys_buttons,
 +};
 +
 +static struct platform_device qi_lb60_gpio_keys = {
 +	.name =	"gpio-keys",
-+	.id =		-1,
++	.id =	-1,
 +	.dev = {
-+		.platform_data = (void *) &qi_lb60_gpio_keys_data,
++		.platform_data = &qi_lb60_gpio_keys_data,
 +	}
 +};
-+
 +
  /* All */
  static struct platform_device *jz_platform_devices[] __initdata = {
  	&jz_usb_ohci_device,
-@@ -506,6 +532,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
- 	&jz_codec_device,
+@@ -528,6 +553,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
  	&jz_rtc_device,
- 	&batt_gpio_device,
+ 	&jz_adc_device,
+ 	&jz_battery_device,
 +	&qi_lb60_gpio_keys,
  };
  
