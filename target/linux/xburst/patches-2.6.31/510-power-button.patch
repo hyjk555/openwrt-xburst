@@ -1,5 +1,3 @@
-diff --git a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
-index 2c3260f..aa461bd 100644
 --- a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
 +++ b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
 @@ -35,6 +35,7 @@
@@ -10,8 +8,6 @@ index 2c3260f..aa461bd 100644
  
  #define GPIO_AMP_EN             JZ_GPIO_PORTD(4)
  
-diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 81cfcb4..9cace99 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
 @@ -21,6 +21,8 @@
@@ -23,7 +19,7 @@ index 81cfcb4..9cace99 100644
  
  #include <asm/jzsoc.h>
  #include <asm/gpio.h>
-@@ -513,6 +515,29 @@ static struct platform_device jz_battery_device = {
+@@ -513,6 +515,29 @@ static struct platform_device jz_battery
  	},
  };
  
@@ -53,7 +49,7 @@ index 81cfcb4..9cace99 100644
  /* All */
  static struct platform_device *jz_platform_devices[] __initdata = {
  	&jz_usb_ohci_device,
-@@ -528,6 +553,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
+@@ -528,6 +553,7 @@ static struct platform_device *jz_platfo
  	&jz_rtc_device,
  	&jz_adc_device,
  	&jz_battery_device,

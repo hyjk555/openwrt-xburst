@@ -1,5 +1,3 @@
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index f9d19be..4299648 100644
 --- a/drivers/video/backlight/Kconfig
 +++ b/drivers/video/backlight/Kconfig
 @@ -93,6 +93,13 @@ config LCD_HP700
@@ -16,11 +14,9 @@ index f9d19be..4299648 100644
  #
  # Backlight
  #
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index 4eb178c..c2fd42c 100644
 --- a/drivers/video/backlight/Makefile
 +++ b/drivers/video/backlight/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_LCD_PLATFORM)	   += platform_lcd.o
+@@ -9,6 +9,7 @@ obj-$(CONFIG_LCD_PLATFORM)	   += platfor
  obj-$(CONFIG_LCD_VGG2432A4)	   += vgg2432a4.o
  obj-$(CONFIG_LCD_TDO24M)	   += tdo24m.o
  obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o

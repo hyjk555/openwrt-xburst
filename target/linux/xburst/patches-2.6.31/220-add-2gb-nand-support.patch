@@ -1,8 +1,6 @@
-diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 5cf3c38..04024d2 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -170,6 +170,8 @@ static struct resource jz_nand_resources[] = {
+@@ -170,6 +170,8 @@ static struct resource jz_nand_resources
  	},
  };
  
@@ -11,7 +9,7 @@ index 5cf3c38..04024d2 100644
  static struct nand_ecclayout qi_lb60_ecclayout = {
  	.eccbytes = 36,
  	.eccpos = {
-@@ -186,23 +188,62 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
+@@ -186,23 +188,62 @@ static struct nand_ecclayout qi_lb60_ecc
  };
  
  static struct mtd_partition qi_lb60_partitions[] = {
@@ -31,7 +29,6 @@ index 5cf3c38..04024d2 100644
 -	  .offset =	100 * 0x100000,
 -	  .size =	20 * 0x100000,
 -	},
--};
 +	{ .name = "NAND BOOT partition",
 +	  .offset = 0 * 0x100000,
 +	  .size = 4 * 0x100000,
@@ -86,12 +83,12 @@ index 5cf3c38..04024d2 100644
 +	  .offset = 512 * 0x100000,
 +	  .size = (512 + 1024) * 0x100000,
 + 	},
-+};
+ };
 +#endif /* QI_LB60_1GB_NAND */
  
  static struct jz_nand_platform_data jz_nand_platform_data = {
  	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
-@@ -219,7 +260,9 @@ static struct platform_device jz_nand_device = {
+@@ -219,7 +260,9 @@ static struct platform_device jz_nand_de
  		.platform_data = &jz_nand_platform_data,
  	}
  };
@@ -102,8 +99,6 @@ index 5cf3c38..04024d2 100644
  
  #define KEY_QI_QI		KEY_F13
  #define KEY_QI_UPRED	KEY_F14
-diff --git a/include/mtd/mtd-abi.h b/include/mtd/mtd-abi.h
-index f86db5a..b19fffa 100644
 --- a/include/mtd/mtd-abi.h
 +++ b/include/mtd/mtd-abi.h
 @@ -135,7 +135,7 @@ struct nand_oobfree {

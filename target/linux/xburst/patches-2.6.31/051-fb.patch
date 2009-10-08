@@ -1,5 +1,3 @@
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 3b54b39..2b08352 100644
 --- a/drivers/video/Kconfig
 +++ b/drivers/video/Kconfig
 @@ -2148,6 +2148,15 @@ config FB_BROADSHEET
@@ -18,11 +16,9 @@ index 3b54b39..2b08352 100644
  source "drivers/video/omap/Kconfig"
  
  source "drivers/video/backlight/Kconfig"
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 01a819f..5af158f 100644
 --- a/drivers/video/Makefile
 +++ b/drivers/video/Makefile
-@@ -126,6 +126,7 @@ obj-$(CONFIG_FB_OMAP)             += omap/
+@@ -126,6 +126,7 @@ obj-$(CONFIG_FB_OMAP)             += oma
  obj-$(CONFIG_XEN_FBDEV_FRONTEND)  += xen-fbfront.o
  obj-$(CONFIG_FB_CARMINE)          += carminefb.o
  obj-$(CONFIG_FB_MB862XX)	  += mb862xx/

@@ -1,5 +1,3 @@
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index ce96c09..818bce0 100644
 --- a/drivers/mtd/nand/Kconfig
 +++ b/drivers/mtd/nand/Kconfig
 @@ -452,4 +452,10 @@ config MTD_NAND_SOCRATES
@@ -13,22 +11,18 @@ index ce96c09..818bce0 100644
 +	Support NAND Flash device on Jz4740 board
 +
  endif # MTD_NAND
-diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-index f3a786b..ef4590b 100644
 --- a/drivers/mtd/nand/Makefile
 +++ b/drivers/mtd/nand/Makefile
-@@ -40,5 +40,6 @@ obj-$(CONFIG_MTD_NAND_SH_FLCTL)		+= sh_flctl.o
+@@ -40,5 +40,6 @@ obj-$(CONFIG_MTD_NAND_SH_FLCTL)		+= sh_f
  obj-$(CONFIG_MTD_NAND_MXC)		+= mxc_nand.o
  obj-$(CONFIG_MTD_NAND_SOCRATES)		+= socrates_nand.o
  obj-$(CONFIG_MTD_NAND_TXX9NDFMC)	+= txx9ndfmc.o
 +obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
  
  nand-objs := nand_base.o nand_bbt.o
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 8c21b89..1749f31 100644
 --- a/drivers/mtd/nand/nand_base.c
 +++ b/drivers/mtd/nand/nand_base.c
-@@ -953,29 +953,22 @@ static int nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
+@@ -953,29 +953,22 @@ static int nand_read_page_hwecc(struct m
  	uint8_t *ecc_calc = chip->buffers->ecccalc;
  	uint8_t *ecc_code = chip->buffers->ecccode;
  	uint32_t *eccpos = chip->ecc.layout->eccpos;
@@ -63,7 +57,7 @@ index 8c21b89..1749f31 100644
  	return 0;
  }
  
-@@ -1125,6 +1118,8 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
+@@ -1125,6 +1118,8 @@ static int nand_do_read_ops(struct mtd_i
  			bufpoi = aligned ? buf : chip->buffers->databuf;
  
  			if (likely(sndcmd)) {

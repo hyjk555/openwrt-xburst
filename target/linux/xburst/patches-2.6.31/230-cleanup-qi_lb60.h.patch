@@ -1,5 +1,3 @@
-diff --git a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
-index b2f02f4..2c3260f 100644
 --- a/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
 +++ b/arch/mips/include/asm/mach-jz4740/board-qi_lb60.h
 @@ -1,49 +1,57 @@
@@ -47,19 +45,21 @@ index b2f02f4..2c3260f 100644
 -#define GPIO_LCD_CS             (2 * 32 + 21)
 -#define GPIO_DISP_OFF_N         (3 * 32 + 21)
 -#define GPIO_PWM                (3 * 32 + 27)
+-
+-#define GPIO_AMP_EN             (3 * 32 + 4)
+-
+-#define GPIO_SD_CD_N            (3 * 32 + 0)
+-#define GPIO_SD_VCC_EN_N        (3 * 32 + 2)
+-#define GPIO_SD_WP              (3 * 32 + 16)
 +#define GPIO_DC_DETE_N          JZ_GPIO_PORTC(26)
 +#define GPIO_CHARG_STAT_N       JZ_GPIO_PORTC(27)
 +#define GPIO_LED_EN             JZ_GPIO_PORTC(28)
 +#define GPIO_LCD_CS             JZ_GPIO_PORTC(21)
 +#define GPIO_DISP_OFF_N         JZ_GPIO_PORTD(21)
 +#define GPIO_PWM                JZ_GPIO_PORTD(27)
- 
--#define GPIO_AMP_EN             (3 * 32 + 4)
++
 +#define GPIO_AMP_EN             JZ_GPIO_PORTD(4)
- 
--#define GPIO_SD_CD_N            (3 * 32 + 0)
--#define GPIO_SD_VCC_EN_N        (3 * 32 + 2)
--#define GPIO_SD_WP              (3 * 32 + 16)
++
 +#define GPIO_SD_CD_N            JZ_GPIO_PORTD(0)
 +#define GPIO_SD_VCC_EN_N        JZ_GPIO_PORTD(2)
 +#define GPIO_SD_WP              JZ_GPIO_PORTD(16)

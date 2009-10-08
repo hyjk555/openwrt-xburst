@@ -1,8 +1,6 @@
-diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index 4575a50..dc7a832 100644
 --- a/arch/mips/jz4740/platform.c
 +++ b/arch/mips/jz4740/platform.c
-@@ -264,10 +264,11 @@ static struct platform_device jz_nand_device = {
+@@ -264,10 +264,11 @@ static struct platform_device jz_nand_de
   * don't define this. the keyboard and keyboard both work
   */
  
@@ -16,7 +14,7 @@ index 4575a50..dc7a832 100644
  
  static const uint32_t qi_lb60_keymap[] = {
  	KEY(0, 0, KEY_F1),	/* S2 */
-@@ -330,7 +331,7 @@ static const uint32_t qi_lb60_keymap[] = {
+@@ -330,7 +331,7 @@ static const uint32_t qi_lb60_keymap[] =
  #ifndef KEEP_UART_ALIVE
  	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
  	KEY(7, 1, KEY_LEFTALT),	/* S59 */
@@ -25,8 +23,6 @@ index 4575a50..dc7a832 100644
  #endif
  };
  
-diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
-index 50b30ca..153f026 100644
 --- a/drivers/char/defkeymap.map
 +++ b/drivers/char/defkeymap.map
 @@ -1,5 +1,5 @@
@@ -36,7 +32,7 @@ index 50b30ca..153f026 100644
  # Change the above line into
  #	keymaps 0-2,4-6,8,12
  # in case you want the entries
-@@ -45,24 +45,38 @@ keycode  12 = minus            underscore       backslash
+@@ -45,24 +45,38 @@ keycode  12 = minus            underscor
  	control	keycode  12 = Control_underscore
  	shift	control	keycode  12 = Control_underscore
  	alt	keycode  12 = Meta_minus      
@@ -77,7 +73,7 @@ index 50b30ca..153f026 100644
  keycode  26 = bracketleft      braceleft       
  	control keycode  26 = Escape          
  	alt     keycode  26 = Meta_bracketleft
-@@ -73,17 +87,26 @@ keycode  28 = Return
+@@ -73,17 +87,26 @@ keycode  28 = Return          
  	alt     keycode  28 = Meta_Control_m  
  keycode  29 = Control         
  keycode  30 = a
@@ -107,7 +103,7 @@ index 50b30ca..153f026 100644
  keycode  39 = semicolon        colon           
  	alt     keycode  39 = Meta_semicolon  
  keycode  40 = apostrophe       quotedbl        
-@@ -97,58 +120,65 @@ keycode  43 = backslash        bar
+@@ -97,58 +120,65 @@ keycode  43 = backslash        bar      
  	control keycode  43 = Control_backslash
  	alt     keycode  43 = Meta_backslash  
  keycode  44 = z               

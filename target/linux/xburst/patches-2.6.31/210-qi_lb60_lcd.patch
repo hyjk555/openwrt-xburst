@@ -1,5 +1,3 @@
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index d25c6f6..5dc3d4c 100644
 --- a/drivers/video/Kconfig
 +++ b/drivers/video/Kconfig
 @@ -281,6 +281,42 @@ config FB_JZLCD_4730_4740
@@ -45,11 +43,9 @@ index d25c6f6..5dc3d4c 100644
  choice
  	depends on FB_JZLCD_4730_4740
  	prompt "LCD Panel"
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index c037677..c8db3fc 100644
 --- a/drivers/video/Makefile
 +++ b/drivers/video/Makefile
-@@ -28,7 +28,7 @@ obj-$(CONFIG_FB_DDC)           += fb_ddc.o
+@@ -28,7 +28,7 @@ obj-$(CONFIG_FB_DDC)           += fb_ddc
  obj-$(CONFIG_FB_DEFERRED_IO)   += fb_defio.o
  
  # Hardware specific drivers go first

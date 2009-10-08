@@ -1,5 +1,3 @@
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index b4e1c22..a2e6ac1 100644
 --- a/drivers/mmc/host/Kconfig
 +++ b/drivers/mmc/host/Kconfig
 @@ -66,6 +66,15 @@ config MMC_RICOH_MMC
@@ -18,8 +16,6 @@ index b4e1c22..a2e6ac1 100644
  
  	  To compile this driver as a module, choose M here:
  	  the module will be called ricoh_mmc.
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 4cce976..a3d336a 100644
 --- a/drivers/mmc/host/Makefile
 +++ b/drivers/mmc/host/Makefile
 @@ -6,6 +6,7 @@ ifeq ($(CONFIG_MMC_DEBUG),y)
