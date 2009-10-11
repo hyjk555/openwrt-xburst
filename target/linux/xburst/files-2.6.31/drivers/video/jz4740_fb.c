@@ -315,6 +315,7 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 
 	framedesc = jzfb->devmem  + max_videosize;
 	jzfb->vidmem = jzfb->devmem;
+	jzfb->vidmem_phys = jzfb->devmem_phys;
 
 	framedesc->next = jzfb->devmem_phys + max_videosize;
 	framedesc->addr = jzfb->devmem_phys;
