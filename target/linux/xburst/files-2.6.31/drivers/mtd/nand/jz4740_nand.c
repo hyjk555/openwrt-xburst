@@ -127,7 +127,7 @@ static void jz_nand_hwctl(struct mtd_info *mtd, int mode)
 }
 
 static int jz_nand_calculate_ecc_rs(struct mtd_info* mtd, const uint8_t* dat,
-				    uint8_t *ecc_code)
+					uint8_t *ecc_code)
 {
 	struct jz_nand *nand = mtd_to_jz_nand(mtd);
 	uint32_t reg, status;
@@ -308,7 +308,7 @@ static int __devinit jz_nand_probe(struct platform_device *pdev)
 	chip->ecc.size		= 512;
 	chip->ecc.bytes		= 9;
 	if (pdata)
-	    chip->ecc.layout = pdata->ecc_layout;
+		chip->ecc.layout = pdata->ecc_layout;
 
 	chip->chip_delay = 50;
 	chip->cmd_ctrl = jz_nand_cmd_ctrl;
@@ -322,25 +322,31 @@ static int __devinit jz_nand_probe(struct platform_device *pdev)
 	nand->pdata = pdata;
 	platform_set_drvdata(pdev, nand);
 
-	ret = nand_scan(mtd, 1);
+	ret = nand_scan_ident(mtd, 1);
 	if (ret) {
-	    dev_err(&pdev->dev,  "Failed to scan nand\n");
-	    goto err_gpio_free;
+		dev_err(&pdev->dev,  "Failed to scan nand\n");
+		goto err_gpio_free;
 	}
+
+	if (pdata && pdata->ident_callback) {
+		pdata->ident_callback(pdev, chip, &pdata->partitions, &pdata->num_partitions);
+	}
+
+	ret = nand_scan_tail(mtd);
+	if (ret) {
+		dev_err(&pdev->dev,  "Failed to scan nand\n");
+		goto err_gpio_free;
+	}
+
 #ifdef CONFIG_MTD_PARTITIONS
 #ifdef CONFIG_MTD_CMDLINE_PARTS
 	num_partitions = parse_mtd_partitions(mtd, part_probes,
 						&partition_info, 0);
+#endif
 	if (num_partitions <= 0 && pdata) {
 		num_partitions = pdata->num_partitions;
 		partition_info = pdata->partitions;
 	}
-#else
-	if (pdata) {
-		num_partitions = pdata->num_partitions;
-		partition_info = pdata->partitions;
-	}
-#endif
 
 	if (num_partitions > 0)
 		ret = add_mtd_partitions(mtd, partition_info, num_partitions);
@@ -349,15 +355,15 @@ static int __devinit jz_nand_probe(struct platform_device *pdev)
 	ret = add_mtd_device(mtd);
 
 	if (ret) {
-	    dev_err(&pdev->dev, "Failed to add mtd device\n");
-	    goto err_nand_release;
+		dev_err(&pdev->dev, "Failed to add mtd device\n");
+		goto err_nand_release;
 	}
 
 	dev_info(&pdev->dev, "Successfully registered JZ4740 NAND driver\n");
 
 	return 0;
 err_nand_release:
-    nand_release(&nand->mtd);
+	nand_release(&nand->mtd);
 err_gpio_free:
 	platform_set_drvdata(pdev, NULL);
 	gpio_free(pdata->busy_gpio);

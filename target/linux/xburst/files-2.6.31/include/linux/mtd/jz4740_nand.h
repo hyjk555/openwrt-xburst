@@ -25,7 +25,10 @@ struct jz_nand_platform_data {
 
 	struct nand_ecclayout	*ecc_layout;
 
-    unsigned int busy_gpio;
+	unsigned int busy_gpio;
+
+	void (*ident_callback)(struct platform_device *, struct nand_chip *,
+				struct mtd_partition **, int *num_partitions);
 };
 
 #endif
