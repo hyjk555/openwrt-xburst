@@ -183,6 +183,5 @@ void __init plat_mem_setup(void)
 #endif
 	jz_soc_setup();
 	jz_serial_setup();
-	jz_board_setup();
 }
 

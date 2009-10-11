@@ -343,7 +343,7 @@ static struct jz_gpio_chip jz_gpio_chips[] = {
 	JZ_GPIO_CHIP(D),
 };
 
-__init int jz_gpiolib_init(void)
+int __init jz_gpiolib_init(void)
 {
 	struct jz_gpio_chip *chip = jz_gpio_chips;
 	int i, irq;
@@ -362,6 +362,3 @@ __init int jz_gpiolib_init(void)
 
 	return 0;
 }
-
-arch_initcall(jz_gpiolib_init);
-

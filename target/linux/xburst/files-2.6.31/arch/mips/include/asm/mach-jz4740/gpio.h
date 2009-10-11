@@ -16,6 +16,8 @@
 #ifndef _JZ_GPIO_H
 #define _JZ_GPIO_H
 
+#include <linux/types.h>
+
 enum jz_gpio_function {
     JZ_GPIO_FUNC_NONE,
     JZ_GPIO_FUNC1,
