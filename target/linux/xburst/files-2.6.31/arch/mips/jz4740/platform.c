@@ -21,6 +21,8 @@
 #include <linux/spi/spi_gpio.h>
 #include <linux/power_supply.h>
 #include <linux/power/jz4740-battery.h>
+#include <linux/input.h>
+#include <linux/gpio_keys.h>
 
 #include <asm/jzsoc.h>
 #include <asm/gpio.h>
@@ -170,6 +172,8 @@ static struct resource jz_nand_resources[] = {
 	},
 };
 
+
+#ifdef QI_LB60_1GB_NAND
 static struct nand_ecclayout qi_lb60_ecclayout = {
 	.eccbytes = 36,
 	.eccpos = {
@@ -186,23 +190,62 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
 };
 
 static struct mtd_partition qi_lb60_partitions[] = {
-	{ .name =	"NAND BOOT partition",
-	  .offset =	0 * 0x100000,
-	  .size =	4 * 0x100000,
-	},
-	{ .name =	"NAND KERNEL partition",
-	  .offset =	4 * 0x100000,
-	  .size =	4 * 0x100000,
-	},
-	{ .name =	"NAND ROOTFS partition",
-	  .offset =	8 * 0x100000,
-	  .size =	20 * 0x100000,
-	},
-	{ .name =	"NAND DATA partition",
-	  .offset =	100 * 0x100000,
-	  .size =	20 * 0x100000,
-	},
+	{ .name = "NAND BOOT partition",
+	  .offset = 0 * 0x100000,
+	  .size = 4 * 0x100000,
+ 	},
+	{ .name = "NAND KERNEL partition",
+	  .offset = 4 * 0x100000,
+	  .size = 4 * 0x100000,
+ 	},
+	{ .name = "NAND ROOTFS partition",
+	  .offset = 8 * 0x100000,
+	  .size = 504 * 0x100000,
+ 	},
+	{ .name = "NAND DATA partition",
+	  .offset = 512 * 0x100000,
+	  .size = 512 * 0x100000,
+ 	},
 };
+#else
+static struct nand_ecclayout qi_lb60_ecclayout = {
+	.eccbytes = 72,
+        .eccpos = {
+                12, 13, 14, 15, 16, 17, 18, 19,
+		20, 21, 22, 23, 24, 25, 26, 27, 
+		28, 29, 30, 31, 32, 33, 34, 35,
+		36, 37, 38, 39, 40, 41, 42, 43,
+		44, 45, 46, 47, 48, 49, 50, 51, 
+		52, 53, 54, 55, 56, 57, 58, 59, 
+		60, 61, 62, 63, 64, 65, 66, 67, 
+		68, 69, 70, 71, 72, 73, 74, 75, 
+		76, 77, 78, 79, 80, 81, 82, 83},
+        .oobfree = {
+ 		{.offset = 2,
+		 .length = 10},
+		{.offset = 84,
+		 .length = 44}}
+};
+ 
+static struct mtd_partition qi_lb60_partitions[] = {
+	{ .name = "NAND BOOT partition",
+	  .offset = 0 * 0x100000,
+	  .size = 4 * 0x100000,
+ 	},
+	{ .name = "NAND KERNEL partition",
+	  .offset = 4 * 0x100000,
+	  .size = 4 * 0x100000,
+ 	},
+	{ .name = "NAND ROOTFS partition",
+	  .offset = 8 * 0x100000,
+	  .size = 504 * 0x100000,
+ 	},
+	{ .name = "NAND DATA partition",
+	  .offset = 512 * 0x100000,
+	  .size = (512 + 1024) * 0x100000,
+ 	},
+};
+#endif /* QI_LB60_1GB_NAND */
 
 static struct jz_nand_platform_data jz_nand_platform_data = {
 	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
@@ -219,12 +262,15 @@ static struct platform_device jz_nand_device = {
 		.platform_data = &jz_nand_platform_data,
 	}
 };
-#define KEEP_UART_ALIVE
+/* #define KEEP_UART_ALIVE
+ * don't define this. the keyboard and keyboard both work
+ */
 
-#define KEY_QI_QI		KEY_F13
-#define KEY_QI_UPRED	KEY_F14
+#define KEY_QI_QI	KEY_F13
+#define KEY_QI_UPRED	KEY_RIGHTSHIFT
 #define KEY_QI_VOLUP	KEY_F15
 #define KEY_QI_VOLDOWN	KEY_F16
+#define KEY_QI_FN	KEY_RIGHTCTRL
 
 static const uint32_t qi_lb60_keymap[] = {
 	KEY(0, 0, KEY_F1),	/* S2 */
@@ -287,7 +333,7 @@ static const uint32_t qi_lb60_keymap[] = {
 #ifndef KEEP_UART_ALIVE
 	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
-	KEY(7, 2, KEY_FN),	/* S60 */
+	KEY(7, 2, KEY_QI_FN),	/* S60 */
 #endif
 };
 
@@ -469,6 +515,29 @@ static struct platform_device jz_battery_device = {
 	},
 };
 
+/* GPIO Key: power */
+static const struct gpio_keys_button qi_lb60_gpio_keys_buttons[] = {
+	[0] = {
+		.code		= KEY_POWER,
+		.gpio		= GPIO_WAKEUP_N,
+		.active_low	= 1,
+		.desc		= "Power",
+	},
+};
+
+static const struct gpio_keys_platform_data qi_lb60_gpio_keys_data = {
+	.nbuttons = ARRAY_SIZE(qi_lb60_gpio_keys_buttons),
+	.buttons = qi_lb60_gpio_keys_buttons,
+};
+
+static struct platform_device qi_lb60_gpio_keys = {
+	.name =	"gpio-keys",
+	.id =	-1,
+	.dev = {
+		.platform_data = &qi_lb60_gpio_keys_data,
+	}
+};
+
 /* All */
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_usb_ohci_device,
@@ -484,6 +553,7 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz_rtc_device,
 	&jz_adc_device,
 	&jz_battery_device,
+	&qi_lb60_gpio_keys,
 };
 
 static int __init jz_platform_init(void)

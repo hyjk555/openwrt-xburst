@@ -16,6 +16,7 @@ obj-$(CONFIG_JZ4740_LEO)	+= board-leo.o
 obj-$(CONFIG_JZ4740_LYRA)	+= board-lyra.o
 obj-$(CONFIG_JZ4725_DIPPER)	+= board-dipper.o
 obj-$(CONFIG_JZ4720_VIRGO)	+= board-virgo.o
+obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
 
 # PM support
 

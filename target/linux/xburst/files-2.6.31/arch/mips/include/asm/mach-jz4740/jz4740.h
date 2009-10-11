@@ -43,6 +43,10 @@
 #include <asm/mach-jz4740/board-virgo.h>
 #endif
 
+#ifdef CONFIG_JZ4740_QI_LB60
+#include <asm/mach-jz4740/board-qi_lb60.h>
+#endif
+
 /* Add other platform definition here ... */
 
 
