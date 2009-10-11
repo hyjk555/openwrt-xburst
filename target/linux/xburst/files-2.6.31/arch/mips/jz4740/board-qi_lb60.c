@@ -31,8 +31,7 @@
 
 
 /* NAND */
-#ifdef QI_LB60_1GB_NAND
-static struct nand_ecclayout qi_lb60_ecclayout = {
+static struct nand_ecclayout qi_lb60_ecclayout_1gb = {
 	.eccbytes = 36,
 	.eccpos = {
 		6,  7,  8,  9,  10, 11, 12, 13,
@@ -47,7 +46,7 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
 		 .length = 22}}
 };
 
-static struct mtd_partition qi_lb60_partitions[] = {
+static struct mtd_partition qi_lb60_partitions_1gb[] = {
 	{ .name = "NAND BOOT partition",
 	  .offset = 0 * 0x100000,
 	  .size = 4 * 0x100000,
@@ -65,11 +64,11 @@ static struct mtd_partition qi_lb60_partitions[] = {
 	  .size = 512 * 0x100000,
  	},
 };
-#else
-static struct nand_ecclayout qi_lb60_ecclayout = {
+
+static struct nand_ecclayout qi_lb60_ecclayout_2gb = {
 	.eccbytes = 72,
-        .eccpos = {
-                12, 13, 14, 15, 16, 17, 18, 19,
+	.eccpos = {
+		12, 13, 14, 15, 16, 17, 18, 19,
 		20, 21, 22, 23, 24, 25, 26, 27, 
 		28, 29, 30, 31, 32, 33, 34, 35,
 		36, 37, 38, 39, 40, 41, 42, 43,
@@ -78,14 +77,14 @@ static struct nand_ecclayout qi_lb60_ecclayout = {
 		60, 61, 62, 63, 64, 65, 66, 67, 
 		68, 69, 70, 71, 72, 73, 74, 75, 
 		76, 77, 78, 79, 80, 81, 82, 83},
-        .oobfree = {
+	.oobfree = {
  		{.offset = 2,
 		 .length = 10},
 		{.offset = 84,
 		 .length = 44}}
 };
 
-static struct mtd_partition qi_lb60_partitions[] = {
+static struct mtd_partition qi_lb60_partitions_2gb[] = {
 	{ .name = "NAND BOOT partition",
 	  .offset = 0 * 0x100000,
 	  .size = 4 * 0x100000,
@@ -103,7 +102,28 @@ static struct mtd_partition qi_lb60_partitions[] = {
 	  .size = (512 + 1024) * 0x100000,
  	},
 };
-#endif /* QI_LB60_1GB_NAND */
+
+static void qi_lb60_nand_ident(struct platform_device *pdev,
+				struct nand_chip *chip, 
+				struct mtd_partition **partitions,
+				int *num_partitions)
+{
+	if (chip->page_shift == 12) {
+		chip->ecc.layout = &qi_lb60_ecclayout_2gb;
+		*partitions = qi_lb60_partitions_2gb;
+		*num_partitions = ARRAY_SIZE(qi_lb60_partitions_2gb);
+	} else {
+		chip->ecc.layout = &qi_lb60_ecclayout_1gb;
+		*partitions = qi_lb60_partitions_1gb;
+		*num_partitions = ARRAY_SIZE(qi_lb60_partitions_1gb);
+	}
+}
+
+static struct jz_nand_platform_data qi_lb60_nand_pdata = {
+	.ident_callback = qi_lb60_nand_ident,
+	.busy_gpio = 94,
+};
+
 
 /* Keyboard*/
 
@@ -237,35 +257,28 @@ static struct fb_videomode qi_lb60_video_modes[] = {
 };
 
 static struct jz4740_fb_platform_data qi_lb60_fb_pdata = {
-	.width	    = 60,
-	.height	    = 45,
-	.num_modes  = ARRAY_SIZE(qi_lb60_video_modes),
-	.modes	    = qi_lb60_video_modes,
-	.bpp	    = 24,
-	.lcd_type   = JZ_LCD_TYPE_8BIT_SERIAL,
+	.width		= 60,
+	.height		= 45,
+	.num_modes	= ARRAY_SIZE(qi_lb60_video_modes),
+	.modes		= qi_lb60_video_modes,
+	.bpp		= 24,
+	.lcd_type	= JZ_LCD_TYPE_8BIT_SERIAL,
 };
 
-
-static struct jz_nand_platform_data qi_lb60_nand_pdata = {
-	.num_partitions = ARRAY_SIZE(qi_lb60_partitions),
-	.partitions = qi_lb60_partitions,
-	.ecc_layout = &qi_lb60_ecclayout,
-	.busy_gpio = 94,
-};
 
 struct spi_gpio_platform_data spigpio_platform_data = {
-    .sck = JZ_GPIO_PORTC(23),
-    .mosi = JZ_GPIO_PORTC(22),
-    .miso = JZ_GPIO_PORTC(22),
-    .num_chipselect = 1,
+	.sck = JZ_GPIO_PORTC(23),
+	.mosi = JZ_GPIO_PORTC(22),
+	.miso = JZ_GPIO_PORTC(22),
+	.num_chipselect = 1,
 };
 
 static struct platform_device spigpio_device = {
-    .name = "spi_gpio",
-    .id   = 1,
-    .dev = {
-        .platform_data = &spigpio_platform_data,
-    },
+	.name = "spi_gpio",
+	.id   = 1,
+	.dev = {
+		.platform_data = &spigpio_platform_data,
+	},
 };
 
 static struct spi_board_info qi_lb60_spi_board_info[] = {
@@ -336,8 +349,8 @@ static struct platform_device *jz_platform_devices[] __initdata = {
 
 static void __init board_gpio_setup(void)
 {
-    /* We only need to enable/disable pullup here for pins used in generic
-     * drivers. Everything else is done by the drivers themselfs. */
+	/* We only need to enable/disable pullup here for pins used in generic
+	 * drivers. Everything else is done by the drivers themselfs. */
 	jz_gpio_disable_pullup(GPIO_SD_VCC_EN_N);
 	jz_gpio_disable_pullup(GPIO_SD_CD_N);
 	jz_gpio_disable_pullup(GPIO_SD_WP);
@@ -358,16 +371,18 @@ static int __init qi_lb60_init_platform_devices(void)
 }
 extern int jz_gpiolib_init(void);
 
-static void __init qi_lb60_board_setup(void)
+static int __init qi_lb60_board_setup(void)
 {
 	printk("Qi Hardware JZ4740 QI_LB60 setup\n");
 	if (jz_gpiolib_init())
-        panic("Failed to initalize jz gpio\n");
+		panic("Failed to initalize jz gpio\n");
 
-    board_gpio_setup();
+	board_gpio_setup();
 
-    if (qi_lb60_init_platform_devices())
-        panic("Failed to initalize platform devices\n");
+	if (qi_lb60_init_platform_devices())
+		panic("Failed to initalize platform devices\n");
+
+	return 0;
 }
 
 arch_initcall(qi_lb60_board_setup);
