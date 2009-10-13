@@ -1,3 +1,5 @@
+diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
+index 50b30ca..e2ff31a 100644
 --- a/drivers/char/defkeymap.map
 +++ b/drivers/char/defkeymap.map
 @@ -1,5 +1,5 @@
@@ -7,7 +9,7 @@
  # Change the above line into
  #	keymaps 0-2,4-6,8,12
  # in case you want the entries
-@@ -45,24 +45,38 @@ keycode  12 = minus            underscor
+@@ -45,24 +45,38 @@ keycode  12 = minus            underscore       backslash
  	control	keycode  12 = Control_underscore
  	shift	control	keycode  12 = Control_underscore
  	alt	keycode  12 = Meta_minus      
@@ -48,7 +50,7 @@
  keycode  26 = bracketleft      braceleft       
  	control keycode  26 = Escape          
  	alt     keycode  26 = Meta_bracketleft
-@@ -73,17 +87,26 @@ keycode  28 = Return          
+@@ -73,17 +87,26 @@ keycode  28 = Return
  	alt     keycode  28 = Meta_Control_m  
  keycode  29 = Control         
  keycode  30 = a
@@ -78,7 +80,7 @@
  keycode  39 = semicolon        colon           
  	alt     keycode  39 = Meta_semicolon  
  keycode  40 = apostrophe       quotedbl        
-@@ -97,58 +120,65 @@ keycode  43 = backslash        bar      
+@@ -97,58 +120,65 @@ keycode  43 = backslash        bar
  	control keycode  43 = Control_backslash
  	alt     keycode  43 = Meta_backslash  
  keycode  44 = z               
@@ -94,12 +96,14 @@
 +	altgr   keycode  49 = less
 +	ctrlr   keycode  49 = one
  keycode  50 = m               
+-keycode  51 = comma            less            
+-	alt     keycode  51 = Meta_comma      
+-keycode  52 = period           greater         
 +	altgr   keycode  50 = greater
 +	ctrlr   keycode  50 = two
- keycode  51 = comma            less            
--	alt     keycode  51 = Meta_comma      
++keycode  51 = comma            semicolon
 +	altgr   keycode  51 = apostrophe
- keycode  52 = period           greater         
++keycode  52 = period           colon
  	control keycode  52 = Compose         
 -	alt     keycode  52 = Meta_period     
 +	altgr   keycode  52 =  quotedbl
