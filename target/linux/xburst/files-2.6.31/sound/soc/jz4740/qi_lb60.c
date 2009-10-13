@@ -36,7 +36,7 @@ static int qi_lb60_spk_event(struct snd_soc_dapm_widget *widget,
 	int on = !SND_SOC_DAPM_EVENT_OFF(event);
 
 	gpio_set_value(QI_LB60_SND_GPIO, on);
-	gpio_set_value(QI_LB60_AMP_GPIO, 0);
+	gpio_set_value(QI_LB60_AMP_GPIO, on);
 
 	return 0;
 }
