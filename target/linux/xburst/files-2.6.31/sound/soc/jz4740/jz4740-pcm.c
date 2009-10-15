@@ -567,14 +567,13 @@ static int jz4740_pcm_close(struct snd_pcm_substream *substream)
 }
 
 static int jz4740_pcm_mmap(struct snd_pcm_substream *substream,
-			   struct vm_area_struct *vma)//include/linux/mm.h
+			   struct vm_area_struct *vma)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	unsigned long start;
-	unsigned long off;
-	u32 len;
-    printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
-    return 0;
+
+	return remap_pfn_range(vma, vma->vm_start,
+		       substream->dma_buffer.addr >> PAGE_SHIFT,
+		       vma->vm_end - vma->vm_start, vma->vm_page_prot);
 }
 
 struct snd_pcm_ops jz4740_pcm_ops = {
