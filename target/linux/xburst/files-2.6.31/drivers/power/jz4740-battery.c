@@ -24,6 +24,9 @@
 #include <linux/jz4740-adc.h>
 
 struct jz_battery_info {
+	struct power_supply usb;
+	struct power_supply bat;
+	struct power_supply ac;
 	int bat_status;
 	struct jz_batt_info *pdata;
 	struct mutex work_lock;
@@ -31,26 +34,27 @@ struct jz_battery_info {
 	struct delayed_work bat_work;
 };
 
-static struct jz_battery_info jz_main_bat = {
-	.bat_status	= POWER_SUPPLY_STATUS_DISCHARGING,
-	.pdata		= 0,
-};
+#define ps_to_jz_battery(x) container_of((x), struct jz_battery_info, bat);
 
 /*********************************************************************
  *		Power
  *********************************************************************/
 
-static int jz_get_power_prop(struct power_supply *psy,
-				enum power_supply_property psp,
-				union power_supply_propval *val)
-{
-	if (!jz_main_bat.pdata)
-		return -EINVAL;
-	int gpio = (psy->type == POWER_SUPPLY_TYPE_MAINS) ? jz_main_bat.pdata->dc_dect_gpio : jz_main_bat.pdata->usb_dect_gpio;
 
+static int jz_get_power_prop(struct jz_battery_info *bat_info,
+			     struct power_supply *psy,
+			     enum power_supply_property psp,
+			     union power_supply_propval *val)
+{
+	int gpio;
+	
+	if (bat_info == 0 || bat_info->pdata == 0)
+		return -EINVAL;
+	gpio = (psy->type == POWER_SUPPLY_TYPE_MAINS) ?
+		bat_info->pdata->dc_dect_gpio :
+		bat_info->pdata->usb_dect_gpio;
 	if (!gpio_is_valid(gpio))
 		return -EINVAL;
-
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = !gpio_get_value(gpio);
@@ -62,6 +66,23 @@ static int jz_get_power_prop(struct power_supply *psy,
 	return 0;
 }
 
+static int jz_usb_get_power_prop(struct power_supply *psy,
+				 enum power_supply_property psp,
+				 union power_supply_propval *val)
+{
+	struct jz_battery_info *bat_info = container_of(psy, struct jz_battery_info, usb);
+	return jz_get_power_prop(bat_info, psy, psp, val);
+}
+
+static int jz_ac_get_power_prop(struct power_supply *psy,
+				 enum power_supply_property psp,
+				 union power_supply_propval *val)
+{
+	struct jz_battery_info *bat_info = container_of(psy, struct jz_battery_info, ac);
+	return jz_get_power_prop(bat_info, psy, psp, val);
+}
+
+
 static enum power_supply_property jz_power_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 };
@@ -71,7 +92,7 @@ static struct power_supply jz_ac = {
 	.type = POWER_SUPPLY_TYPE_MAINS,
 	.properties = jz_power_props,
 	.num_properties = ARRAY_SIZE(jz_power_props),
-	.get_property = jz_get_power_prop,
+	.get_property = jz_ac_get_power_prop,
 };
 
 static struct power_supply jz_usb = {
@@ -79,7 +100,7 @@ static struct power_supply jz_usb = {
 	.type = POWER_SUPPLY_TYPE_USB,
 	.properties = jz_power_props,
 	.num_properties = ARRAY_SIZE(jz_power_props),
-	.get_property = jz_get_power_prop,
+	.get_property = jz_usb_get_power_prop,
 };
 
 
@@ -87,34 +108,31 @@ static struct power_supply jz_usb = {
  *		Battery properties
  *********************************************************************/
 
-static long jz_read_bat(struct power_supply *bat_ps)
+static long jz_read_bat(struct power_supply *psy)
 {
+	struct jz_battery_info *bat_info = ps_to_jz_battery(psy);
 	enum jz_adc_battery_scale scale;
-	if (!jz_main_bat.pdata)
-		return -EINVAL;
 
-	if (jz_main_bat.pdata->max_voltag > 2500000)
+	if (bat_info->pdata->max_voltag > 2500000)
 		scale = JZ_ADC_BATTERY_SCALE_7V5;
 	else
 		scale = JZ_ADC_BATTERY_SCALE_2V5;
 
-	return jz4740_adc_read_battery_voltage(bat_ps->dev->parent->parent, scale);
+	return jz4740_adc_read_battery_voltage(psy->dev->parent->parent, scale);
 }
 
-static int jz_bat_get_capacity(struct power_supply *bat_ps)
+static int jz_bat_get_capacity(struct power_supply *psy)
 {
 	int ret;
+	struct jz_battery_info *bat_info = ps_to_jz_battery(psy);
 
-	if (!jz_main_bat.pdata)
-		return -EINVAL;
-
-	ret = jz_read_bat(bat_ps);
+	ret = jz_read_bat(psy);
 
 	if (ret < 0)
 		return ret;
 
-	ret = (ret - jz_main_bat.pdata->min_voltag) * 100
-		/ (jz_main_bat.pdata->max_voltag - jz_main_bat.pdata->min_voltag);
+	ret = (ret - bat_info->pdata->min_voltag) * 100
+		/ (bat_info->pdata->max_voltag - bat_info->pdata->min_voltag);
 
 	if (ret > 100)
 		ret = 100;
@@ -124,47 +142,46 @@ static int jz_bat_get_capacity(struct power_supply *bat_ps)
 	return ret;
 }
 
-static int jz_bat_get_property(struct power_supply *bat_ps,
+static int jz_bat_get_property(struct power_supply *psy,
 				enum power_supply_property psp,
 				union power_supply_propval *val)
 {
-	if (!jz_main_bat.pdata)
-		return -EINVAL;
-
+	struct jz_battery_info *bat_info = ps_to_jz_battery(psy)
+	
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
-		val->intval = jz_main_bat.bat_status;
+		val->intval = bat_info->bat_status;
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
-		val->intval = jz_main_bat.pdata->batt_tech;
+		val->intval = bat_info->pdata->batt_tech;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
-		if(jz_read_bat(bat_ps) < jz_main_bat.pdata->min_voltag) {
-			dev_dbg(bat_ps->dev, "%s: battery is dead,"
+		if(jz_read_bat(psy) < bat_info->pdata->min_voltag) {
+			dev_dbg(psy->dev, "%s: battery is dead,"
 				"voltage too low!\n", __func__);
 			val->intval = POWER_SUPPLY_HEALTH_DEAD;
 		} else {
-			dev_dbg(bat_ps->dev, "%s: battery is good,"
+			dev_dbg(psy->dev, "%s: battery is good,"
 				"voltage normal.\n", __func__);
 			val->intval = POWER_SUPPLY_HEALTH_GOOD;
 		}
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		val->intval = jz_bat_get_capacity(bat_ps);
-		dev_dbg(bat_ps->dev, "%s: battery_capacity = %d\n",
+		val->intval = jz_bat_get_capacity(psy);
+		dev_dbg(psy->dev, "%s: battery_capacity = %d\n",
 			__func__, val->intval);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		val->intval = jz_read_bat(bat_ps);
+		val->intval = jz_read_bat(psy);
 		if (val->intval < 0)
 			return val->intval;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-		val->intval = jz_main_bat.pdata->max_voltag;
+		val->intval = bat_info->pdata->max_voltag;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-		val->intval = jz_main_bat.pdata->min_voltag;
+		val->intval = bat_info->pdata->min_voltag;
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
 		val->intval = 1;
@@ -175,10 +192,12 @@ static int jz_bat_get_property(struct power_supply *bat_ps,
 	return 0;
 }
 
-static void jz_bat_external_power_changed(struct power_supply *bat_ps)
+static void jz_bat_external_power_changed(struct power_supply *psy)
 {
-	cancel_delayed_work(&jz_main_bat.bat_work);
-	queue_delayed_work(jz_main_bat.monitor_wqueue, &jz_main_bat.bat_work, HZ / 8);
+	struct jz_battery_info *bat_info = ps_to_jz_battery(psy);
+	
+	cancel_delayed_work(&bat_info->bat_work);
+	queue_delayed_work(bat_info->monitor_wqueue, &bat_info->bat_work, HZ / 8);
 }
 
 static char *status_text[] = {
@@ -188,40 +207,42 @@ static char *status_text[] = {
 	[POWER_SUPPLY_STATUS_NOT_CHARGING] =    "Not charging",
 };
 
-static void jz_bat_update(struct power_supply *bat_ps)
+static void jz_bat_update(struct power_supply *psy)
 {
-	int old_status = jz_main_bat.bat_status;
+	struct jz_battery_info *bat_info = ps_to_jz_battery(psy);
+		
+	int old_status = bat_info->bat_status;
 	static unsigned long old_batt_vol = 0;
-	unsigned long batt_vol = jz_read_bat(bat_ps);
-	mutex_lock(&jz_main_bat.work_lock);
+	unsigned long batt_vol = jz_read_bat(psy);
+	
+	mutex_lock(&bat_info->work_lock);
 
-	if (!jz_main_bat.pdata)
-		goto err;
+	if (gpio_is_valid(bat_info->pdata->charg_stat_gpio)) {
+		if(!gpio_get_value(bat_info->pdata->charg_stat_gpio))
+			bat_info->bat_status = POWER_SUPPLY_STATUS_CHARGING;
+		else
+			bat_info->bat_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		dev_dbg(psy->dev, "%s: battery status=%s\n",
+			__func__, status_text[bat_info->bat_status]);
+		
+		if (old_status != bat_info->bat_status) {
+			dev_dbg(psy->dev, "%s %s -> %s\n",
+				psy->name,
+				status_text[old_status],
+				status_text[bat_info->bat_status]);
 
-	if (!gpio_is_valid(jz_main_bat.pdata->charg_stat_gpio))
-		goto err;
-
-	if(!gpio_get_value(jz_main_bat.pdata->charg_stat_gpio))
-		jz_main_bat.bat_status = POWER_SUPPLY_STATUS_CHARGING;
-	else
-		jz_main_bat.bat_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-
-	dev_dbg(bat_ps->dev, "%s: battery status=%s\n",
-		__func__, status_text[jz_main_bat.bat_status]);
-
-	if ((old_status != jz_main_bat.bat_status) ||
-		(old_batt_vol - batt_vol > 50000)) {
-		dev_dbg(bat_ps->dev, "%s %s -> %s\n",
-			 bat_ps->name,
-			 status_text[old_status],
-			 status_text[jz_main_bat.bat_status]);
-
-		power_supply_changed(bat_ps);
+			power_supply_changed(psy);
+		}
 	}
 
-	old_batt_vol = batt_vol;
-err:
-	mutex_unlock(&jz_main_bat.work_lock);
+	if (old_batt_vol - batt_vol > 50000) {
+		dev_dbg(psy->dev, "voltage change : %ld -> %ld\n",
+			old_batt_vol, batt_vol);
+		power_supply_changed(psy);
+		old_batt_vol = batt_vol;
+	}
+
+	mutex_unlock(&bat_info->work_lock);
 }
 
 static enum power_supply_property jz_bat_main_props[] = {
@@ -249,24 +270,31 @@ static void jz_bat_work(struct work_struct *work)
 {
 	/* query interval too small will increase system workload*/
 	const int interval = HZ * 30;
+	struct jz_battery_info *bat_info = container_of(work,struct jz_battery_info, bat_work.work);
 
-	jz_bat_update(&bat_ps);
-	queue_delayed_work(jz_main_bat.monitor_wqueue, &jz_main_bat.bat_work, interval);
+	jz_bat_update(&bat_info->bat);
+	queue_delayed_work(bat_info->monitor_wqueue,
+			   &bat_info->bat_work, interval);
 }
 
 #ifdef CONFIG_PM
-static int jz_bat_suspend(struct platform_device *dev, pm_message_t state)
+static int jz_bat_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	jz_main_bat.bat_status =  POWER_SUPPLY_STATUS_UNKNOWN;
+	struct jz_battery_info *bat_info = platform_get_drvdata(pdev);
+	
+	bat_info->bat_status =  POWER_SUPPLY_STATUS_UNKNOWN;
 
 	return 0;
 }
 
-static int jz_bat_resume(struct platform_device *dev)
+static int jz_bat_resume(struct platform_device *pdev)
 {
-	jz_main_bat.bat_status =  POWER_SUPPLY_STATUS_UNKNOWN;
-	cancel_delayed_work(&jz_main_bat.bat_work);
-	queue_delayed_work(jz_main_bat.monitor_wqueue, &jz_main_bat.bat_work, HZ/10);
+	struct jz_battery_info *bat_info = platform_get_drvdata(pdev);
+
+	bat_info->bat_status =  POWER_SUPPLY_STATUS_UNKNOWN;
+
+	cancel_delayed_work(&bat_info->bat_work);
+	queue_delayed_work(bat_info->monitor_wqueue, &bat_info->bat_work, HZ/10);
 
 	return 0;
 }
@@ -275,29 +303,38 @@ static int jz_bat_resume(struct platform_device *dev)
 #define jz_bat_resume NULL
 #endif
 
-static int __devinit jz_bat_probe(struct platform_device *pdev)
+static int jz_bat_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	struct jz_battery_info *bat_info;
+	
+	bat_info = kzalloc(sizeof(struct jz_battery_info), GFP_KERNEL);
 
-	printk("JZ battery init.\n");
-	mutex_init(&jz_main_bat.work_lock);
-	INIT_DELAYED_WORK(&jz_main_bat.bat_work, jz_bat_work);
+	if (!bat_info) {
+		return -ENOMEM;
+	}
 
 	if (!pdev->dev.platform_data) {
 		dev_err(&pdev->dev, "Please set battery info\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto err_platform_data;
 	}
+	platform_set_drvdata(pdev, bat_info);
+	bat_info->pdata = pdev->dev.platform_data;
+	bat_info->bat = bat_ps;
+	bat_info->usb = jz_usb;
+	bat_info->ac =  jz_ac;
+	mutex_init(&bat_info->work_lock);
+	INIT_DELAYED_WORK(&bat_info->bat_work, jz_bat_work);
 
-	jz_main_bat.pdata = pdev->dev.platform_data;
-
-	if (gpio_is_valid(jz_main_bat.pdata->dc_dect_gpio)) {
-		ret = gpio_request(jz_main_bat.pdata->dc_dect_gpio, "AC/DC DECT");
+	if (gpio_is_valid(bat_info->pdata->dc_dect_gpio)) {
+		ret = gpio_request(bat_info->pdata->dc_dect_gpio, "AC/DC DECT");
 		if (ret) {
 			dev_err(&pdev->dev, "ac/dc dect gpio request failed.\n");
 
 			goto err_dc_gpio_request;
 		}
-		ret = gpio_direction_input(jz_main_bat.pdata->dc_dect_gpio);
+		ret = gpio_direction_input(bat_info->pdata->dc_dect_gpio);
 		if (ret) {
 			dev_err(&pdev->dev, "ac/dc dect gpio direction failed.\n");
 
@@ -305,90 +342,98 @@ static int __devinit jz_bat_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (gpio_is_valid(jz_main_bat.pdata->usb_dect_gpio)) {
-		ret = gpio_request(jz_main_bat.pdata->usb_dect_gpio, "USB DECT");
+	if (gpio_is_valid(bat_info->pdata->usb_dect_gpio)) {
+		ret = gpio_request(bat_info->pdata->usb_dect_gpio, "USB DECT");
 		if (ret) {
 			dev_err(&pdev->dev, "usb dect gpio request failed.\n");
 
 			goto err_usb_gpio_request;
 		}
-		ret = gpio_direction_input(jz_main_bat.pdata->usb_dect_gpio);
+		ret = gpio_direction_input(bat_info->pdata->usb_dect_gpio);
 		if (ret) {
 			dev_err(&pdev->dev, "usb dect gpio set direction failed.\n");
 			goto err_usb_gpio_direction;
 		}
 
-		jz_gpio_disable_pullup(jz_main_bat.pdata->usb_dect_gpio);
+		jz_gpio_disable_pullup(bat_info->pdata->usb_dect_gpio);
 		/* TODO: Use generic gpio is better */
 	}
 
-	if (gpio_is_valid(jz_main_bat.pdata->charg_stat_gpio)) {
-		ret = gpio_request(jz_main_bat.pdata->charg_stat_gpio, "CHARG STAT");
+	if (gpio_is_valid(bat_info->pdata->charg_stat_gpio)) {
+		ret = gpio_request(bat_info->pdata->charg_stat_gpio, "CHARG STAT");
 		if (ret) {
 			dev_err(&pdev->dev, "charger state gpio request failed.\n");
 			goto err_charg_gpio_request;
 		}
-		ret = gpio_direction_input(jz_main_bat.pdata->charg_stat_gpio);
+		ret = gpio_direction_input(bat_info->pdata->charg_stat_gpio);
 		if (ret) {
 			dev_err(&pdev->dev, "charger state gpio set direction failed.\n");
 			goto err_charg_gpio_direction;
 		}
 	}
-
-	ret = power_supply_register(&pdev->dev, &jz_ac);
-	if (ret) {
-		dev_err(&pdev->dev, "power supply ac/dc register failed.\n");
-		goto err_power_register_ac;
-	}
-
-	ret = power_supply_register(&pdev->dev, &jz_usb);
-	if (ret) {
-		dev_err(&pdev->dev, "power supply usb register failed.\n");
-		goto err_power_register_usb;
-	}
-
-	ret = power_supply_register(&pdev->dev, &bat_ps);
-	if (ret) {
-		dev_err(&pdev->dev, "power supply battery register failed.\n");
-		goto err_power_register_bat;
-	}
-
-	if (!ret) {
-		jz_main_bat.monitor_wqueue = create_singlethread_workqueue("jz_battery");
-		if (!jz_main_bat.monitor_wqueue) {
-			return -ESRCH;
+	
+	if (gpio_is_valid(bat_info->pdata->dc_dect_gpio)) {
+		ret = power_supply_register(&pdev->dev, &bat_info->ac);
+		if (ret) {
+			dev_err(&pdev->dev, "power supply ac/dc register failed.\n");
+			goto err_power_register_ac;
 		}
-		queue_delayed_work(jz_main_bat.monitor_wqueue, &jz_main_bat.bat_work, HZ * 1);
 	}
 
+	if (gpio_is_valid(bat_info->pdata->usb_dect_gpio)) {
+		ret = power_supply_register(&pdev->dev, &bat_info->usb);
+		if (ret) {
+			dev_err(&pdev->dev, "power supply usb register failed.\n");
+			goto err_power_register_usb;
+		}
+	}
+
+	if (gpio_is_valid(bat_info->pdata->charg_stat_gpio)) {
+		ret = power_supply_register(&pdev->dev, &bat_info->bat);
+		if (ret) {
+			dev_err(&pdev->dev, "power supply battery register failed.\n");
+			goto err_power_register_bat;
+		} else {
+			bat_info->monitor_wqueue = create_singlethread_workqueue("jz_battery");
+			if (!bat_info->monitor_wqueue) {
+				return -ESRCH;
+			}
+			queue_delayed_work(bat_info->monitor_wqueue, &bat_info->bat_work, HZ * 1);
+		}
+	}
+	printk(KERN_INFO "jz_bat init success.\n");
 	return ret;
 
 err_power_register_bat:
-	power_supply_unregister(&jz_usb);
+	power_supply_unregister(&bat_info->usb);
 err_power_register_usb:
-	power_supply_unregister(&jz_ac);
+	power_supply_unregister(&bat_info->ac);
 err_power_register_ac:
 err_charg_gpio_direction:
-	gpio_free(jz_main_bat.pdata->charg_stat_gpio);
+	gpio_free(bat_info->pdata->charg_stat_gpio);
 err_charg_gpio_request:
 err_usb_gpio_direction:
-	gpio_free(jz_main_bat.pdata->usb_dect_gpio);
+	gpio_free(bat_info->pdata->usb_dect_gpio);
 err_usb_gpio_request:
 err_dc_gpio_direction:
-	gpio_free(jz_main_bat.pdata->dc_dect_gpio);
+	gpio_free(bat_info->pdata->dc_dect_gpio);
 err_dc_gpio_request:
+err_platform_data:
+	kfree(bat_info);
 	return ret;
 }
 
-static int __devexit jz_bat_remove(struct platform_device *dev)
+static int jz_bat_remove(struct platform_device *pdev)
 {
-	if (jz_main_bat.pdata) {
-		if (gpio_is_valid(jz_main_bat.pdata->dc_dect_gpio))
-			gpio_free(jz_main_bat.pdata->dc_dect_gpio);
-		if (gpio_is_valid(jz_main_bat.pdata->usb_dect_gpio))
-			gpio_free(jz_main_bat.pdata->usb_dect_gpio);
-		if (gpio_is_valid(jz_main_bat.pdata->charg_stat_gpio))
-			gpio_free(jz_main_bat.pdata->charg_stat_gpio);
+	struct jz_battery_info *bat_info = platform_get_drvdata(pdev);
+		
+	if (bat_info->pdata) {
+		if (gpio_is_valid(bat_info->pdata->dc_dect_gpio))
+			gpio_free(bat_info->pdata->dc_dect_gpio);
+		if (gpio_is_valid(bat_info->pdata->usb_dect_gpio))
+			gpio_free(bat_info->pdata->usb_dect_gpio);
+		if (gpio_is_valid(bat_info->pdata->charg_stat_gpio))
+			gpio_free(bat_info->pdata->charg_stat_gpio);
 	}
 
 	power_supply_unregister(&bat_ps);
