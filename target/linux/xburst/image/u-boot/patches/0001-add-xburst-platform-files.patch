@@ -1,12 +1,11 @@
-From 5c38420f8091019aac00b5c0c2846f0c35b297c4 Mon Sep 17 00:00:00 2001
+From 2c59aede240ece0040be14ad0da99e0abf56d983 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Mon, 12 Oct 2009 11:22:48 +0800
-Subject: [PATCH] add xburst platform files
+Date: Wed, 21 Oct 2009 10:58:21 +0800
+Subject: [PATCH] add new file
 
 ---
  board/qi_lb60/Makefile            |   38 +
- board/qi_lb60/config.mk           |   33 +
- board/qi_lb60/config.tmp          |    1 +
+ board/qi_lb60/config.mk           |   31 +
  board/qi_lb60/flash.c             |   50 +
  board/qi_lb60/qi_lb60.c           |  103 +
  board/qi_lb60/u-boot-nand.lds     |   63 +
@@ -25,17 +24,18 @@ Subject: [PATCH] add xburst platform files
  cpu/mips/jz_mmc.h                 |  113 +
  cpu/mips/jz_serial.c              |  167 ++
  cpu/mips/mmc_protocol.h           |  273 +++
+ cpu/mips/qi_lb60_gpm940b0.c       |  420 ++++
+ cpu/mips/qi_lb60_gpm940b0.h       |  211 ++
  cpu/mips/usb_boot.S               |  821 +++++++
  include/asm-mips/jz4740.h         | 4880 +++++++++++++++++++++++++++++++++++++
- include/configs/qi_lb60.h         |  210 ++
+ include/configs/qi_lb60.h         |  213 ++
  nand_spl/board/qi_lb60/Makefile   |  104 +
  nand_spl/board/qi_lb60/config.mk  |   34 +
  nand_spl/board/qi_lb60/u-boot.lds |   63 +
  nand_spl/nand_boot_jz4740.c       |  456 ++++
- 28 files changed, 12941 insertions(+), 0 deletions(-)
+ 29 files changed, 13572 insertions(+), 0 deletions(-)
  create mode 100644 board/qi_lb60/Makefile
  create mode 100644 board/qi_lb60/config.mk
- create mode 100644 board/qi_lb60/config.tmp
  create mode 100644 board/qi_lb60/flash.c
  create mode 100644 board/qi_lb60/qi_lb60.c
  create mode 100644 board/qi_lb60/u-boot-nand.lds
@@ -54,6 +54,8 @@ Subject: [PATCH] add xburst platform files
  create mode 100644 cpu/mips/jz_mmc.h
  create mode 100644 cpu/mips/jz_serial.c
  create mode 100644 cpu/mips/mmc_protocol.h
+ create mode 100644 cpu/mips/qi_lb60_gpm940b0.c
+ create mode 100644 cpu/mips/qi_lb60_gpm940b0.h
  create mode 100644 cpu/mips/usb_boot.S
  create mode 100644 include/asm-mips/jz4740.h
  create mode 100644 include/configs/qi_lb60.h
@@ -108,13 +110,13 @@ index 0000000..470447d
 +#########################################################################
 diff --git a/board/qi_lb60/config.mk b/board/qi_lb60/config.mk
 new file mode 100644
-index 0000000..56b77d3
+index 0000000..858e6a2
 --- /dev/null
 +++ b/board/qi_lb60/config.mk
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,31 @@
 +#
-+# (C) Copyright 2006
-+# Ingenic Semiconductor, <jlwei@ingenic.cn>
++# (C) Copyright 2006 Qi Hardware, Inc.
++# Author: Xiangfu Liu <xiangfu.z@gmail.com>
 +#
 +# This program is free software; you can redistribute it and/or
 +# modify it under the terms of the GNU General Public License as
@@ -133,25 +135,16 @@ index 0000000..56b77d3
 +#
 +
 +#
-+# Ingenic's PI board, MIPS32 core
++# Qi Hardware, Inc. Ben NanoNote (QI_LB60)
 +#
-+
-+sinclude $(OBJTREE)/board/$(BOARDDIR)/config.tmp
 +
 +ifndef TEXT_BASE
 +# ROM version
-+TEXT_BASE = 0x88000000
++# TEXT_BASE = 0x88000000
 +
 +# RAM version
-+#TEXT_BASE = 0x80100000
-+endif
-diff --git a/board/qi_lb60/config.tmp b/board/qi_lb60/config.tmp
-new file mode 100644
-index 0000000..3ea6c8c
---- /dev/null
-+++ b/board/qi_lb60/config.tmp
-@@ -0,0 +1 @@
 +TEXT_BASE = 0x80100000
++endif
 diff --git a/board/qi_lb60/flash.c b/board/qi_lb60/flash.c
 new file mode 100644
 index 0000000..891c604
@@ -6561,6 +6554,649 @@ index 0000000..9028cdf
 +#endif /* MMC_DEBUG_EN */
 +
 +#endif  /* __MMC_PROTOCOL__ */
+diff --git a/cpu/mips/qi_lb60_gpm940b0.c b/cpu/mips/qi_lb60_gpm940b0.c
+new file mode 100644
+index 0000000..79af40e
+--- /dev/null
++++ b/cpu/mips/qi_lb60_gpm940b0.c
+@@ -0,0 +1,420 @@
++/*
++ * JzRISC lcd controller
++ *
++ * xiangfu liu <xiangfu.z@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <config.h>
++#include <common.h>
++#include <lcd.h>
++
++#include <asm/io.h>               /* virt_to_phys() */
++
++#include <asm/jz4740.h>
++#include "qi_lb60_gpm940b0.h"
++
++#define align2(n) (n)=((((n)+1)>>1)<<1)
++#define align4(n) (n)=((((n)+3)>>2)<<2)
++#define align8(n) (n)=((((n)+7)>>3)<<3)
++
++struct jzfb_info {
++	unsigned int cfg;	/* panel mode and pin usage etc. */
++	unsigned int w;
++	unsigned int h;
++	unsigned int bpp;	/* bit per pixel */
++	unsigned int fclk;	/* frame clk */
++	unsigned int hsw;	/* hsync width, in pclk */
++	unsigned int vsw;	/* vsync width, in line count */
++	unsigned int elw;	/* end of line, in pclk */
++	unsigned int blw;	/* begin of line, in pclk */
++	unsigned int efw;	/* end of frame, in line count */
++	unsigned int bfw;	/* begin of frame, in line count */
++};
++
++static struct jzfb_info jzfb = {
++	MODE_8BIT_SERIAL_TFT | PCLK_N | HSYNC_N | VSYNC_N,
++	320, 240, 32, 70, 1, 1, 273, 140, 1, 20
++};
++
++vidinfo_t panel_info = {
++	320, 240, LCD_BPP,
++};
++
++int lcd_line_length;
++
++int lcd_color_fg;
++int lcd_color_bg;
++/*
++ * Frame buffer memory information
++ */
++void *lcd_base;			/* Start of framebuffer memory	*/
++void *lcd_console_address;	/* Start of console buffer	*/
++
++short console_col;
++short console_row;
++
++void lcd_ctrl_init (void *lcdbase);
++void lcd_enable (void);
++void lcd_disable (void);
++
++static int  jz_lcd_init_mem(void *lcdbase, vidinfo_t *vid);
++static void jz_lcd_desc_init(vidinfo_t *vid);
++static int  jz_lcd_hw_init( vidinfo_t *vid );
++extern int flush_cache_all(void);
++
++void lcd_ctrl_init (void *lcdbase)
++{
++	__lcd_display_pin_init();
++
++	jz_lcd_init_mem(lcdbase, &panel_info);
++	jz_lcd_desc_init(&panel_info);
++	jz_lcd_hw_init(&panel_info);
++
++	__lcd_display_on() ;
++}
++
++/*
++ * Before enabled lcd controller, lcd registers should be configured correctly.
++ */
++
++void lcd_enable (void)
++{
++	REG_LCD_CTRL &= ~(1<<4); /* LCDCTRL.DIS */
++	REG_LCD_CTRL |= 1<<3;    /* LCDCTRL.ENA*/
++}
++
++void lcd_disable (void)
++{
++	REG_LCD_CTRL |= (1<<4); /* LCDCTRL.DIS, regular disable */
++	/* REG_LCD_CTRL |= (1<<3); */  /* LCDCTRL.DIS, quikly disable */
++}
++
++static int jz_lcd_init_mem(void *lcdbase, vidinfo_t *vid)
++{
++	u_long palette_mem_size;
++	struct jz_fb_info *fbi = &vid->jz_fb;
++	int fb_size = vid->vl_row * (vid->vl_col * NBITS (vid->vl_bpix)) / 8;
++
++	fbi->screen = (u_long)lcdbase;
++	fbi->palette_size = 256;
++	palette_mem_size = fbi->palette_size * sizeof(u16);
++
++	debug("jz_lcd.c palette_mem_size = 0x%08lx\n", (u_long) palette_mem_size);
++	/* locate palette and descs at end of page following fb */
++	fbi->palette = (u_long)lcdbase + fb_size + PAGE_SIZE - palette_mem_size;
++
++	return 0;
++}
++
++static void jz_lcd_desc_init(vidinfo_t *vid)
++{
++	struct jz_fb_info * fbi;
++	fbi = &vid->jz_fb;
++	fbi->dmadesc_fblow = (struct jz_fb_dma_descriptor *)((unsigned int)fbi->palette - 3*16);
++	fbi->dmadesc_fbhigh = (struct jz_fb_dma_descriptor *)((unsigned int)fbi->palette - 2*16);
++	fbi->dmadesc_palette = (struct jz_fb_dma_descriptor *)((unsigned int)fbi->palette - 1*16);
++
++	#define BYTES_PER_PANEL	 (vid->vl_col * vid->vl_row * NBITS(vid->vl_bpix) / 8)
++
++	/* populate descriptors */
++	fbi->dmadesc_fblow->fdadr = virt_to_phys(fbi->dmadesc_fblow);
++	fbi->dmadesc_fblow->fsadr = virt_to_phys((void *)(fbi->screen + BYTES_PER_PANEL));
++	fbi->dmadesc_fblow->fidr  = 0;
++	fbi->dmadesc_fblow->ldcmd = BYTES_PER_PANEL / 4 ;
++
++	fbi->fdadr1 = virt_to_phys(fbi->dmadesc_fblow); /* only used in dual-panel mode */
++
++	fbi->dmadesc_fbhigh->fsadr = virt_to_phys((void *)fbi->screen); 
++	fbi->dmadesc_fbhigh->fidr = 0;
++	fbi->dmadesc_fbhigh->ldcmd =  BYTES_PER_PANEL / 4; /* length in word */
++
++	fbi->dmadesc_palette->fsadr = virt_to_phys((void *)fbi->palette);
++	fbi->dmadesc_palette->fidr  = 0;
++	fbi->dmadesc_palette->ldcmd = (fbi->palette_size * 2)/4 | (1<<28);
++
++	if(NBITS(vid->vl_bpix) < 12)
++	{
++		/* assume any mode with <12 bpp is palette driven */
++		fbi->dmadesc_palette->fdadr = virt_to_phys(fbi->dmadesc_fbhigh);
++		fbi->dmadesc_fbhigh->fdadr = virt_to_phys(fbi->dmadesc_palette);
++		/* flips back and forth between pal and fbhigh */
++		fbi->fdadr0 = virt_to_phys(fbi->dmadesc_palette);
++	} else {
++		/* palette shouldn't be loaded in true-color mode */
++		fbi->dmadesc_fbhigh->fdadr = virt_to_phys((void *)fbi->dmadesc_fbhigh);
++		fbi->fdadr0 = virt_to_phys(fbi->dmadesc_fbhigh); /* no pal just fbhigh */
++	}
++
++	flush_cache_all();
++}
++
++static int  jz_lcd_hw_init(vidinfo_t *vid)
++{
++	struct jz_fb_info *fbi = &vid->jz_fb;
++	unsigned int val = 0;
++	unsigned int pclk;
++	unsigned int stnH;
++	int pll_div;
++
++	/* Setting Control register */
++	switch (jzfb.bpp) {
++	case 1:
++		val |= LCD_CTRL_BPP_1;
++		break;
++	case 2:
++		val |= LCD_CTRL_BPP_2;
++		break;
++	case 4:
++		val |= LCD_CTRL_BPP_4;
++		break;
++	case 8:
++		val |= LCD_CTRL_BPP_8;
++		break;
++	case 15:
++		val |= LCD_CTRL_RGB555;
++	case 16:
++		val |= LCD_CTRL_BPP_16;
++		break;
++	case 17 ... 32:
++		val |= LCD_CTRL_BPP_18_24;	/* target is 4bytes/pixel */
++		break;
++
++	default:
++		printf("jz_lcd.c The BPP %d is not supported\n", jzfb.bpp);
++		val |= LCD_CTRL_BPP_16;
++		break;
++	}
++
++	switch (jzfb.cfg & MODE_MASK) {
++	case MODE_STN_MONO_DUAL:
++	case MODE_STN_COLOR_DUAL:
++	case MODE_STN_MONO_SINGLE:
++	case MODE_STN_COLOR_SINGLE:
++		switch (jzfb.bpp) {
++		case 1:
++			/* val |= LCD_CTRL_PEDN; */
++		case 2:
++			val |= LCD_CTRL_FRC_2;
++			break;
++		case 4:
++			val |= LCD_CTRL_FRC_4;
++			break;
++		case 8:
++		default:
++			val |= LCD_CTRL_FRC_16;
++			break;
++		}
++		break;
++	}
++
++	val |= LCD_CTRL_BST_16;		/* Burst Length is 16WORD=64Byte */
++	val |= LCD_CTRL_OFUP;		/* OutFIFO underrun protect */
++
++	switch (jzfb.cfg & MODE_MASK) {
++	case MODE_STN_MONO_DUAL:
++	case MODE_STN_COLOR_DUAL:
++	case MODE_STN_MONO_SINGLE:
++	case MODE_STN_COLOR_SINGLE:
++		switch (jzfb.cfg & STN_DAT_PINMASK) {
++		case STN_DAT_PIN1:
++			/* Do not adjust the hori-param value. */
++			break;
++		case STN_DAT_PIN2:
++			align2(jzfb.hsw);
++			align2(jzfb.elw);
++			align2(jzfb.blw);
++			break;
++		case STN_DAT_PIN4:
++			align4(jzfb.hsw);
++			align4(jzfb.elw);
++			align4(jzfb.blw);
++			break;
++		case STN_DAT_PIN8:
++			align8(jzfb.hsw);
++			align8(jzfb.elw);
++			align8(jzfb.blw);
++			break;
++		}
++		break;
++	}
++
++	REG_LCD_CTRL = val;
++
++	switch (jzfb.cfg & MODE_MASK) {
++	case MODE_STN_MONO_DUAL:
++	case MODE_STN_COLOR_DUAL:
++	case MODE_STN_MONO_SINGLE:
++	case MODE_STN_COLOR_SINGLE:
++		if (((jzfb.cfg & MODE_MASK) == MODE_STN_MONO_DUAL) ||
++		    ((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_DUAL))
++			stnH = jzfb.h >> 1;
++		else
++			stnH = jzfb.h;
++
++		REG_LCD_VSYNC = (0 << 16) | jzfb.vsw;
++		REG_LCD_HSYNC = ((jzfb.blw+jzfb.w) << 16) | (jzfb.blw+jzfb.w+jzfb.hsw);
++
++		/* Screen setting */
++		REG_LCD_VAT = ((jzfb.blw + jzfb.w + jzfb.hsw + jzfb.elw) << 16) | (stnH + jzfb.vsw + jzfb.bfw + jzfb.efw);
++		REG_LCD_DAH = (jzfb.blw << 16) | (jzfb.blw + jzfb.w);
++		REG_LCD_DAV = (0 << 16) | (stnH);
++
++		/* AC BIAs signal */
++		REG_LCD_PS = (0 << 16) | (stnH+jzfb.vsw+jzfb.efw+jzfb.bfw);
++
++		break;
++
++	case MODE_TFT_GEN:
++	case MODE_TFT_SHARP:
++	case MODE_TFT_CASIO:
++	case MODE_TFT_SAMSUNG:
++	case MODE_8BIT_SERIAL_TFT:
++	case MODE_TFT_18BIT:
++		REG_LCD_VSYNC = (0 << 16) | jzfb.vsw;
++		REG_LCD_HSYNC = (0 << 16) | jzfb.hsw;
++		REG_LCD_DAV =((jzfb.vsw+jzfb.bfw) << 16) | (jzfb.vsw +jzfb.bfw+jzfb.h);
++		REG_LCD_DAH = ((jzfb.hsw + jzfb.blw) << 16) | (jzfb.hsw + jzfb.blw + jzfb.w );
++		REG_LCD_VAT = (((jzfb.blw + jzfb.w + jzfb.elw + jzfb.hsw)) << 16) \
++			| (jzfb.vsw + jzfb.bfw + jzfb.h + jzfb.efw);
++		break;
++	}
++
++	switch (jzfb.cfg & MODE_MASK) {
++	case MODE_TFT_SAMSUNG:
++	{
++		unsigned int total, tp_s, tp_e, ckv_s, ckv_e;
++		unsigned int rev_s, rev_e, inv_s, inv_e;
++
++		pclk = val * (jzfb.w + jzfb.hsw + jzfb.elw + jzfb.blw) *
++			(jzfb.h + jzfb.vsw + jzfb.efw + jzfb.bfw); /* Pixclk */
++
++		total = jzfb.blw + jzfb.w + jzfb.elw + jzfb.hsw;
++		tp_s = jzfb.blw + jzfb.w + 1;
++		tp_e = tp_s + 1;
++		/* ckv_s = tp_s - jz_clocks.pixclk/(1000000000/4100); */
++		ckv_s = tp_s - pclk/(1000000000/4100);
++		ckv_e = tp_s + total;
++		rev_s = tp_s - 11;	/* -11.5 clk */
++		rev_e = rev_s + total;
++		inv_s = tp_s;
++		inv_e = inv_s + total;
++		REG_LCD_CLS = (tp_s << 16) | tp_e;
++		REG_LCD_PS = (ckv_s << 16) | ckv_e;
++		REG_LCD_SPL = (rev_s << 16) | rev_e;
++		REG_LCD_REV = (inv_s << 16) | inv_e;
++		jzfb.cfg |= STFT_REVHI | STFT_SPLHI;
++		break;
++	}
++	case MODE_TFT_SHARP:
++	{
++		unsigned int total, cls_s, cls_e, ps_s, ps_e;
++		unsigned int spl_s, spl_e, rev_s, rev_e;
++		total = jzfb.blw + jzfb.w + jzfb.elw + jzfb.hsw;
++		spl_s = 1;
++		spl_e = spl_s + 1;
++		cls_s = 0;
++		cls_e = total - 60;	/* > 4us (pclk = 80ns) */
++		ps_s = cls_s;
++		ps_e = cls_e;
++		rev_s = total - 40;	/* > 3us (pclk = 80ns) */
++		rev_e = rev_s + total;
++		jzfb.cfg |= STFT_PSHI; 
++		REG_LCD_SPL = (spl_s << 16) | spl_e;
++		REG_LCD_CLS = (cls_s << 16) | cls_e;
++		REG_LCD_PS = (ps_s << 16) | ps_e;
++		REG_LCD_REV = (rev_s << 16) | rev_e;
++		break;
++	}
++	case MODE_TFT_CASIO:
++		break;
++	}
++
++	/* Configure the LCD panel */
++	REG_LCD_CFG = jzfb.cfg;
++
++	/* Timing setting */
++	__cpm_stop_lcd();
++
++	val = jzfb.fclk; /* frame clk */
++	if ( (jzfb.cfg & MODE_MASK) != MODE_8BIT_SERIAL_TFT) {
++		pclk = val * (jzfb.w + jzfb.hsw + jzfb.elw + jzfb.blw) *
++			(jzfb.h + jzfb.vsw + jzfb.efw + jzfb.bfw); /* Pixclk */
++	} else {
++		/* serial mode: Hsync period = 3*Width_Pixel */
++		pclk = val * (jzfb.w*3 + jzfb.hsw + jzfb.elw + jzfb.blw) *
++			(jzfb.h + jzfb.vsw + jzfb.efw + jzfb.bfw); /* Pixclk */
++	}
++
++	if (((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_SINGLE) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_DUAL))
++		pclk = (pclk * 3);
++
++	if (((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_SINGLE) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_DUAL) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_MONO_SINGLE) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_MONO_DUAL))
++		pclk = pclk >> ((jzfb.cfg & STN_DAT_PINMASK) >> 4);
++
++	if (((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_DUAL) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_MONO_DUAL))
++		pclk >>= 1;
++
++	pll_div = ( REG_CPM_CPCCR & CPM_CPCCR_PCS ); /* clock source,0:pllout/2 1: pllout */
++	pll_div = pll_div ? 1 : 2 ;
++	val = ( __cpm_get_pllout()/pll_div ) / pclk;
++	val--;
++	if ( val > 0x1ff ) {
++		printf("CPM_LPCDR too large, set it to 0x1ff\n");
++		val = 0x1ff;
++	}
++	__cpm_set_pixdiv(val);
++
++	val = pclk * 3 ;	/* LCDClock > 2.5*Pixclock */
++	if ( val > 150000000 ) {
++		printf("Warning: LCDClock=%d\n, LCDClock must less or equal to 150MHz.\n", val);
++		printf("Change LCDClock to 150MHz\n");
++		val = 150000000;
++	}
++	val = ( __cpm_get_pllout()/pll_div ) / val;
++	val--;
++	if ( val > 0x1f ) {
++		printf("CPM_CPCCR.LDIV too large, set it to 0x1f\n");
++		val = 0x1f;
++	}
++	__cpm_set_ldiv( val );
++	REG_CPM_CPCCR |= CPM_CPCCR_CE ; /* update divide */
++
++	__cpm_start_lcd();
++	udelay(1000);
++
++	REG_LCD_DA0 = fbi->fdadr0; /* frame descripter*/
++
++	if (((jzfb.cfg & MODE_MASK) == MODE_STN_COLOR_DUAL) ||
++	    ((jzfb.cfg & MODE_MASK) == MODE_STN_MONO_DUAL))
++		REG_LCD_DA1 = fbi->fdadr1; /* frame descripter*/
++
++	return 0;
++}
++
++void lcd_setcolreg (ushort regno, ushort red, ushort green, ushort blue)
++{
++}
++
++void lcd_initcolregs (void)
++{
++}
+diff --git a/cpu/mips/qi_lb60_gpm940b0.h b/cpu/mips/qi_lb60_gpm940b0.h
+new file mode 100644
+index 0000000..385e016
+--- /dev/null
++++ b/cpu/mips/qi_lb60_gpm940b0.h
+@@ -0,0 +1,211 @@
++/*
++ * JzRISC lcd controller
++ *
++ * xiangfu liu <xiangfu.z@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __QI_LB60_GPM940B0_H__
++#define __QI_LB60_GPM940B0_H__
++
++#include <asm/io.h>
++
++#define mdelay(n)	udelay((n)*1000)
++
++#define NR_PALETTE	256
++
++struct lcd_desc{
++	unsigned int next_desc; /* LCDDAx */
++	unsigned int databuf;   /* LCDSAx */
++	unsigned int frame_id;  /* LCDFIDx */ 
++	unsigned int cmd;       /* LCDCMDx */
++};
++
++#define MODE_MASK		0x0f
++#define MODE_TFT_GEN		0x00
++#define MODE_TFT_SHARP		0x01
++#define MODE_TFT_CASIO		0x02
++#define MODE_TFT_SAMSUNG	0x03
++#define MODE_CCIR656_NONINT	0x04
++#define MODE_CCIR656_INT	0x05
++#define MODE_STN_COLOR_SINGLE	0x08
++#define MODE_STN_MONO_SINGLE	0x09
++#define MODE_STN_COLOR_DUAL	0x0a
++#define MODE_STN_MONO_DUAL	0x0b
++#define MODE_8BIT_SERIAL_TFT    0x0c
++
++#define MODE_TFT_18BIT          (1<<7)
++
++#define STN_DAT_PIN1	(0x00 << 4)
++#define STN_DAT_PIN2	(0x01 << 4)
++#define STN_DAT_PIN4	(0x02 << 4)
++#define STN_DAT_PIN8	(0x03 << 4)
++#define STN_DAT_PINMASK	STN_DAT_PIN8
++
++#define STFT_PSHI	(1 << 15)
++#define STFT_CLSHI	(1 << 14)
++#define STFT_SPLHI	(1 << 13)
++#define STFT_REVHI	(1 << 12)
++
++#define SYNC_MASTER	(0 << 16)
++#define SYNC_SLAVE	(1 << 16)
++
++#define DE_P		(0 << 9)
++#define DE_N		(1 << 9)
++
++#define PCLK_P		(0 << 10)
++#define PCLK_N		(1 << 10)
++
++#define HSYNC_P		(0 << 11)
++#define HSYNC_N		(1 << 11)
++
++#define VSYNC_P		(0 << 8)
++#define VSYNC_N		(1 << 8)
++
++#define DATA_NORMAL	(0 << 17)
++#define DATA_INVERSE	(1 << 17)
++
++
++/* Jz LCDFB supported I/O controls. */
++#define FBIOSETBACKLIGHT	0x4688
++#define FBIODISPON		0x4689
++#define FBIODISPOFF		0x468a
++#define FBIORESET		0x468b
++#define FBIOPRINT_REG		0x468c
++
++/*
++ * LCD panel specific definition
++ */
++#define MODE	0xc9		/* 8bit serial RGB */
++#define SPEN	(32*2+21)       /*LCD_SPL */
++#define SPCK	(32*2+23)       /*LCD_CLS */
++#define SPDA	(32*2+22)       /*LCD_D12 */
++#define LCD_RET (32*3+27) 
++
++#define __spi_write_reg1(reg, val) \
++do { \
++	unsigned char no;\
++	unsigned short value;\
++	unsigned char a=0;\
++	unsigned char b=0;\
++	a=reg;\
++	b=val;\
++	__gpio_set_pin(SPEN);\
++	__gpio_set_pin(SPCK);\
++	__gpio_clear_pin(SPDA);\
++	__gpio_clear_pin(SPEN);\
++	udelay(25);\
++	value=((a<<8)|(b&0xFF));\
++	for(no=0;no<16;no++)\
++	{\
++		__gpio_clear_pin(SPCK);\
++		if((value&0x8000)==0x8000)\
++		__gpio_set_pin(SPDA);\
++		else\
++		__gpio_clear_pin(SPDA);\
++		udelay(25);\
++		__gpio_set_pin(SPCK);\
++		value=(value<<1); \
++		udelay(25);\
++	 }\
++	__gpio_set_pin(SPEN);\
++	udelay(100);\
++} while (0)
++
++#define __spi_write_reg(reg, val) \
++do {\
++	__spi_write_reg1((reg<<2|2), val);\
++	udelay(100); \
++}while(0)
++	
++#define __lcd_special_pin_init() \
++do { \
++	__gpio_as_output(SPEN); /* use SPDA */\
++	__gpio_as_output(SPCK); /* use SPCK */\
++	__gpio_as_output(SPDA); /* use SPDA */\
++	__gpio_as_output(LCD_RET);\
++} while (0)
++
++#define __lcd_special_on() \
++do { \
++	udelay(50);\
++	__spi_write_reg1(0x05, 0x16); \
++	__spi_write_reg1(0x04, 0x0b); \
++	__spi_write_reg1(0x07, 0x8d); \
++	__spi_write_reg1(0x01, 0x95); \
++	__spi_write_reg1(0x08, 0xc0); \
++	__spi_write_reg1(0x03, 0x40); \
++	__spi_write_reg1(0x06, 0x15); \
++	__spi_write_reg1(0x05, 0xd7); \
++} while (0)
++
++#define __lcd_special_off() \
++do {					\
++	__spi_write_reg1(0x05, 0x5e);	\
++} while (0)
++
++#define __lcd_display_pin_init() \
++do { \
++	__lcd_special_pin_init();\
++	__gpio_as_pwm();\
++	__lcd_set_backlight_level(8);\
++} while (0)
++
++#define __lcd_display_on() \
++do { \
++	__lcd_set_backlight_level(8); \
++	__lcd_special_on();\
++} while (0)
++
++#define __lcd_display_off() \
++do { \
++	__lcd_set_backlight_level(0); \
++	__lcd_special_off();\
++} while (0)
++
++#define __lcd_set_backlight_level(n)\
++do { \
++	__gpio_as_output(LCD_RET); \
++	__gpio_set_pin(LCD_RET); \
++} while (0)
++
++#define __lcd_close_backlight() \
++do { \
++	__gpio_as_output(GPIO_PWM); \
++	__gpio_clear_pin(GPIO_PWM); \
++} while (0)
++
++#define __lcd_display_pin_init() \
++do { \
++	__gpio_as_output(GPIO_DISP_OFF_N); \
++	__cpm_start_tcu(); \
++	__lcd_special_pin_init(); \
++} while (0)
++
++#define __lcd_display_on() \
++do { \
++	__gpio_set_pin(GPIO_DISP_OFF_N); \
++	__lcd_special_on(); \
++} while (0)
++
++#define __lcd_display_off() \
++do { \
++	__lcd_special_off(); \
++	__gpio_clear_pin(GPIO_DISP_OFF_N); \
++} while (0)
++
++#endif /* __QI_LB60_GPM940B0_H__ */
 diff --git a/cpu/mips/usb_boot.S b/cpu/mips/usb_boot.S
 new file mode 100644
 index 0000000..6c3788f
@@ -12276,10 +12912,10 @@ index 0000000..2840bc0
 +#endif /* __JZ4740_H__ */
 diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
 new file mode 100644
-index 0000000..28b10aa
+index 0000000..e78d17f
 --- /dev/null
 +++ b/include/configs/qi_lb60.h
-@@ -0,0 +1,210 @@
+@@ -0,0 +1,213 @@
 +/*
 + * Authors: Xiangfu Liu <xiangfu.z@gmail.com>
 + *
@@ -12295,20 +12931,16 @@ index 0000000..28b10aa
 +#ifndef __CONFIG_H
 +#define __CONFIG_H
 +
++#define DEBUG
 +#define CONFIG_MIPS32		1  /* MIPS32 CPU core */
 +#define CONFIG_JzRISC		1  /* JzRISC core */
 +#define CONFIG_JZSOC		1  /* Jz SoC */
 +#define CONFIG_JZ4740		1  /* Jz4740 SoC */
 +#define CONFIG_QI_LB60		1  /* Qi_LB60 board */
 +
-+#define CONFIG_DOS_PARTITION	1
-+
 +#define CONFIG_LCD		1  /* LCD support */
-+#define LCD_BPP			LCD_COLOR32/*5:18,24,32 bits per pixel */
-+#define CONFIG_JZLCD_FOXCONN_PT035TN01
-+
-+/* NAND Boot config code */
-+#define JZ4740_NANDBOOT_CFG	JZ4740_NANDBOOT_B8R3 
++#define LCD_BPP			LCD_COLOR32	/*5:18,24,32 bits per pixel */
++#define CONFIG_SYS_WHITE_ON_BLACK	1
 +
 +#define CONFIG_CPU_SPEED	336000000	/* CPU clock: 336 MHz */
 +#define CONFIG_EXTAL		12000000	/* EXTAL freq: 12 MHz */
@@ -12321,9 +12953,11 @@ index 0000000..28b10aa
 +
 +#define CONFIG_MMC      	1
 +#define CONFIG_FAT      	1  
++#define CONFIG_DOS_PARTITION	1
 +#define CONFIG_SKIP_LOWLEVEL_INIT	1
 +#define CONFIG_BOARD_EARLY_INIT_F	1
 +#define CONFIG_SYS_NO_FLASH	1
++#define CONFIG_ENV_OVERWRITE	1
 +
 +#define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
 +#define CONFIG_BOOTDELAY	0
@@ -12331,18 +12965,25 @@ index 0000000..28b10aa
 +#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 rootfstype=jffs2 root=/dev/mtdblock2 rw rootwait"
 +#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x300000;bootm"
 +
-+#define CONFIG_DRIVER_CS8900   1
-+#define CS8900_BASE            (0xa8000000)
-+#define CS8900_BUS16
-+#define CONFIG_ETHADDR         00:2a:cc:2a:af:fe    /* Ethernet address */
-+
-+/* allow to overwrite serial and ethaddr */
-+#define CONFIG_ENV_OVERWRITE
-+
 +/*
 + * Command line configuration.
 + */
-+#include <config_cmd_default.h>
++#define CONFIG_CMD_BDI		/* bdinfo			*/
++#define CONFIG_CMD_BOOTD	/* bootd			*/
++#define CONFIG_CMD_CONSOLE	/* coninfo			*/
++#define CONFIG_CMD_ECHO		/* echo arguments		*/
++#define CONFIG_CMD_IMI		/* iminfo			*/
++#define CONFIG_CMD_ITEST	/* Integer (and string) test	*/
++
++#define CONFIG_CMD_LOADB	/* loadb			*/
++#define CONFIG_CMD_LOADS	/* loads			*/
++#define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop mtest */
++#define CONFIG_CMD_MISC		/* Misc functions like sleep etc*/
++#define CONFIG_CMD_RUN		/* run command in env variable	*/
++#define CONFIG_CMD_SAVEENV	/* saveenv			*/
++#define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
++#define CONFIG_CMD_SOURCE	/* "source" command support	*/
++#define CONFIG_CMD_XIMG		/* Load part of Multi Image	*/
 +
 +#define CONFIG_CMD_NAND
 +#define CONFIG_CMD_MMC
@@ -12362,21 +13003,16 @@ index 0000000..28b10aa
 +#define	CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 +#define	CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 +/* Print Buffer Size */
-+#define	CONFIG_SYS_MAXARGS	16	/* max number of command args*/
++#define	CONFIG_SYS_MAXARGS		16	/* max number of command args*/
 +
 +#define CONFIG_SYS_MALLOC_LEN		896 * 1024
 +#define CONFIG_SYS_BOOTPARAMS_LEN	128 * 1024
 +
 +#define CONFIG_SYS_SDRAM_BASE		0x80000000     /* Cached addr */
-+
 +#define CONFIG_SYS_INIT_SP_OFFSET	0x400000
-+
 +#define CONFIG_SYS_LOAD_ADDR		0x80600000     /* default load address */
-+
 +#define CONFIG_SYS_MEMTEST_START	0x80100000
-+#define CONFIG_SYS_MEMTEST_END	0x80800000
-+
-+#define CONFIG_RX_ETH_BUFFER	16	/* use 16 rx buffers on jz47xx eth */
++#define CONFIG_SYS_MEMTEST_END		0x80800000
 +
 +/*
 + * Environment
@@ -12386,6 +13022,9 @@ index 0000000..28b10aa
 +/*
 + * NAND FLASH configuration
 + */
++/* NAND Boot config code */
++#define JZ4740_NANDBOOT_CFG	JZ4740_NANDBOOT_B8R3 
++
 +#define QI_LB60_NAND_SIZE	2 /* if board nand flash is 1GB, set to 1
 +				   * if board nand flash is 2GB, set to 2
 +				   * for change the PAGE_SIZE and BLOCK_SIZE
@@ -12420,7 +13059,7 @@ index 0000000..28b10aa
 + * from RAM. Therefore it mustn't (re-)configure the SDRAM controller.
 + *
 + */
-+#define CONFIG_NAND_U_BOOT_DST	0x80100000	/* Load NUB to this addr */
++#define CONFIG_NAND_U_BOOT_DST		0x80100000	/* Load NUB to this addr */
 +#define CONFIG_NAND_U_BOOT_START	CONFIG_NAND_U_BOOT_DST 
 +/* Start NUB from this addr*/
 +

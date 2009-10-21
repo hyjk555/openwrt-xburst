@@ -1,13 +1,13 @@
-From 9570fff140b889e8171a50ebe8db17e847147fcc Mon Sep 17 00:00:00 2001
+From 7d8029d27d53b04b223a638de4fc726f6c68359f Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Mon, 12 Oct 2009 11:28:05 +0800
-Subject: [PATCH] add xburst support
+Date: Wed, 21 Oct 2009 11:02:22 +0800
+Subject: [PATCH] add qi_lb60 support
 
 ---
  Makefile                       |   10 +
- common/lcd.c                   |   44 ++++-
- cpu/mips/Makefile              |    5 +-
- cpu/mips/cache.S               |  283 ++++++++++----------------
+ common/lcd.c                   |   45 ++++-
+ cpu/mips/Makefile              |    4 +
+ cpu/mips/cache.S               |  280 ++++++++++----------------
  cpu/mips/config.mk             |    6 +-
  cpu/mips/cpu.c                 |   75 +++++++
  cpu/mips/start.S               |  432 +++++++++++++++++++++++++++++++--------
@@ -18,7 +18,7 @@ Subject: [PATCH] add xburst support
  include/lcd.h                  |   56 +++++-
  lib_mips/board.c               |   18 ++-
  lib_mips/time.c                |    4 +
- 14 files changed, 745 insertions(+), 288 deletions(-)
+ 14 files changed, 744 insertions(+), 286 deletions(-)
 
 diff --git a/Makefile b/Makefile
 index e4499d7..e492d6a 100644
@@ -42,7 +42,7 @@ index e4499d7..e492d6a 100644
  #########################################################################
  
 diff --git a/common/lcd.c b/common/lcd.c
-index dc8fea6..a2ea260 100644
+index dc8fea6..b68b1ca 100644
 --- a/common/lcd.c
 +++ b/common/lcd.c
 @@ -64,7 +64,9 @@
@@ -56,7 +56,22 @@ index dc8fea6..a2ea260 100644
  # endif
  #endif
  
-@@ -336,6 +338,9 @@ static void test_pattern (void)
+@@ -270,6 +272,14 @@ static void lcd_drawchars (ushort x, ushort y, uchar *str, int count)
+ 						lcd_color_fg : lcd_color_bg;
+ 				bits <<= 1;
+ 			}
++#elif LCD_BPP == LCD_COLOR32
++			uint *m = (uint *)d;
++			for (c=0; c<32; ++c) {
++				*m++ = (bits & 0x80) ?
++						lcd_color_fg : lcd_color_bg;
++				//d+=4;
++				bits <<= 1;
++			}
+ #endif
+ 		}
+ #if LCD_BPP == LCD_MONOCHROME
+@@ -336,6 +346,9 @@ static void test_pattern (void)
  }
  #endif /* LCD_TEST_PATTERN */
  
@@ -66,26 +81,15 @@ index dc8fea6..a2ea260 100644
  
  /************************************************************************/
  /* ** GENERIC Initialization Routines					*/
-@@ -398,10 +403,18 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
- 	test_pattern();
- #else
- 	/* set framebuffer to background color */
-+#if LCD_BPP == LCD_COLOR32
-+	long long i;
-+	int *lcdbase_p = (int *)lcd_base;
-+	for(i=0;i<lcd_line_length*panel_info.vl_row/4;i++)
-+		*lcdbase_p++ = COLOR_MASK(lcd_getbgcolor());
-+#else
- 	memset ((char *)lcd_base,
+@@ -402,6 +415,7 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
  		COLOR_MASK(lcd_getbgcolor()),
  		lcd_line_length*panel_info.vl_row);
  #endif
-+#endif
 +
  	/* Paint the logo and retrieve LCD base address */
  	debug ("[LCD] Drawing the logo...\n");
  	lcd_console_address = lcd_logo ();
-@@ -479,6 +492,8 @@ static void lcd_setfgcolor (int color)
+@@ -479,6 +493,8 @@ static void lcd_setfgcolor (int color)
  {
  #ifdef CONFIG_ATMEL_LCD
  	lcd_color_fg = color;
@@ -94,7 +98,7 @@ index dc8fea6..a2ea260 100644
  #else
  	lcd_color_fg = color & 0x0F;
  #endif
-@@ -490,6 +505,8 @@ static void lcd_setbgcolor (int color)
+@@ -490,6 +506,8 @@ static void lcd_setbgcolor (int color)
  {
  #ifdef CONFIG_ATMEL_LCD
  	lcd_color_bg = color;
@@ -103,7 +107,7 @@ index dc8fea6..a2ea260 100644
  #else
  	lcd_color_bg = color & 0x0F;
  #endif
-@@ -528,6 +545,7 @@ void bitmap_plot (int x, int y)
+@@ -528,6 +546,7 @@ void bitmap_plot (int x, int y)
  	uchar *bmap;
  	uchar *fb;
  	ushort *fb16;
@@ -111,7 +115,7 @@ index dc8fea6..a2ea260 100644
  #if defined(CONFIG_PXA250)
  	struct pxafb_info *fbi = &panel_info.pxa;
  #elif defined(CONFIG_MPC823)
-@@ -588,13 +606,25 @@ void bitmap_plot (int x, int y)
+@@ -588,13 +607,25 @@ void bitmap_plot (int x, int y)
  		}
  	}
  	else { /* true color mode */
@@ -144,37 +148,27 @@ index dc8fea6..a2ea260 100644
  	}
  
 diff --git a/cpu/mips/Makefile b/cpu/mips/Makefile
-index 28a1cbb..01810c0 100644
+index 28a1cbb..5207bc5 100644
 --- a/cpu/mips/Makefile
 +++ b/cpu/mips/Makefile
-@@ -27,7 +27,10 @@ LIB	= $(obj)lib$(CPU).a
- 
- START	= start.o
- SOBJS-y	= cache.o
--COBJS-y	= cpu.o interrupts.o
-+COBJS-y	= cpu.o interrupts.o \
-+          jz4740.o jz_lcd.o jz_serial.o jz_i2c.o jz_mmc.o jz_cs8900.o \
-+          jz4740_nand.o jz4740_cpm_test.o 
+@@ -33,6 +33,10 @@ SOBJS-$(CONFIG_INCA_IP)	+= incaip_wdt.o
+ COBJS-$(CONFIG_INCA_IP)	+= asc_serial.o incaip_clock.o
+ COBJS-$(CONFIG_PURPLE)	+= asc_serial.o
+ COBJS-$(CONFIG_SOC_AU1X00) += au1x00_eth.o au1x00_serial.o au1x00_usb_ohci.o
++COBJS-$(CONFIG_JZSOC) += jz4740.o jz_serial.o jz_i2c.o jz_mmc.o jz4740_nand.o
++COBJS-$(CONFIG_DRIVER_CS8900) += jz_cs8900.o
++COBJS-$(CONFIG_QI_LB60) += qi_lb60_gpm940b0.o
 +
  
- SOBJS-$(CONFIG_INCA_IP)	+= incaip_wdt.o
- COBJS-$(CONFIG_INCA_IP)	+= asc_serial.o incaip_clock.o
+ SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
+ OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
 diff --git a/cpu/mips/cache.S b/cpu/mips/cache.S
-index ff4f11c..afc2a71 100644
+index ff4f11c..cb3baff 100644
 --- a/cpu/mips/cache.S
 +++ b/cpu/mips/cache.S
-@@ -1,5 +1,5 @@
- /*
-- *  Cache-handling routined for MIPS CPUs
-+ *  Cache-handling routined for MIPS 4K CPUs
-  *
-  *  Copyright (c) 2003	Wolfgang Denk <wd@denx.de>
-  *
-@@ -22,33 +22,21 @@
-  * MA 02111-1307 USA
+@@ -23,32 +23,19 @@
   */
  
-+
  #include <config.h>
 -#include <asm/asm.h>
 +#include <version.h>
@@ -184,7 +178,8 @@ index ff4f11c..afc2a71 100644
  #include <asm/cacheops.h>
  
 -#define RA		t8
--
++#ifndef CONFIG_JzRISC
+ 
 -/*
 - * 16kB is the maximum size of instruction and data caches on MIPS 4K,
 - * 64kB is on 4KE, 24K, 5K, etc. Set bigger size for convenience.
@@ -193,8 +188,7 @@ index ff4f11c..afc2a71 100644
 - * doesn't have L2 cache support for now.
 - */
 -#define MIPS_MAX_CACHE_SIZE	0x10000
-+#ifndef CONFIG_JzRISC
- 
+-
 -#define INDEX_BASE	CKSEG0
 +	/* 16KB is the maximum size of instruction and data caches on
 +	 * MIPS 4K.
@@ -211,7 +205,7 @@ index ff4f11c..afc2a71 100644
  
  /*
   * cacheop macro to automate cache operations
-@@ -119,79 +107,7 @@
+@@ -119,79 +106,7 @@
  #define icacheop(kva, n, cacheSize, cacheLineSize, op) \
     icacheopn(kva, n, cacheSize, cacheLineSize, 1, (op))
  
@@ -291,7 +285,7 @@ index ff4f11c..afc2a71 100644
  * mips_cache_reset - low level initialisation of the primary caches
  *
  * This routine initialises the primary caches to ensure that they
-@@ -204,112 +120,129 @@ LEAF(mips_init_dcache)
+@@ -204,112 +119,129 @@ LEAF(mips_init_dcache)
  * a source of parity.
  *
  * RETURNS: N/A
@@ -500,7 +494,7 @@ index ff4f11c..afc2a71 100644
  #if defined(CONFIG_PURPLE)
  # define	CACHE_LOCK_SIZE	(CONFIG_SYS_DCACHE_SIZE/2)
  #else
-@@ -318,14 +251,14 @@ LEAF(dcache_enable)
+@@ -318,14 +250,14 @@ LEAF(dcache_enable)
  	.globl	mips_cache_lock
  	.ent	mips_cache_lock
  mips_cache_lock:
