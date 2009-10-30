@@ -146,7 +146,8 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 
 	dev_set_drvdata(&spi->dev, gpm940b0);
 
-	gpm940b0_write_reg(spi, 0x13, 0x1);
+	gpm940b0_write_reg(spi, 0x13, 0x01);
+	gpm940b0_write_reg(spi, 0x05, 0x5f);
 	return 0;
 err_free_gpm940b0:
 	return ret;
