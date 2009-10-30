@@ -1,6 +1,6 @@
-From 2c59aede240ece0040be14ad0da99e0abf56d983 Mon Sep 17 00:00:00 2001
+From 0e135685e7045f606feb6ffc8f2b159e87fcd389 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Wed, 21 Oct 2009 10:58:21 +0800
+Date: Fri, 30 Oct 2009 14:49:02 +0800
 Subject: [PATCH] add new file
 
 ---
@@ -25,7 +25,7 @@ Subject: [PATCH] add new file
  cpu/mips/jz_serial.c              |  167 ++
  cpu/mips/mmc_protocol.h           |  273 +++
  cpu/mips/qi_lb60_gpm940b0.c       |  420 ++++
- cpu/mips/qi_lb60_gpm940b0.h       |  211 ++
+ cpu/mips/qi_lb60_gpm940b0.h       |  212 ++
  cpu/mips/usb_boot.S               |  821 +++++++
  include/asm-mips/jz4740.h         | 4880 +++++++++++++++++++++++++++++++++++++
  include/configs/qi_lb60.h         |  213 ++
@@ -33,7 +33,7 @@ Subject: [PATCH] add new file
  nand_spl/board/qi_lb60/config.mk  |   34 +
  nand_spl/board/qi_lb60/u-boot.lds |   63 +
  nand_spl/nand_boot_jz4740.c       |  456 ++++
- 29 files changed, 13572 insertions(+), 0 deletions(-)
+ 29 files changed, 13573 insertions(+), 0 deletions(-)
  create mode 100644 board/qi_lb60/Makefile
  create mode 100644 board/qi_lb60/config.mk
  create mode 100644 board/qi_lb60/flash.c
@@ -6982,10 +6982,10 @@ index 0000000..79af40e
 +}
 diff --git a/cpu/mips/qi_lb60_gpm940b0.h b/cpu/mips/qi_lb60_gpm940b0.h
 new file mode 100644
-index 0000000..385e016
+index 0000000..a4f8b0b
 --- /dev/null
 +++ b/cpu/mips/qi_lb60_gpm940b0.h
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,212 @@
 +/*
 + * JzRISC lcd controller
 + *
@@ -7137,8 +7137,9 @@ index 0000000..385e016
 +	__spi_write_reg1(0x01, 0x95); \
 +	__spi_write_reg1(0x08, 0xc0); \
 +	__spi_write_reg1(0x03, 0x40); \
-+	__spi_write_reg1(0x06, 0x15); \
-+	__spi_write_reg1(0x05, 0xd7); \
++	__spi_write_reg1(0x06, 0x75); \
++	__spi_write_reg1(0x13, 0x01); \
++	__spi_write_reg1(0x05, 0x57); \
 +} while (0)
 +
 +#define __lcd_special_off() \
