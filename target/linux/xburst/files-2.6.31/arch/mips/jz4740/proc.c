@@ -517,31 +517,6 @@ static int udc_read_proc(char *page, char **start, off_t off,
         return len;
 }
 
-/*
- * MMC/SD hotplug
- */
-
-#ifndef MSC_HOTPLUG_PIN
-#define MSC_HOTPLUG_PIN 90
-#endif
-
-static int mmc_read_proc (char *page, char **start, off_t off,
-                          int count, int *eof, void *data)
-{
-        int len = 0;
-
-#if defined(CONFIG_JZ4740_LYRA)
-        if (!(__gpio_get_pin(MSC_HOTPLUG_PIN)))
-#else
-        if (__gpio_get_pin(MSC_HOTPLUG_PIN))
-#endif
-                len += sprintf (page+len, "REMOVE\n");
-        else
-                len += sprintf (page+len, "INSERT\n");
-
-        return len;
-}
-
 /***********************************************************************
  * IPU memory management (used by mplayer and other apps)
  *
@@ -828,14 +803,6 @@ static int __init jz_proc_init(void)
 	res = create_proc_entry("udc", 0644, proc_jz_root);
 	if (res) {
 		res->read_proc = udc_read_proc;
-		res->write_proc = NULL;
-		res->data = NULL;
-	}
-
-	/* mmc hotplug */
-	res = create_proc_entry("mmc", 0644, proc_jz_root);
-	if (res) {
-		res->read_proc = mmc_read_proc;
 		res->write_proc = NULL;
 		res->data = NULL;
 	}
