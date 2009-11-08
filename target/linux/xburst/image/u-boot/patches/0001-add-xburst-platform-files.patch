@@ -206,7 +206,7 @@ new file mode 100644
 index 0000000..572d22b
 --- /dev/null
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,93 @@
 +/*
 + * Authors: Xiangfu Liu <xiangfu.z@gmail.com>
 + *
@@ -242,16 +242,6 @@ index 0000000..572d22b
 +	 * Initialize LCD pins
 +	 */
 +	__gpio_as_lcd_18bit();
-+
-+	/*
-+	 * Initialize SSI pins
-+	 */
-+	__gpio_as_ssi();
-+
-+	/*
-+	 * Initialize I2C pins
-+	 */
-+	__gpio_as_i2c();
 +
 +	/*
 +	 * Initialize MSC pins
