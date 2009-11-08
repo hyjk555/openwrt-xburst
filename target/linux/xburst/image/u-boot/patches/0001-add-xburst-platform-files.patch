@@ -206,7 +206,7 @@ new file mode 100644
 index 0000000..572d22b
 --- /dev/null
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,103 @@
 +/*
 + * Authors: Xiangfu Liu <xiangfu.z@gmail.com>
 + *
@@ -284,9 +284,19 @@ index 0000000..572d22b
 +	__gpio_enable_pull(GPIO_USB_DETECT);
 +}
 +
++static void cpm_init(void)
++{
++	__cpm_stop_ipu();
++	__cpm_stop_cim();
++	__cpm_stop_i2c();
++	__cpm_stop_ssi();
++	__cpm_stop_uart1();
++}
++
 +void board_early_init(void)
 +{
 +	gpio_init();
++	cpm_init();
 +}
 +
 +/* U-Boot common routines */
