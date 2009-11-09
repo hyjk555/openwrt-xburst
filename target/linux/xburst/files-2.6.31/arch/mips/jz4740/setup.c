@@ -174,9 +174,6 @@ void __init plat_mem_setup(void)
 	_machine_restart = jz_restart;
 	_machine_halt = jz_halt;
 	pm_power_off = jz_power_off;
-#ifdef CONFIG_PM
-	jz_pm_init();
-#endif
 	jz_soc_setup();
 	jz_serial_setup();
 }
