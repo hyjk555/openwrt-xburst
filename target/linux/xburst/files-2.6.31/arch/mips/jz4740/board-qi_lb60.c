@@ -309,6 +309,7 @@ static struct gpio_keys_button qi_lb60_gpio_keys_buttons[] = {
 		.gpio		= GPIO_WAKEUP_N,
 		.active_low	= 1,
 		.desc		= "Power",
+		.wakeup		= 1,
 	},
 };
 
