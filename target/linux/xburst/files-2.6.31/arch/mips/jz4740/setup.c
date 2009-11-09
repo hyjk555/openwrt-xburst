@@ -96,10 +96,6 @@ static void __init sysclocks_setup(void)
 
 static void __init soc_cpm_setup(void)
 {
-	/* Start all module clocks
-	 */
-	__cpm_start_all();
-
 	/* Enable CKO to external memory */
 	__cpm_enable_cko();
 
