@@ -307,6 +307,11 @@ define Build/Compile
 	$(call Build/Compile/Default)
 endef
 
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/lib
+	ln -sf $(TOOLCHAIN_DIR)/usr/lib$(LIB_SUFFIX)/libstdc++.{la,a,so*} $(1)/usr/lib/
+endef
+
 define Package/base-files/install
 	$(CP) ./files/* $(1)/
 	if [ -d $(GENERIC_PLATFORM_DIR)/base-files/. ]; then \
