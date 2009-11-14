@@ -82,6 +82,14 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
 		( cd $(TARGET_DIR); find . | cpio -o -H newc | gzip -9 >$(BIN_DIR)/openwrt-$(BOARD)-rootfs.cpio.gz )
     endef
   endif
+  ifeq ($(CONFIG_TARGET_ROOTFS_UBIFS),y)
+    define Image/mkfs/ubifs
+		$(CP) ./ubinize.cfg $(KDIR)
+		mkfs.ubifs $(UBIFS_OPTS) -o $(KDIR)/root.ubifs -d $(TARGET_DIR)
+		(cd $(KDIR); \
+		ubinize $(UBINIZE_OPTS) -o $(BIN_DIR)/openwrt-$(BOARD)-rootfs.ubi ubinize.cfg)
+    endef
+  endif
 else
   define Image/BuildKernel
 	cp $(KDIR)/vmlinux.elf $(BIN_DIR)/openwrt-$(BOARD)-vmlinux.elf
@@ -146,6 +154,7 @@ ifneq ($(IB),1)
 	$(call Image/mkfs/cpiogz)
 	$(call Image/mkfs/ext2)
 	$(call Image/mkfs/iso)
+	$(call Image/mkfs/ubifs)
 	$(call Image/Checksum)
 else
   install: compile install-targets
@@ -156,6 +165,7 @@ else
 	$(call Image/mkfs/cpiogz)
 	$(call Image/mkfs/ext2)
 	$(call Image/mkfs/iso)
+	$(call Image/mkfs/ubifs)
 	$(call Image/Checksum)
 endif
 

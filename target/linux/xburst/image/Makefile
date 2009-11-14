@@ -9,6 +9,9 @@ include $(INCLUDE_DIR)/image.mk
 
 JFFS2_BLOCKSIZE=256k 512k
 
+UBIFS_OPTS = -m 4096 -e 516096 -c 4095
+UBINIZE_OPTS = -m 4096 -p 512KiB
+
 ifneq ($(CONFIG_XBURST_UBOOT),)
   define Build/Clean
 	$(MAKE) -C u-boot clean
