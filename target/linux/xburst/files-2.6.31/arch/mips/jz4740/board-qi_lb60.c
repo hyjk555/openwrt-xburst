@@ -7,8 +7,8 @@
  * Author: Xiangfu Liu <xiangfu@qi-hardware.com>
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3 as
- * published by the Free Software Foundation.
+ * it under the terms of the GNU General Public License version 2 or later 
+ * as published by the Free Software Foundation.
  */
 
 #include <linux/kernel.h>
