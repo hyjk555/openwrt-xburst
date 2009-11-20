@@ -1,13 +1,13 @@
-From 0e135685e7045f606feb6ffc8f2b159e87fcd389 Mon Sep 17 00:00:00 2001
+From 23f08521fd9f997876d5e90354b9ad957bb4e982 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Fri, 30 Oct 2009 14:49:02 +0800
-Subject: [PATCH] add new file
+Date: Wed, 18 Nov 2009 23:23:56 +0800
+Subject: [PATCH 1/2] add new file
 
 ---
  board/qi_lb60/Makefile            |   38 +
  board/qi_lb60/config.mk           |   31 +
  board/qi_lb60/flash.c             |   50 +
- board/qi_lb60/qi_lb60.c           |  103 +
+ board/qi_lb60/qi_lb60.c           |  105 +
  board/qi_lb60/u-boot-nand.lds     |   63 +
  board/qi_lb60/u-boot.lds          |   63 +
  cpu/mips/jz4740.c                 |  574 +++++
@@ -33,7 +33,7 @@ Subject: [PATCH] add new file
  nand_spl/board/qi_lb60/config.mk  |   34 +
  nand_spl/board/qi_lb60/u-boot.lds |   63 +
  nand_spl/nand_boot_jz4740.c       |  456 ++++
- 29 files changed, 13573 insertions(+), 0 deletions(-)
+ 29 files changed, 13575 insertions(+), 0 deletions(-)
  create mode 100644 board/qi_lb60/Makefile
  create mode 100644 board/qi_lb60/config.mk
  create mode 100644 board/qi_lb60/flash.c
@@ -203,7 +203,7 @@ index 0000000..891c604
 +}
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
 new file mode 100644
-index 0000000..572d22b
+index 0000000..d13f2ab
 --- /dev/null
 +++ b/board/qi_lb60/qi_lb60.c
 @@ -0,0 +1,105 @@
@@ -12915,7 +12915,7 @@ index 0000000..2840bc0
 +#endif /* __JZ4740_H__ */
 diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
 new file mode 100644
-index 0000000..e78d17f
+index 0000000..02af607
 --- /dev/null
 +++ b/include/configs/qi_lb60.h
 @@ -0,0 +1,213 @@
@@ -12965,8 +12965,8 @@ index 0000000..e78d17f
 +#define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
 +#define CONFIG_BOOTDELAY	0
 +#define CONFIG_BOOTFILE		"uImage"	/* file to load */
-+#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 rootfstype=jffs2 root=/dev/mtdblock2 rw rootwait"
-+#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x300000;bootm"
++#define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
++#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
 +
 +/*
 + * Command line configuration.
@@ -13814,5 +13814,5 @@ index 0000000..924a47a
 +	(*uboot)();
 +}
 -- 
-1.6.0.4
+1.6.3.3
 
