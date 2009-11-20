@@ -18,6 +18,9 @@
 #include <sound/initval.h>
 #include <sound/soc.h>
 
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/ops.h>
+
 #include "jz4740-pcm.h"
 #include "jz4740-i2s.h"
 

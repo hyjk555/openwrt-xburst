@@ -8,7 +8,7 @@
 #ifndef _JZ4740_PCM_H
 #define _JZ4740_PCM_H
 
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/dma.h>
 
 #define ST_RUNNING		(1<<0)
 #define ST_OPENED		(1<<1)

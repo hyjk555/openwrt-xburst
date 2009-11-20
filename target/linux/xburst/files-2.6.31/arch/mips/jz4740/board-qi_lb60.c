@@ -28,6 +28,7 @@
 #include <linux/spi/spi_gpio.h>
 #include <linux/power_supply.h>
 #include <linux/power/jz4740-battery.h>
+#include <linux/mmc/jz4740_mmc.h>
 
 
 /* NAND */
@@ -325,12 +326,12 @@ static struct platform_device qi_lb60_gpio_keys = {
 		.platform_data = &qi_lb60_gpio_keys_data,
 	}
 };
-/*
-static struct jz_mmc_platform_data jz_mmc_pdata = {
-	.card_detect_gpio = JZ_GPIO_PORTD(0),
-	.read_only_gpio = JZ_GPIO_PORTD(16),
-	.power_gpio = JZ_GPIO_PORTD(2),
-};*/
+
+static struct jz4740_mmc_platform_data qi_lb60_mmc_pdata = {
+	.gpio_card_detect	= JZ_GPIO_PORTD(0),
+	.gpio_read_only		= JZ_GPIO_PORTD(16),
+	.gpio_power		= JZ_GPIO_PORTD(2),
+};
 
 static struct platform_device *jz_platform_devices[] __initdata = {
 	&jz4740_usb_ohci_device,
@@ -362,6 +363,7 @@ static int __init qi_lb60_init_platform_devices(void)
 	jz4740_framebuffer_device.dev.platform_data = &qi_lb60_fb_pdata;
 	jz4740_nand_device.dev.platform_data = &qi_lb60_nand_pdata;
 	jz4740_battery_device.dev.platform_data = &qi_lb60_battery_pdata;
+	jz4740_mmc_device.dev.platform_data = &qi_lb60_mmc_pdata;
 
 	spi_register_board_info(qi_lb60_spi_board_info,
 				ARRAY_SIZE(qi_lb60_spi_board_info));
@@ -371,12 +373,14 @@ static int __init qi_lb60_init_platform_devices(void)
 
 }
 extern int jz_gpiolib_init(void);
+extern int jz_init_clocks(unsigned long extal);
 
 static int __init qi_lb60_board_setup(void)
 {
 	printk("Qi Hardware JZ4740 QI_LB60 setup\n");
 	if (jz_gpiolib_init())
 		panic("Failed to initalize jz gpio\n");
+	jz_init_clocks(12000000);
 
 	board_gpio_setup();
 

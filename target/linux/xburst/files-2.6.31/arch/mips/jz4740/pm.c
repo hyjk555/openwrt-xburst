@@ -23,9 +23,9 @@
 
 #include <linux/init.h>
 #include <linux/pm.h>
-#include <linux/sysctl.h>
+#include <linux/delay.h>
 #include <linux/suspend.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
 
 extern void jz4740_intc_suspend(void);
 extern void jz4740_intc_resume(void);
@@ -37,7 +37,6 @@ static int jz_pm_enter(suspend_state_t state)
 	unsigned long delta;
 	unsigned long nfcsr = REG_EMC_NFCSR;
 	uint32_t scr = REG_CPM_SCR;
-	uint32_t sleep_gpio_save[7*3];
 
 	/* Preserve current time */
 	delta = xtime.tv_sec - REG_RTC_RSR;

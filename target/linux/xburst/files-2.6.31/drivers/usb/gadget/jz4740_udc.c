@@ -37,7 +37,8 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/system.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/clock.h>
 
 #include "jz4740_udc.h"
 

@@ -26,7 +26,8 @@
 #include <linux/clockchips.h>
 
 #include <asm/time.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/jz4740.h>
 
 /* This is for machines which generate the exact clock. */
 

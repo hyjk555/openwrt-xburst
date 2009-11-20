@@ -15,6 +15,8 @@
 #ifndef __ASM_JZ4740_CLOCK_H__
 #define __ASM_JZ4740_CLOCK_H__
 
+#include <asm/mach-jz4740/ops.h>
+
 #ifndef JZ_EXTAL
 //#define JZ_EXTAL		3686400   /* 3.6864 MHz */
 #define JZ_EXTAL		12000000   /* 3.6864 MHz */

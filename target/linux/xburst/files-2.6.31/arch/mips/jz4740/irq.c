@@ -11,28 +11,20 @@
  *  Free Software Foundation;  either version 2 of the	License, or (at your
  *  option) any later version.
  */
+#include <asm/mach-jz4740/irq.h>
+#include <linux/irq.h>
+
 #include <linux/errno.h>
 #include <linux/init.h>
-#include <linux/irq.h>
-#include <linux/kernel_stat.h>
-#include <linux/module.h>
-#include <linux/signal.h>
-#include <linux/sched.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
 #include <linux/timex.h>
 #include <linux/slab.h>
-#include <linux/random.h>
 #include <linux/delay.h>
-#include <linux/bitops.h>
 
-#include <asm/bootinfo.h>
 #include <asm/io.h>
 #include <asm/mipsregs.h>
-#include <asm/system.h>
-#include <asm/jzsoc.h>
-#include <asm/mach-generic/irq.h>
 #include <asm/irq_cpu.h>
 
 static void __iomem *jz_intc_base;

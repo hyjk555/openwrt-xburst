@@ -37,17 +37,10 @@
 #include <asm/reboot.h>
 #include <asm/pgtable.h>
 #include <asm/time.h>
-#include <asm/jzsoc.h>
-
-#ifdef CONFIG_PM
-#include <asm/suspend.h>
-#endif
-
-#ifdef CONFIG_PC_KEYB
-#include <asm/keyboard.h>
-#endif
-
-jz_clocks_t jz_clocks;
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/ops.h>
+#include <asm/mach-jz4740/clock.h>
+#include <asm/mach-jz4740/serial.h>
 
 extern char * __init prom_getcmdline(void);
 extern void __init jz_board_setup(void);
@@ -58,40 +51,13 @@ extern void jz_time_init(void);
 
 static void __init sysclocks_setup(void)
 {
-#ifndef CONFIG_MIPS_JZ_EMURUS /* FPGA */
-	jz_clocks.cclk = __cpm_get_cclk();
-	jz_clocks.hclk = __cpm_get_hclk();
-	jz_clocks.pclk = __cpm_get_pclk();
-	jz_clocks.mclk = __cpm_get_mclk();
-	jz_clocks.lcdclk = __cpm_get_lcdclk();
-	jz_clocks.pixclk = __cpm_get_pixclk();
-	jz_clocks.i2sclk = __cpm_get_i2sclk();
-	jz_clocks.usbclk = __cpm_get_usbclk();
-	jz_clocks.mscclk = __cpm_get_mscclk();
-	jz_clocks.extalclk = __cpm_get_extalclk();
-	jz_clocks.rtcclk = __cpm_get_rtcclk();
-#else
-
-#define FPGACLK 8000000
-
-	jz_clocks.cclk = FPGACLK;
-	jz_clocks.hclk = FPGACLK;
-	jz_clocks.pclk = FPGACLK;
-	jz_clocks.mclk = FPGACLK;
-	jz_clocks.lcdclk = FPGACLK;
-	jz_clocks.pixclk = FPGACLK;
-	jz_clocks.i2sclk = FPGACLK;
-	jz_clocks.usbclk = FPGACLK;
-	jz_clocks.mscclk = FPGACLK;
-	jz_clocks.extalclk = FPGACLK;
-	jz_clocks.rtcclk = FPGACLK;
-#endif
-
+#if 0
 	printk("CPU clock: %dMHz, System clock: %dMHz, Peripheral clock: %dMHz, Memory clock: %dMHz\n",
 	       (jz_clocks.cclk + 500000) / 1000000,
 	       (jz_clocks.hclk + 500000) / 1000000,
 	       (jz_clocks.pclk + 500000) / 1000000,
 	       (jz_clocks.mclk + 500000) / 1000000);
+#endif
 }
 
 static void __init soc_cpm_setup(void)
@@ -139,7 +105,7 @@ static void __init jz_serial_setup(void)
 	s.flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST;
 	s.iotype = SERIAL_IO_MEM;
 	s.regshift = 2;
-	s.uartclk = jz_clocks.extalclk ;
+	s.uartclk = JZ_EXTAL;
 
 	s.line = 0;
 	s.membase = (u8 *)UART0_BASE;

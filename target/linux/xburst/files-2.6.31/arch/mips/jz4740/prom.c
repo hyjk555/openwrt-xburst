@@ -40,7 +40,7 @@
 #include <linux/string.h>
 
 #include <asm/bootinfo.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
 
 /* #define DEBUG_CMDLINE */
 

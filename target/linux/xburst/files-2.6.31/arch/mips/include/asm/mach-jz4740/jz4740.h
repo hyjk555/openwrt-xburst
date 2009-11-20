@@ -22,6 +22,7 @@
 /*------------------------------------------------------------------
  * Platform definitions
  */
+
 #ifdef CONFIG_JZ4740_QI_LB60
 #include <asm/mach-jz4740/board-qi_lb60.h>
 #endif

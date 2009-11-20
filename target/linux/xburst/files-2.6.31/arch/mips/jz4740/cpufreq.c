@@ -17,7 +17,8 @@
 
 #include <linux/cpufreq.h>
 
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/clock.h>
 #include <asm/processor.h>
 
 #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_DRIVER, \
@@ -69,24 +70,6 @@ struct dpm_regs {
 	u32 cppcr_mask;   /* PLL1 Control Register mask */
 	u32 pll_up_flag;  /* New PLL freq is higher than current or not */
 };
-
-extern jz_clocks_t jz_clocks;
-
-static void jz_update_clocks(void)
-{
-	/* Next clocks must be updated if we have changed 
-	 * the PLL or divisors.
-	 */
-	jz_clocks.cclk = __cpm_get_cclk();
-	jz_clocks.hclk = __cpm_get_hclk();
-	jz_clocks.mclk = __cpm_get_mclk();
-	jz_clocks.pclk = __cpm_get_pclk();
-	jz_clocks.lcdclk = __cpm_get_lcdclk();
-	jz_clocks.pixclk = __cpm_get_pixclk();
-	jz_clocks.i2sclk = __cpm_get_i2sclk();
-	jz_clocks.usbclk = __cpm_get_usbclk();
-	jz_clocks.mscclk = __cpm_get_mscclk();
-}
 
 static void
 jz_init_boot_config(void)
@@ -434,9 +417,6 @@ static void jz4740_transition(struct dpm_regs *regs)
 	REG_LCD_CTRL &= ~LCD_CTRL_DIS;
 	REG_LCD_CTRL |= LCD_CTRL_ENA;
 #endif
-
-	/* Update system clocks */
-	jz_update_clocks();
 }
 
 extern unsigned int idle_times;
