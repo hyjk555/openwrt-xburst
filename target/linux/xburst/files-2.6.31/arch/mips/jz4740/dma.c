@@ -21,14 +21,14 @@
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
-#include <linux/string.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
-#include <linux/soundcard.h>
 
 #include <asm/system.h>
 #include <asm/addrspace.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/ops.h>
+#include <asm/mach-jz4740/dma.h>
 
 #define JZ_REG_DMA_SRC_ADDR(x)		((x) * 0x20 + 0x00)
 #define JZ_REG_DMA_DEST_ADDR(x)		((x) * 0x20 + 0x04)
@@ -501,39 +501,6 @@ unsigned int get_dma_residue(unsigned int dmanr)
 	return count;
 }
 
-void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt)
-{
-	struct jz_dma_chan *chan = get_dma_chan(dmanr);
-
-	if (!chan)
-		return;
-
-	switch (audio_fmt) {
-	case AFMT_U8:
-		/* burst mode : 32BIT */
-		break;
-	case AFMT_S16_LE:
-		/* burst mode : 16BYTE */
-		if (mode == DMA_MODE_READ) {
-			chan->mode = DMA_AIC_32_16BYTE_RX_CMD | DMA_MODE_READ;
-			chan->mode |= mode & ~(DMAC_DCMD_SAI | DMAC_DCMD_DAI);
-			mode &= DMA_MODE_MASK;
-			chan->mode |= DMAC_DCMD_DAI;
-			chan->mode &= ~DMAC_DCMD_SAI;
-		} else if (mode == DMA_MODE_WRITE) {
-			chan->mode = DMA_AIC_32_16BYTE_TX_CMD | DMA_MODE_WRITE;
-			chan->mode |= mode & ~(DMAC_DCMD_SAI | DMAC_DCMD_DAI);
-			mode &= DMA_MODE_MASK;
-			chan->mode |= DMAC_DCMD_SAI;
-			chan->mode &= ~DMAC_DCMD_DAI;
-		} else
-			printk("oss_dma_burst_mode() just supports DMA_MODE_READ or DMA_MODE_WRITE!\n");
-
-			jz_dma_write(JZ_REG_DMA_CMD(chan->io), chan->mode & ~DMA_MODE_MASK);
-			jz_dma_write(JZ_REG_DMA_TYPE(chan->io), chan->source);
-		break;
-	}
-}
 
 void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt)
 {
@@ -912,7 +879,6 @@ EXPORT_SYMBOL(jz_set_dma_dest_width);
 EXPORT_SYMBOL(jz_set_dma_block_size);
 EXPORT_SYMBOL(jz_set_dma_mode);
 EXPORT_SYMBOL(set_dma_mode);
-EXPORT_SYMBOL(jz_set_oss_dma);
 EXPORT_SYMBOL(jz_set_alsa_dma);
 EXPORT_SYMBOL(set_dma_addr);
 EXPORT_SYMBOL(set_dma_count);

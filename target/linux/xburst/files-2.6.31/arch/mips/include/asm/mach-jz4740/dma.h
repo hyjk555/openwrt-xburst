@@ -19,7 +19,8 @@
 #include <asm/io.h>			/* need byte IO */
 #include <linux/spinlock.h>		/* And spinlocks */
 #include <linux/delay.h>
-#include <asm/system.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/ops.h>
 
 /*
  * Descriptor structure for JZ4740 DMA engine
@@ -167,7 +168,6 @@ extern void disable_dma(unsigned int dmanr);
 extern void set_dma_addr(unsigned int dmanr, unsigned int phyaddr);
 extern void set_dma_count(unsigned int dmanr, unsigned int bytecnt);
 extern void set_dma_mode(unsigned int dmanr, unsigned int mode);
-extern void jz_set_oss_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt);
 extern void jz_set_alsa_dma(unsigned int dmanr, unsigned int mode, unsigned int audio_fmt);
 extern unsigned int get_dma_residue(unsigned int dmanr);
 

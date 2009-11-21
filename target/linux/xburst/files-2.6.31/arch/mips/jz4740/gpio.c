@@ -59,9 +59,9 @@
 #define CHIP_TO_DATA_SELECT_REG(chip)		CHIP_TO_REG(chip, 0x50)
 #define CHIP_TO_DATA_SELECT_SET_REG(chip)	CHIP_TO_REG(chip, 0x54)
 #define CHIP_TO_DATA_SELECT_CLEAR_REG(chip)	CHIP_TO_REG(chip, 0x58)
-#define CHIP_TO_DATA_DIRECION_REG(chip)		CHIP_TO_REG(chip, 0x60)
-#define CHIP_TO_DATA_DIRECTION_SET_REG(chip)	CHIP_TO_REG(chip, 0x64)
-#define CHIP_TO_DATA_DIRECTION_CLEAR_REG(chip)	CHIP_TO_REG(chip, 0x68)
+#define CHIP_TO_DIRECION_REG(chip)		CHIP_TO_REG(chip, 0x60)
+#define CHIP_TO_DIRECTION_SET_REG(chip)	CHIP_TO_REG(chip, 0x64)
+#define CHIP_TO_DIRECTION_CLEAR_REG(chip)	CHIP_TO_REG(chip, 0x68)
 
 #define GPIO_TO_BIT(gpio) BIT(gpio & 0x1f)
 
@@ -94,6 +94,7 @@ struct jz_gpio_chip {
 	uint32_t saved[4];
 	struct gpio_chip gpio_chip;
 	struct irq_chip irq_chip;
+	uint32_t edge_trigger_both;
 };
 
 static struct jz_gpio_chip *jz_irq_to_chip(unsigned int irq)
@@ -186,7 +187,7 @@ static void jz_gpio_set_value(struct gpio_chip *chip, unsigned gpio, int value)
 
 static int jz_gpio_direction_output(struct gpio_chip *chip, unsigned gpio, int value)
 {
-	writel(BIT(gpio), CHIP_TO_DATA_DIRECTION_SET_REG(chip));
+	writel(BIT(gpio), CHIP_TO_DIRECTION_SET_REG(chip));
 	jz_gpio_set_value(chip, gpio, value);
 
 	return 0;
@@ -194,7 +195,7 @@ static int jz_gpio_direction_output(struct gpio_chip *chip, unsigned gpio, int v
 
 static int jz_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
 {
-	writel(BIT(gpio), CHIP_TO_DATA_DIRECTION_CLEAR_REG(chip));
+	writel(BIT(gpio), CHIP_TO_DIRECTION_CLEAR_REG(chip));
 
 	return 0;
 }
@@ -205,6 +206,7 @@ static int jz_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
 
 
 #define IRQ_TO_REG(irq, reg)  GPIO_TO_REG(IRQ_TO_GPIO(irq), reg)
+#define IRQ_TO_PIN_REG(irq)		IRQ_TO_REG(irq, 0x00)
 #define IRQ_TO_MASK_REG(irq)		IRQ_TO_REG(irq, 0x20)
 #define IRQ_TO_MASK_SET_REG(irq)	IRQ_TO_REG(irq, 0x24)
 #define IRQ_TO_MASK_CLEAR_REG(irq)	IRQ_TO_REG(irq, 0x28)
@@ -226,14 +228,28 @@ static void jz_gpio_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
 	uint32_t flag;
 	unsigned int gpio_irq;
 	unsigned int gpio_bank;
+	struct jz_gpio_chip *chip = get_irq_desc_data(desc);
 
 	gpio_bank = JZ_IRQ_GPIO0 - irq;
 
 	flag = readl(jz_gpio_base + (gpio_bank << 8) + 0x80);
 
-	gpio_irq = ffs(flag);
+	gpio_irq = ffs(flag) - 1;
 
-	gpio_irq += (gpio_bank << 5) + JZ_IRQ_GPIO(0) - 1;
+	if (chip->edge_trigger_both & BIT(gpio_irq)) {
+		uint32_t value = readl(CHIP_TO_PIN_REG(&chip->gpio_chip));
+		if (value & BIT(gpio_irq)) {
+			writel(BIT(gpio_irq),
+				CHIP_TO_DIRECTION_CLEAR_REG(&chip->gpio_chip));
+		} else {
+			writel(BIT(gpio_irq),
+				CHIP_TO_DIRECTION_SET_REG(&chip->gpio_chip));
+		}
+	}
+
+
+	gpio_irq += (gpio_bank << 5) + JZ_IRQ_GPIO(0);
+
 
 	generic_handle_irq(gpio_irq);
 };
@@ -276,11 +292,22 @@ static void jz_gpio_irq_ack(unsigned int irq)
 static int jz_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
 {
 	uint32_t mask;
+	struct jz_gpio_chip *chip = jz_irq_to_chip(irq);
 	spin_lock(&jz_gpio_lock);
 
 	mask = readl(IRQ_TO_MASK_REG(irq));
 
 	writel(IRQ_TO_BIT(irq), IRQ_TO_MASK_CLEAR_REG(irq));
+	if (flow_type == IRQ_TYPE_EDGE_BOTH) {
+		uint32_t value = readl(IRQ_TO_PIN_REG(irq));
+		if (value & IRQ_TO_BIT(irq))
+			flow_type = IRQ_TYPE_EDGE_FALLING;
+		else
+			flow_type = IRQ_TYPE_EDGE_RISING;
+		chip->edge_trigger_both |= IRQ_TO_BIT(irq);
+	} else {
+		chip->edge_trigger_both &= ~IRQ_TO_BIT(irq);
+	}
 
 	switch(flow_type) {
 	case IRQ_TYPE_EDGE_RISING:
@@ -288,7 +315,6 @@ static int jz_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
 		writel(IRQ_TO_BIT(irq), IRQ_TO_TRIGGER_SET_REG(irq));
 		break;
 	case IRQ_TYPE_EDGE_FALLING:
-	case IRQ_TYPE_EDGE_BOTH:
 		writel(IRQ_TO_BIT(irq), IRQ_TO_DIRECTION_CLEAR_REG(irq));
 		writel(IRQ_TO_BIT(irq), IRQ_TO_TRIGGER_SET_REG(irq));
 		break;
@@ -376,6 +402,7 @@ int __init jz_gpiolib_init(void)
 	for (i = 0; i < ARRAY_SIZE(jz_gpio_chips); ++i, ++chip) {
 		gpiochip_add(&chip->gpio_chip);
 		chip->irq = JZ_IRQ_INTC_GPIO(i);
+		set_irq_data(chip->irq, chip);
 		set_irq_chained_handler(chip->irq, jz_gpio_irq_demux_handler);
 		for (irq = chip->irq_base; irq < chip->irq_base + chip->gpio_chip.ngpio;
 		++irq) {

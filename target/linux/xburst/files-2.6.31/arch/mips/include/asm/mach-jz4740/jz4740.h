@@ -18,30 +18,10 @@
 #include <asm/mach-jz4740/regs.h>
 #include <asm/mach-jz4740/ops.h>
 #include <asm/mach-jz4740/dma.h>
-#include <asm/mach-jz4740/misc.h>
 
 /*------------------------------------------------------------------
  * Platform definitions
  */
-#ifdef CONFIG_JZ4740_PAVO
-#include <asm/mach-jz4740/board-pavo.h>
-#endif
-
-#ifdef CONFIG_JZ4740_LEO
-#include <asm/mach-jz4740/board-leo.h>
-#endif
-
-#ifdef CONFIG_JZ4740_LYRA
-#include <asm/mach-jz4740/board-lyra.h>
-#endif
-
-#ifdef CONFIG_JZ4725_DIPPER
-#include <asm/mach-jz4740/board-dipper.h>
-#endif
-
-#ifdef CONFIG_JZ4720_VIRGO
-#include <asm/mach-jz4740/board-virgo.h>
-#endif
 
 #ifdef CONFIG_JZ4740_QI_LB60
 #include <asm/mach-jz4740/board-qi_lb60.h>

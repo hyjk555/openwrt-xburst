@@ -29,7 +29,9 @@
 #include <linux/page-flags.h>
 #include <asm/uaccess.h>
 #include <asm/pgtable.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/clock.h>
+#include <asm/mach-jz4740/ops.h>
 
 //#define DEBUG 1
 #undef DEBUG

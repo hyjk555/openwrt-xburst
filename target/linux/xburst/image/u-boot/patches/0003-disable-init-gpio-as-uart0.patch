@@ -1,0 +1,30 @@
+From 6901dd7d88680eb08b9bd3000244aa8003d0de9f Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu@qi-hardware.com>
+Date: Fri, 20 Nov 2009 23:29:31 +0800
+Subject: [PATCH] disable init gpio as uart0
+
+---
+ board/qi_lb60/qi_lb60.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
+index d13f2ab..d87619c 100644
+--- a/board/qi_lb60/qi_lb60.c
++++ b/board/qi_lb60/qi_lb60.c
+@@ -25,9 +25,11 @@ static void gpio_init(void)
+ 	__gpio_as_sdram_32bit();
+ 
+ 	/*
+-	 * Initialize UART0 pins
++	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
++	 * same gpio, init the gpio as uart0 cause a keyboard bug. so for
++	 * end user we disable the uart0
+ 	 */
+-	__gpio_as_uart0();
++	/* __gpio_as_uart0(); */
+ 
+ 	/*
+ 	 * Initialize LCD pins
+-- 
+1.6.3.3
+

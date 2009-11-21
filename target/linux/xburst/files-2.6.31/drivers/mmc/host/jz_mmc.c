@@ -27,7 +27,7 @@
 
 #include <asm/io.h>
 #include <asm/scatterlist.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/jz4740.h>
 
 #include "jz_mmc.h"
 

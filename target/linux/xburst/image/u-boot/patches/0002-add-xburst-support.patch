@@ -1,7 +1,7 @@
-From 7d8029d27d53b04b223a638de4fc726f6c68359f Mon Sep 17 00:00:00 2001
+From 7f32a7a2ec1cf7472684869a5cec40013134c92b Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Wed, 21 Oct 2009 11:02:22 +0800
-Subject: [PATCH] add qi_lb60 support
+Date: Wed, 18 Nov 2009 23:24:14 +0800
+Subject: [PATCH 2/2] add-xburst-support
 
 ---
  Makefile                       |   10 +
@@ -1585,5 +1585,5 @@ index 07e356d..4654bf4 100644
 +
 +#endif /* !CONFIG_JzRISC */
 -- 
-1.6.0.4
+1.6.3.3
 

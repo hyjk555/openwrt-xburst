@@ -17,7 +17,8 @@
 #include <asm/processor.h>
 #include <asm/reboot.h>
 #include <asm/system.h>
-#include <asm/jzsoc.h>
+#include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/jz4740.h>
 
 void jz_restart(char *command)
 {

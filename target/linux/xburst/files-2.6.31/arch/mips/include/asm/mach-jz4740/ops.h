@@ -16,6 +16,8 @@
 #ifndef __JZ4740_OPS_H__
 #define __JZ4740_OPS_H__
 
+#include <asm/mach-jz4740/regs.h>
+
 /*
  * Definition of Module Operations
  */

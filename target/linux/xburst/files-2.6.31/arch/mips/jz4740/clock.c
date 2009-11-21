@@ -473,6 +473,8 @@ static int jz_clk_ldclk_set_rate(struct clk *clk, unsigned long rate)
 
 	jz_clk_reg_write_mask(JZ_REG_CLOCK_CTRL, div << JZ_CLOCK_CTRL_LDIV_OFFSET,
 				JZ_CLOCK_CTRL_LDIV_MASK);
+
+	return 0;
 }
 
 static unsigned long jz_clk_ldclk_get_rate(struct clk *clk)
@@ -704,8 +706,8 @@ struct clk *clk_get(struct device *dev, const char *name)
 	struct clk *clk;
 
 	list_for_each_entry(clk, &jz_clocks, list) {
-	    if (strcmp(clk->name, name))
-		return clk;
+	    if (strcmp(clk->name, name) == 0)
+			return clk;
 	}
 	return ERR_PTR(-ENOENT);
 }
