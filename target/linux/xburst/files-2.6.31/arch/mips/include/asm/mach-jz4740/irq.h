@@ -1,15 +1,7 @@
 #ifndef __JZ4740_IRQ_H__
 #define __JZ4740_IRQ_H__
-/*
- *  JZ4740 irqs.
- *
- *  Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
 
+#define MIPS_CPU_IRQ_BASE 0
 #define JZ_IRQ_BASE 8
 
 // 1st-level interrupts
@@ -39,10 +31,9 @@
 
 /* 2nd-level interrupts */
 #define JZ_IRQ_DMA(x)	((x) + JZ_IRQ(32))  /* 32 to 37 for DMAC channel 0 to 5 */
-#define JZ_IRQ_GPIO_0	JZ_IRQ(48)  /* 48 to 175 for GPIO pin 0 to 127 */
 
 #define JZ_IRQ_INTC_GPIO(x)	(JZ_IRQ_GPIO0 - (x))
-#define JZ_IRQ_GPIO(x)		((x) + JZ_IRQ(48)
+#define JZ_IRQ_GPIO(x)		(JZ_IRQ(48) + (x))
 
 #define NR_IRQS (JZ_IRQ_GPIO(127) + 1)
 
