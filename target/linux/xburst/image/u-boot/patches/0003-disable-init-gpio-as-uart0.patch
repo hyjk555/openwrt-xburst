@@ -1,14 +1,5 @@
-From 6901dd7d88680eb08b9bd3000244aa8003d0de9f Mon Sep 17 00:00:00 2001
-From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Fri, 20 Nov 2009 23:29:31 +0800
-Subject: [PATCH] disable init gpio as uart0
-
----
- board/qi_lb60/qi_lb60.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
-index d13f2ab..d87619c 100644
+index d13f2ab..86c33ba 100644
 --- a/board/qi_lb60/qi_lb60.c
 +++ b/board/qi_lb60/qi_lb60.c
 @@ -25,9 +25,11 @@ static void gpio_init(void)
@@ -25,6 +16,14 @@ index d13f2ab..d87619c 100644
  
  	/*
  	 * Initialize LCD pins
--- 
-1.6.3.3
-
+@@ -52,8 +54,8 @@ static void gpio_init(void)
+ 		__gpio_as_input(GPIO_KEYIN_BASE + i);
+ 		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
+ 	}
+-	/* __gpio_as_input( GPIO_KEYIN_8 ); */
+-	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
++	__gpio_as_input(GPIO_KEYIN_8);
++	__gpio_enable_pull(GPIO_KEYIN_8);
+ 
+ 	__gpio_as_output(GPIO_AUDIO_POP);
+ 	__gpio_set_pin(GPIO_AUDIO_POP);
