@@ -1,29 +1,133 @@
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
-index d13f2ab..86c33ba 100644
+index d13f2ab..30ee73c 100644
 --- a/board/qi_lb60/qi_lb60.c
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -25,9 +25,11 @@ static void gpio_init(void)
+@@ -25,11 +25,6 @@ static void gpio_init(void)
  	__gpio_as_sdram_32bit();
  
  	/*
 -	 * Initialize UART0 pins
+-	 */
+-	__gpio_as_uart0();
+-
+-	/*
+ 	 * Initialize LCD pins
+ 	 */
+ 	__gpio_as_lcd_18bit();
+@@ -43,17 +38,30 @@ static void gpio_init(void)
+ 	 * Initialize Other pins
+ 	 */
+ 	unsigned int i;
++	for (i = 0; i < 7; i++){
++		__gpio_as_input(GPIO_KEYIN_BASE + i);
++		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	}
++
+ 	for (i = 0; i < 8; i++) {
+ 		__gpio_as_output(GPIO_KEYOUT_BASE + i);
+-		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
++		__gpio_clear_pin(GPIO_KEYOUT_BASE + i);
+ 	}
+ 
+-	for (i = 0; i < 7; i++){
+-		__gpio_as_input(GPIO_KEYIN_BASE + i);
+-		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	/*
 +	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
 +	 * same gpio, init the gpio as uart0 cause a keyboard bug. so for
 +	 * end user we disable the uart0
- 	 */
--	__gpio_as_uart0();
-+	/* __gpio_as_uart0(); */
- 
- 	/*
- 	 * Initialize LCD pins
-@@ -52,8 +54,8 @@ static void gpio_init(void)
- 		__gpio_as_input(GPIO_KEYIN_BASE + i);
- 		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	 */
++	if (__gpio_get_pin(GPIO_KEYIN_BASE + 2) == 0){
++		/* if pressed [S] */
++		printf("[S] pressed, enable UART0\n");
++		__gpio_as_uart0();
++	} else {
++		printf("[S] not pressed, disable UART0\n");
++		__gpio_as_input(GPIO_KEYIN_8);
++		__gpio_enable_pull(GPIO_KEYIN_8);
  	}
 -	/* __gpio_as_input( GPIO_KEYIN_8 ); */
 -	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
-+	__gpio_as_input(GPIO_KEYIN_8);
-+	__gpio_enable_pull(GPIO_KEYIN_8);
  
  	__gpio_as_output(GPIO_AUDIO_POP);
  	__gpio_set_pin(GPIO_AUDIO_POP);
+diff --git a/nand_spl/nand_boot_jz4740.c b/nand_spl/nand_boot_jz4740.c
+index 924a47a..146de19 100644
+--- a/nand_spl/nand_boot_jz4740.c
++++ b/nand_spl/nand_boot_jz4740.c
+@@ -24,10 +24,8 @@
+ #include <asm/io.h>
+ #include <asm/jz4740.h>
+ 
+-#define KEY_1_OUT       (32 * 3 + 21)
+-#define KEY_1_IN        (32 * 3 + 19)
+-#define KEY_2_OUT       (32 * 3 + 25)
+-#define KEY_2_IN        (32 * 3 + 26)
++#define KEY_U_OUT       (32 * 2 + 16)
++#define KEY_U_IN        (32 * 3 + 19)
+ 
+ /*
+  * NAND flash definitions
+@@ -350,40 +348,25 @@ static void gpio_init(void)
+ 
+ static int is_usb_boot()
+ {
+-	int key2,keyh;
+-
+-	key2 = 0;
+-	keyh = 0;
++	int keyU = 0;
+     
+-	__gpio_as_output(KEY_1_OUT);
+-	__gpio_as_output(KEY_2_OUT);
+-	__gpio_as_input(KEY_1_IN);
+-	__gpio_as_input(KEY_2_IN);
+-	__gpio_disable_pull(KEY_1_IN);
+-	__gpio_disable_pull(KEY_2_IN);
++	__gpio_as_input(KEY_U_IN);
++	__gpio_enable_pull(KEY_U_IN);
+     
+-	__gpio_clear_pin(KEY_1_OUT);
+-	__gpio_clear_pin(KEY_2_OUT);
+-
+-	key2 = __gpio_get_pin(KEY_2_IN);
+-	keyh = __gpio_get_pin(KEY_1_IN);
++	__gpio_as_output(KEY_U_OUT);
++	__gpio_clear_pin(KEY_U_OUT);
+ 
+-	if(key2)
+-		serial_puts("key2");
+-	else
+-		serial_puts("key2--");
++	keyU = __gpio_get_pin(KEY_U_IN);
+ 
+-	if(keyh)
+-		serial_puts("keyh");
++	if (keyU)
++		serial_puts("[U] not pressed\n");
+ 	else
+-		serial_puts("keyh--");
++		serial_puts("[U] pressed\n");
+ 
+-
+-	if( ( key2 == 0 ) && ( keyh == 0 ) )
++	if (keyU == 0)
+ 		return 1;
+ 	else
+ 		return 0;
+-    
+ }
+ 
+ void nand_boot(void)
+@@ -402,9 +385,8 @@ void nand_boot(void)
+ 	pll_init();
+ 	sdram_init();
+ 
+-	int ret = 0;
+-	ret = is_usb_boot();
+-	if(ret) {
++	if(is_usb_boot()) {
++		serial_puts("enter USB BOOT mode\n");
+ 		usb_boot();
+ 	}
+ 
