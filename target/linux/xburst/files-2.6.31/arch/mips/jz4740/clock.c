@@ -71,7 +71,7 @@
 #define JZ_CLOCK_PLL_OD_OFFSET		16
 
 static void __iomem *jz_clock_base;
-spinlock_t jz_clock_lock;
+static spinlock_t jz_clock_lock;
 static LIST_HEAD(jz_clocks);
 
 struct clk {
@@ -202,8 +202,8 @@ static unsigned long jz_clk_pll_half_get_rate(struct clk *clk)
 
 	reg = jz_clk_reg_read(JZ_REG_CLOCK_CTRL);
 	if (reg & JZ_CLOCK_CTRL_PLL_HALF)
-		return jz_clk_pll_get_rate(NULL) >> 1;
-	return jz_clk_pll_get_rate(NULL);
+		return jz_clk_pll_get_rate(clk->parent);
+	return jz_clk_pll_get_rate(clk->parent) >> 1;
 }
 
 
@@ -212,7 +212,7 @@ static const int jz_clk_main_divs[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
 
 static unsigned long jz_clk_main_round_rate(struct clk *clk, unsigned long rate)
 {
-	unsigned long parent_rate = jz_clk_pll_get_rate(NULL);
+	unsigned long parent_rate = jz_clk_pll_get_rate(clk->parent);
 	int div;
 
 	div = parent_rate / rate;
@@ -238,7 +238,7 @@ static unsigned long jz_clk_main_get_rate(struct clk *clk) {
 	if (div >= ARRAY_SIZE(jz_clk_main_divs))
 		div = ARRAY_SIZE(jz_clk_main_divs) - 1;
 
-	return jz_clk_pll_get_rate(NULL) / jz_clk_main_divs[div];
+	return jz_clk_pll_get_rate(clk->parent) / jz_clk_main_divs[div];
 }
 
 static int jz_clk_main_set_rate(struct clk *clk, unsigned long rate)
@@ -246,7 +246,7 @@ static int jz_clk_main_set_rate(struct clk *clk, unsigned long rate)
 	struct main_clk *mclk = (struct main_clk*)clk;
 	int i;
 	int div;
-	unsigned long parent_rate = jz_clk_pll_get_rate(NULL);
+	unsigned long parent_rate = jz_clk_pll_get_rate(clk->parent);
 
 	rate = jz_clk_main_round_rate(clk, rate);
 
@@ -444,7 +444,7 @@ static int jz_clk_divided_set_rate(struct clk *clk, unsigned long rate)
 static unsigned long jz_clk_ldclk_round_rate(struct clk *clk, unsigned long rate)
 {
 	int div;
-	unsigned long parent_rate = jz_clk_pll_half_get_rate(NULL);
+	unsigned long parent_rate = jz_clk_pll_half_get_rate(clk->parent);
 
 	if (rate > 150000000)
 		return 150000000;
@@ -465,7 +465,7 @@ static int jz_clk_ldclk_set_rate(struct clk *clk, unsigned long rate)
 	if (rate > 150000000)
 		return -EINVAL;
 
-	div = jz_clk_pll_half_get_rate(NULL) / rate - 1;
+	div = jz_clk_pll_half_get_rate(clk->parent) / rate - 1;
 	if (div < 0)
 		div = 0;
 	else if(div > 31)
@@ -484,7 +484,7 @@ static unsigned long jz_clk_ldclk_get_rate(struct clk *clk)
 	div = jz_clk_reg_read(JZ_REG_CLOCK_CTRL) & JZ_CLOCK_CTRL_LDIV_MASK;
 	div >>= JZ_CLOCK_CTRL_LDIV_OFFSET;
 
-	return jz_clk_pll_half_get_rate(NULL) / (div + 1);
+	return jz_clk_pll_half_get_rate(clk->parent) / (div + 1);
 }
 
 static struct clk jz_clk_ld = {
