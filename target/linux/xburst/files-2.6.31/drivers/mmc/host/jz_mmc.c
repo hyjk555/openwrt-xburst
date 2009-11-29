@@ -350,7 +350,7 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 		writew(JZ_MMC_IRQ_SDIO, host->base + JZ_REG_MMC_IREG);
 		mmc_signal_sdio_irq(host->mmc);
 	}
-    writew(0xff, host->base + JZ_REG_MMC_IREG);
+	writew(0xff, host->base + JZ_REG_MMC_IREG);
 
 	return ret;
 }
@@ -490,7 +490,6 @@ static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			gpio_set_value(host->pdata->gpio_power, 0);
 		host->cmdat |= JZ_MMC_CMDAT_INIT;
 		clk_enable(host->clk);
-        printk("POWER UP\n");
 		break;
 	case MMC_POWER_ON:
 		break;
@@ -498,7 +497,6 @@ static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		if (gpio_is_valid(host->pdata->gpio_power))
 			gpio_set_value(host->pdata->gpio_power, 1);
 		clk_disable(host->clk);
-        printk("POWER DOWN\n");
 		break;
 	}
 
@@ -744,7 +742,7 @@ static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
 	jz4740_mmc_clock_disable(host);
 	setup_timer(&host->timeout_timer, jz4740_mmc_timeout, (unsigned long)host);
 
-	platform_set_drvdata(pdev, mmc);
+	platform_set_drvdata(pdev, host);
 	ret = mmc_add_host(mmc);
 
 	if (ret) {
@@ -783,7 +781,7 @@ err_free_host:
 static int jz4740_mmc_remove(struct platform_device *pdev)
 {
 	struct jz4740_mmc_host *host = platform_get_drvdata(pdev);
-    struct jz4740_mmc_platform_data *pdata = host->pdata;
+	struct jz4740_mmc_platform_data *pdata = host->pdata;
 
 	del_timer_sync(&host->timeout_timer);
 	jz4740_mmc_disable_irq(host, 0xff);
@@ -821,7 +819,7 @@ static int jz4740_mmc_suspend(struct device *dev)
 
 	mmc_suspend_host(host->mmc, PMSG_SUSPEND);
 
-    return 0;
+	return 0;
 }
 
 static int jz4740_mmc_resume(struct device *dev)
@@ -830,7 +828,7 @@ static int jz4740_mmc_resume(struct device *dev)
 
 	mmc_resume_host(host->mmc);
 
-    return 0;
+	return 0;
 }
 
 struct dev_pm_ops jz4740_mmc_pm_ops = {
