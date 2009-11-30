@@ -1,0 +1,47 @@
+From 855326380fbb37b294abceaa10a5596408719f52 Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu@qi-hardware.com>
+Date: Thu, 26 Nov 2009 16:22:41 +0800
+Subject: [PATCH] fix compile zImage
+
+---
+ arch/mips/boot/compressed/Makefile |    2 +-
+ arch/mips/boot/compressed/misc.c   |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/boot/compressed/Makefile b/arch/mips/boot/compressed/Makefile
+index 9b41329..4a313fd 100644
+--- a/arch/mips/boot/compressed/Makefile
++++ b/arch/mips/boot/compressed/Makefile
+@@ -27,7 +27,7 @@ $(obj)/head.o: $(obj)/head.S $(obj)/vmlinux.bin.gz vmlinux
+ 	$(CC) $(KBUILD_AFLAGS) \
+ 	-DIMAGESIZE=$(shell sh $(FILESIZE) $(obj)/vmlinux.bin.gz) \
+ 	-DKERNEL_ENTRY=$(shell sh $(ENTRY) $(NM) vmlinux ) \
+-	-DLOADADDR=$(loadaddr) \
++	-DLOADADDR=$(loadaddr) -I$(srctree)/arch/mips/include \
+ 	-c -o $(obj)/head.o $<
+ 
+ $(obj)/vmlinuz: $(OBJS) $(obj)/ld.script $(obj)/vmlinux.bin.gz $(obj)/dummy.o
+diff --git a/arch/mips/boot/compressed/misc.c b/arch/mips/boot/compressed/misc.c
+index 2309fee..1a3695e 100644
+--- a/arch/mips/boot/compressed/misc.c
++++ b/arch/mips/boot/compressed/misc.c
+@@ -102,7 +102,7 @@ static unsigned long free_mem_end_ptr;
+ #define HEAP_SIZE             0x10000
+ 
+ #include "../../../../lib/inflate.c"
+-
++#if 0
+ static void *malloc(int size)
+ {
+ 	void *p;
+@@ -124,6 +124,7 @@ static void *malloc(int size)
+ static void free(void *where)
+ {	/* Don't care */
+ }
++#endif
+ 
+ static void gzip_mark(void **ptr)
+ {
+-- 
+1.6.3.3
+
