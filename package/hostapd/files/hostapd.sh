@@ -77,7 +77,9 @@ hostapd_setup_vif() {
 	config_get channel "$device" channel
 	config_get hwmode "$device" hwmode
 	config_get wpa_group_rekey "$vif" wpa_group_rekey
-	config_get ieee80211d "$vif" ieee80211d 
+	config_get ieee80211d "$vif" ieee80211d
+	config_get_bool wds "$vif" wds 0
+	[ "$wds" -gt 0 -a "$driver" = "nl80211" ] && wds="wds_sta=1" || wds=""
 	case "$hwmode" in
 		bg) hwmode=g;;
 	esac
@@ -89,6 +91,9 @@ hostapd_setup_vif() {
 		[ -n "$hwmode_11n" ] && {
 			hwmode="$hwmode_11n"
 			config_get ht_capab "$device" ht_capab
+			[ -n "$ht_capab" -a -n "${ht_capab%%\[*}" ] && {
+				ht_capab=`echo "[$ht_capab]" | sed -e 's, ,][,g'`
+			}
 		}
 	}
 	cat > /var/run/hostapd-$ifname.conf <<EOF
@@ -106,6 +111,7 @@ ${hwmode_11n:+ieee80211n=1}
 ${ht_capab:+ht_capab=$ht_capab}
 ${wpa_group_rekey:+wpa_group_rekey=$wpa_group_rekey}
 ${ieee80211d:+ieee80211d=$ieee80211d}
+$wds
 $hostapd_cfg
 EOF
 	case "$driver" in
@@ -113,27 +119,27 @@ EOF
 		;;
 		*) 
 			cat >> /var/run/hostapd-$ifname.conf <<EOF
-wme_enabled=1
-wme_ac_bk_cwmin=4
-wme_ac_bk_cwmax=10
-wme_ac_bk_aifs=7
-wme_ac_bk_txop_limit=0
-wme_ac_bk_acm=0
-wme_ac_be_aifs=3
-wme_ac_be_cwmin=4
-wme_ac_be_cwmax=10
-wme_ac_be_txop_limit=0
-wme_ac_be_acm=0
-wme_ac_vi_aifs=2
-wme_ac_vi_cwmin=3
-wme_ac_vi_cwmax=4
-wme_ac_vi_txop_limit=94
-wme_ac_vi_acm=0
-wme_ac_vo_aifs=2
-wme_ac_vo_cwmin=2
-wme_ac_vo_cwmax=3
-wme_ac_vo_txop_limit=47
-wme_ac_vo_acm=0
+wmm_enabled=1
+wmm_ac_bk_cwmin=4
+wmm_ac_bk_cwmax=10
+wmm_ac_bk_aifs=7
+wmm_ac_bk_txop_limit=0
+wmm_ac_bk_acm=0
+wmm_ac_be_aifs=3
+wmm_ac_be_cwmin=4
+wmm_ac_be_cwmax=10
+wmm_ac_be_txop_limit=0
+wmm_ac_be_acm=0
+wmm_ac_vi_aifs=2
+wmm_ac_vi_cwmin=3
+wmm_ac_vi_cwmax=4
+wmm_ac_vi_txop_limit=94
+wmm_ac_vi_acm=0
+wmm_ac_vo_aifs=2
+wmm_ac_vo_cwmin=2
+wmm_ac_vo_cwmax=3
+wmm_ac_vo_txop_limit=47
+wmm_ac_vo_acm=0
 tx_queue_data3_aifs=7
 tx_queue_data3_cwmin=15
 tx_queue_data3_cwmax=1023

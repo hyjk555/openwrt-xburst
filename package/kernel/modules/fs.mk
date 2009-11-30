@@ -82,7 +82,7 @@ define KernelPackage/fs-ext2
   KCONFIG:=CONFIG_EXT2_FS
   DEPENDS:=$(if $(DUMP)$(CONFIG_FS_MBCACHE),+kmod-fs-mbcache)
   FILES:=$(LINUX_DIR)/fs/ext2/ext2.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,30,ext2)
+  AUTOLOAD:=$(call AutoLoad,32,ext2)
 endef
 
 define KernelPackage/fs-ext2/description
@@ -102,7 +102,7 @@ define KernelPackage/fs-ext3
   FILES:= \
 	$(LINUX_DIR)/fs/ext3/ext3.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/fs/jbd/jbd.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,30,jbd ext3)
+  AUTOLOAD:=$(call AutoLoad,31,jbd ext3)
 endef
 
 define KernelPackage/fs-ext3/description
@@ -364,7 +364,7 @@ define KernelPackage/fs-btrfs
 	CONFIG_BTRFS_FS \
 	CONFIG_BTRFS_FS_POSIX_ACL=n
   # for crc32c
-  DEPENDS:=+kmod-crypto-core @!LINUX_2_6_21&&!LINUX_2_6_25&&!LINUX_2_6_27&&!LINUX_2_6_28
+  DEPENDS:=+kmod-crypto-core @!LINUX_2_6_21&&!LINUX_2_6_25&&!LINUX_2_6_28
   FILES:=\
 	$(LINUX_DIR)/crypto/crc32c.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/lib/libcrc32c.$(LINUX_KMOD_SUFFIX) \

@@ -104,6 +104,7 @@ enable_mac80211() {
 		config_get enc "$vif" encryption
 		config_get mode "$vif" mode
 		config_get ssid "$vif" ssid
+		config_get_bool wds "$vif" wds 0
 
 		# It is far easier to delete and create the desired interface
 		case "$mode" in
@@ -123,12 +124,17 @@ enable_mac80211() {
 				iw phy "$phy" interface add "$ifname" type monitor
 			;;
 			sta)
-				iw phy "$phy" interface add "$ifname" type managed
+				local wdsflag
+				[ "$wds" -gt 0 ] && wdsflag="4addr on"
+				iw phy "$phy" interface add "$ifname" type managed $wdsflag
+				config_get_bool powersave "$vif" powersave 0
+				[ "$powersave" -gt 0 ] && powersave="on" || powersave="off"
+				iwconfig "$ifname" power "$powersave"
 			;;
 		esac
 
 		# All interfaces must have unique mac addresses
-		# which can either be explicitly set in the device 
+		# which can either be explicitly set in the device
 		# section, or automatically generated
 		config_get macaddr "$device" macaddr
 		local mac_1="${macaddr%%:*}"
@@ -136,7 +142,7 @@ enable_mac80211() {
 
 		config_get vif_mac "$vif" macaddr
 		[ -n "$vif_mac" ] || {
-			if [ "$i" -gt 0 ]; then 
+			if [ "$i" -gt 0 ]; then
 				offset="$(( 2 + $i * 4 ))"
 			else
 				offset="0"
@@ -162,7 +168,7 @@ enable_mac80211() {
 		# none -> NO encryption
 		#
 		# wep + keymgmt = '' -> we use iw to connect to the
-		# network.  
+		# network.
 		#
 		# wep + keymgmt = 'NONE' -> wpa_supplicant will be
 		# configured to handle the wep connection
@@ -176,7 +182,7 @@ enable_mac80211() {
 							zidx = idx - 1
 							config_get key "$vif" "key${idx}"
 							if [ -n "$key" ]; then
-								append keystring "${zidx}:${key} " 
+								append keystring "${zidx}:${key} "
 							fi
 						done
 					fi
@@ -232,7 +238,7 @@ enable_mac80211() {
 			;;
 			sta|mesh)
 				config_get bssid "$vif" bssid
-				case "$enc" in												 
+				case "$enc" in
 					wep)
 						if [ -e "$keymgmt" ]; then
 							[ -n "$keystring" ] &&
@@ -248,7 +254,8 @@ enable_mac80211() {
 							fi
 						fi
 					;;
-					wpa)
+					wpa*|psk*)
+						config_get key "$vif" key
 						if eval "type wpa_supplicant_setup_vif" 2>/dev/null >/dev/null; then
 							wpa_supplicant_setup_vif "$vif" wext || {
 								echo "enable_mac80211($device): Failed to set up wpa_supplicant for interface $ifname" >&2
@@ -281,29 +288,44 @@ check_device() {
 detect_mac80211() {
 	devidx=0
 	config_load wireless
+	while :; do
+		config_get type "wifi$devidx" type
+		[ -n "$type" ] || break
+		devidx=$(($devidx + 1))
+	done
 	for dev in $(ls /sys/class/ieee80211); do
 		found=0
 		config_foreach check_device wifi-device
 		[ "$found" -gt 0 ] && continue
 
-		while :; do 
-			config_get type "wifi$devidx" type
-			[ -n "$type" ] || break
-			devidx=$(($devidx + 1))
-		done
 		mode_11n=""
 		mode_band="g"
-		iw phy "$dev" info | grep -q 'HT cap' && mode_11n="n"
-		iw phy "$dev" info | grep -q '2412 MHz' || mode_band="a"
+		channel="5"
+		ht_cap=0
+		for cap in $(iw phy "$dev" info | grep 'HT capabilities' | cut -d: -f2); do
+			ht_cap="$(($ht_cap | $cap))"
+		done
+		ht_capab="";
+		[ "$ht_cap" -gt 0 ] && {
+			mode_11n="n"
+			list="	list ht_capab"
+			[ "$(($ht_cap & 1))" -eq 1 ] && append ht_capab "$list	LDPC" "$N"
+			[ "$(($ht_cap & 2))" -eq 2 ] && append ht_capab "$list	HT40-" "$N"
+			[ "$(($ht_cap & 32))" -eq 32 ] && append ht_capab "$list	SHORT-GI-20" "$N"
+			[ "$(($ht_cap & 64))" -eq 64 ] && append ht_capab "$list	SHORT-GI-40" "$N"
+			[ "$(($ht_cap & 4096))" -eq 4096 ] && append ht_capab "$list	DSSS_CCK-40" "$N"
+		}
+		iw phy "$dev" info | grep -q '2412 MHz' || { mode_band="a"; channel="36"; }
 
 		cat <<EOF
 config wifi-device  wifi$devidx
 	option type     mac80211
-	option channel  5
+	option channel  ${channel}
 	option macaddr	$(cat /sys/class/ieee80211/${dev}/macaddress)
 	option hwmode	11${mode_11n}${mode_band}
 	# REMOVE THIS LINE TO ENABLE WIFI:
 	option disabled 1
+$ht_capab
 
 config wifi-iface
 	option device   wifi$devidx
@@ -313,6 +335,7 @@ config wifi-iface
 	option encryption none
 
 EOF
+	devidx=$(($devidx + 1))
 	done
 }
 

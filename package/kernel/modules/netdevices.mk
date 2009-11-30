@@ -113,7 +113,7 @@ $(eval $(call KernelPackage,via-rhine))
 define KernelPackage/via-velocity
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=VIA Velocity Gigabit Ethernet Adapter kernel support
-  DEPENDS:=@TARGET_ixp4xx||TARGET_x86
+  DEPENDS:=@TARGET_ixp4xx||TARGET_mpc83xx||TARGET_x86
   KCONFIG:=CONFIG_VIA_VELOCITY
   FILES:=$(LINUX_DIR)/drivers/net/via-velocity.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,50,via-velocity)
@@ -201,9 +201,10 @@ $(eval $(call KernelPackage,e100))
 define KernelPackage/e1000
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel(R) PRO/1000 PCI cards kernel support
-  DEPENDS:=@TARGET_x86
+  DEPENDS:=@PCI_SUPPORT
   KCONFIG:=CONFIG_E1000 \
-    CONFIG_E1000_DISABLE_PACKET_SPLIT=n
+    CONFIG_E1000_DISABLE_PACKET_SPLIT=n \
+    CONFIG_E1000_NAPI=y
   FILES:=$(LINUX_DIR)/drivers/net/e1000/e1000.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,50,e1000)
 endef
@@ -289,7 +290,7 @@ define KernelPackage/tg3
   TITLE:=Broadcom Tigon3 Gigabit Ethernet
   FILES:=$(LINUX_DIR)/drivers/net/tg3.$(LINUX_KMOD_SUFFIX)
   KCONFIG:=CONFIG_TIGON3
-  DEPENDS:=@LINUX_2_6 +LINUX_2_6_27||LINUX_2_6_28||LINUX_2_6_30||LINUX_2_6_31:kmod-libphy
+  DEPENDS:=@LINUX_2_6 +LINUX_2_6_28||LINUX_2_6_30||LINUX_2_6_31:kmod-libphy @!TARGET_ubicom32
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   AUTOLOAD:=$(call AutoLoad,50,tg3)
 endef

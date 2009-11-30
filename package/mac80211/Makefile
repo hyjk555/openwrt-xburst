@@ -10,18 +10,21 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2009-10-09
-PKG_RELEASE:=1
+PKG_VERSION:=2009-11-21
+PKG_RELEASE:=7
 PKG_SOURCE_URL:= \
-	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2009/10 \
+	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2009/11 \
 	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=15c310560765cbc35ed930fb0e815284
+PKG_MD5SUM:=00e80559cddaa160605098572f5c58b8
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_kmod-mac80211 \
+	CONFIG_PACKAGE_MAC80211_DEBUGFS \
+	CONFIG_PACKAGE_ATH_DEBUG \
+	CONFIG_ATH_USER_REGD \
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -53,12 +56,12 @@ endef
 
 # Prism54 drivers
 P54PCIFW:=2.13.12.0.arm
-P54USBFW:=2.13.24.0.lm86.arm
+P54USBFW:=2.13.24.0.lm87.arm
 
 define Download/p54usb
   FILE:=$(P54USBFW)
   URL:=http://daemonizer.de/prism54/prism54-fw/fw-usb
-  MD5SUM:=2efd50eab43c0d0376765576a54b7a30
+  MD5SUM:=8e8ab005a4f8f0123bcdc51bc25b47f6
 endef
 $(eval $(call Download,p54usb))
 
@@ -278,10 +281,17 @@ config ATH_USER_REGD
 	help
 		Atheros' idea of regulatory handling is that the EEPROM of the card defines
 		the regulatory limits and the user is only allowed to restrict the settings
-		even further, even if the country allows frequencies or power levels that 
+		even further, even if the country allows frequencies or power levels that
 		are forbidden by the EEPROM settings.
 		Select this option if you want the driver to respect the user's decision about
 		regulatory settings.
+
+config PACKAGE_ATH_DEBUG
+	bool "Atheros wireless debugging"
+	depends on PACKAGE_kmod-ath
+	help
+		Say Y, if you want to debug atheros wireless drivers.
+		Right now only ath9k makes use of this.
 endef
 
 define KernelPackage/ath
@@ -316,9 +326,10 @@ define KernelPackage/ath9k
   URL:=http://linuxwireless.org/en/users/Drivers/ath9k
   DEPENDS+= +kmod-ath
   FILES:= \
+	$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath9k/ath9k_common.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath9k/ath9k_hw.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath9k/ath9k.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,27,ath9k_hw ath9k)
+  AUTOLOAD:=$(call AutoLoad,27,ath9k_hw ath9k_common ath9k)
 endef
 
 define KernelPackage/ath9k/description
@@ -329,7 +340,6 @@ endef
 define KernelPackage/ath9k/config
 	source "$(SOURCE)/Config.in.ath9k"
 endef
-
 
 USB8388FW_NAME:=usb8388
 USB8388FW_VERSION:=5.110.22.p23
@@ -343,7 +353,7 @@ $(eval $(call Download,usb8388))
 
 define KernelPackage/libertas
   $(call KernelPackage/mac80211/Default)
-  DEPENDS+= @USB_SUPPORT +kmod-mac80211 +kmod-usb-core
+  DEPENDS+= @USB_SUPPORT +kmod-mac80211 +kmod-usb-core +kmod-lib80211
   TITLE:=Marvell 88W8015 Wireless Driver
   FILES:= \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/libertas/libertas.$(LINUX_KMOD_SUFFIX) \
@@ -356,7 +366,7 @@ define KernelPackage/ar9170
   $(call KernelPackage/mac80211/Default)
   TITLE:=Atheros AR9170 802.11n USB support
   URL:=http://wireless.kernel.org/en/users/Drivers/ar9170
-  DEPENDS+= @USB_SUPPORT @!LINUX_2_6_25 @!LINUX_2_6_27 +kmod-ath +kmod-usb-core
+  DEPENDS+= @USB_SUPPORT @!LINUX_2_6_25 +kmod-ath +kmod-usb-core
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ar9170/ar9170usb.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,27,ar9170usb)
 endef
@@ -491,8 +501,8 @@ BUILDFLAGS:= \
 	$(if $(CONFIG_PCI),-DCONFIG_SSB_SPROM) \
 	$(if $(CONFIG_LEDS_TRIGGERS), -DCONFIG_MAC80211_LEDS -DCONFIG_LEDS_TRIGGERS -DCONFIG_B43_LEDS -DCONFIG_B43LEGACY_LEDS -DCONFIG_AR9170_LEDS) \
 	-DCONFIG_B43_HWRNG -DCONFIG_B43LEGACY_HWRNG \
-	$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),-DCONFIG_MAC80211_DEBUGFS) \
-	$(if $(CONFIG_PACKAGE_ATH9K_DEBUG),-DCONFIG_ATH9K_DEBUG) \
+	$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),-DCONFIG_MAC80211_DEBUGFS -DCONFIG_ATH9K_DEBUGFS) \
+	$(if $(CONFIG_PACKAGE_ATH_DEBUG),-DCONFIG_ATH_DEBUG) \
 	-D__CONFIG_MAC80211_RC_DEFAULT=minstrel \
 	$(if $(CONFIG_ATH_USER_REGD),-DATH_USER_REGD=1)
 
@@ -519,9 +529,10 @@ MAKE_OPTS:= \
 	CONFIG_B43=$(if $(CONFIG_PACKAGE_kmod-b43),m) \
 	CONFIG_B43LEGACY=$(if $(CONFIG_PACKAGE_kmod-b43legacy),m) \
 	CONFIG_ATH_COMMON=$(if $(CONFIG_PACKAGE_kmod-ath),m) \
+	CONFIG_ATH_DEBUG=$(if $(CONFIG_PACKAGE_ATH_DEBUG),y) \
 	CONFIG_ATH5K=$(if $(CONFIG_PACKAGE_kmod-ath5k),m) \
 	CONFIG_ATH9K=$(if $(CONFIG_PACKAGE_kmod-ath9k),m) \
-	CONFIG_ATH9K_DEBUG=$(if $(CONFIG_PACKAGE_ATH9K_DEBUG),y) \
+	CONFIG_ATH9K_DEBUGFS=$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),y) \
 	CONFIG_ZD1211RW=$(if $(CONFIG_PACKAGE_kmod-zd1211rw),m) \
 	CONFIG_P54_COMMON=$(if $(CONFIG_PACKAGE_kmod-p54-common),m) \
 	CONFIG_P54_PCI=$(if $(CONFIG_PACKAGE_kmod-p54-pci),m) \

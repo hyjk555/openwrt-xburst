@@ -11,7 +11,7 @@ choice
 	default GCC_VERSION_4_3_3 if TARGET_coldfire
 	default GCC_VERSION_4_4_1 if ubicom32
 	default GCC_VERSION_4_4_1 if TARGET_octeon
-	default GCC_VERSION_4_3_3_CS if mips || mipsel
+	default GCC_VERSION_4_3_3_CS if (mips || mipsel) && !TARGET_octeon
 	default GCC_VERSION_4_3_3_CS if arm || armeb
 	default GCC_VERSION_4_1_2
 	help
@@ -49,6 +49,11 @@ if !LINUX_2_4
 endif
 
 endchoice
+
+config GCC_USE_GRAPHITE
+	bool
+	prompt "Compile in support for the new Graphite framework in GCC 4.4+" if TOOLCHAINOPTS
+	depends GCC_VERSION_4_4_1 || GCC_VERSION_4_4_2
 
 config EXTRA_GCC_CONFIG_OPTIONS
 	string

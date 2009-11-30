@@ -318,6 +318,7 @@ static void ag71xx_hw_set_macaddr(struct ag71xx *ag, unsigned char *mac)
 
 static void ag71xx_dma_reset(struct ag71xx *ag)
 {
+	u32 val;
 	int i;
 
 	ag71xx_dump_dma_regs(ag);
@@ -340,13 +341,19 @@ static void ag71xx_dma_reset(struct ag71xx *ag)
 	ag71xx_wr(ag, AG71XX_REG_RX_STATUS, RX_STATUS_BE | RX_STATUS_OF);
 	ag71xx_wr(ag, AG71XX_REG_TX_STATUS, TX_STATUS_BE | TX_STATUS_UR);
 
-	if (ag71xx_rr(ag, AG71XX_REG_RX_STATUS))
-		printk(KERN_ALERT "%s: unable to clear DMA Rx status\n",
-			ag->dev->name);
+	val = ag71xx_rr(ag, AG71XX_REG_RX_STATUS);
+	if (val)
+		printk(KERN_ALERT "%s: unable to clear DMA Rx status: %08x\n",
+			ag->dev->name, val);
 
-	if (ag71xx_rr(ag, AG71XX_REG_TX_STATUS))
-		printk(KERN_ALERT "%s: unable to clear DMA Tx status\n",
-			ag->dev->name);
+	val = ag71xx_rr(ag, AG71XX_REG_TX_STATUS);
+
+	/* mask out reserved bits */
+	val &= ~0xff000000;
+
+	if (val)
+		printk(KERN_ALERT "%s: unable to clear DMA Tx status: %08x\n",
+			ag->dev->name, val);
 
 	ag71xx_dump_dma_regs(ag);
 }
@@ -395,8 +402,13 @@ static void ag71xx_hw_init(struct ag71xx *ag)
 
 	/* setup FIFO configuration registers */
 	ag71xx_wr(ag, AG71XX_REG_FIFO_CFG0, FIFO_CFG0_INIT);
-	ag71xx_wr(ag, AG71XX_REG_FIFO_CFG1, 0x0fff0000);
-	ag71xx_wr(ag, AG71XX_REG_FIFO_CFG2, 0x00001fff);
+	if (pdata->is_ar724x) {
+		ag71xx_wr(ag, AG71XX_REG_FIFO_CFG1, pdata->fifo_cfg1);
+		ag71xx_wr(ag, AG71XX_REG_FIFO_CFG2, pdata->fifo_cfg2);
+	} else {
+		ag71xx_wr(ag, AG71XX_REG_FIFO_CFG1, 0x0fff0000);
+		ag71xx_wr(ag, AG71XX_REG_FIFO_CFG2, 0x00001fff);
+	}
 	ag71xx_wr(ag, AG71XX_REG_FIFO_CFG4, FIFO_CFG4_INIT);
 	ag71xx_wr(ag, AG71XX_REG_FIFO_CFG5, FIFO_CFG5_INIT);
 

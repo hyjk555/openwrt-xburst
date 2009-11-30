@@ -225,25 +225,26 @@ EOF
 	}
 	if (@{$target->{subtargets}} > 0) {
 		$confstr .= "\tselect HAS_SUBTARGETS\n";
-	} else {
-		$confstr .= "\tselect $target->{arch}\n";
-		foreach my $dep (@{$target->{depends}}) {
-			my $mode = "depends";
-			my $flags;
-			my $name;
-
-			$dep =~ /^([@\+\-]+)(.+)$/;
-			$flags = $1;
-			$name = $2;
-
-			next if $name =~ /:/;
-			$flags =~ /-/ and $mode = "deselect";
-			$flags =~ /\+/ and $mode = "select";
-			$flags =~ /@/ and $confstr .= "\t$mode $name\n";
-		}
-		$confstr .= $features;
 	}
 
+	if ($target->{arch} =~ /\w/) {
+		$confstr .= "\tselect $target->{arch}\n";
+	}
+	foreach my $dep (@{$target->{depends}}) {
+		my $mode = "depends";
+		my $flags;
+		my $name;
+
+		$dep =~ /^([@\+\-]+)(.+)$/;
+		$flags = $1;
+		$name = $2;
+
+		next if $name =~ /:/;
+		$flags =~ /-/ and $mode = "deselect";
+		$flags =~ /\+/ and $mode = "select";
+		$flags =~ /@/ and $confstr .= "\t$mode $name\n";
+	}
+	$confstr .= $features;
 	$confstr .= "$help\n\n";
 	print $confstr;
 }
@@ -548,9 +549,10 @@ EOF
 			print <<EOF;
 	config FEATURE_$feature->{name}
 		bool "$feature->{title}"
-		help
-$feature->{description}
 EOF
+			$feature->{description} =~ /\w/ and do {
+				print "\t\thelp\n".$feature->{description}."\n";
+			};
 		}
 		print "endchoice\n"
 	}
@@ -619,6 +621,9 @@ sub gen_package_mk() {
 		if ($config) {
 			$pkg->{buildonly} and $config = "";
 			print "package-$config += $pkg->{subdir}$pkg->{src}\n";
+			if ($pkg->{variant}) {
+				print "\$(curdir)/$pkg->{subdir}$pkg->{src}/variants += \$(if $config,$pkg->{variant})\n"
+			}
 			$pkg->{prereq} and print "prereq-$config += $pkg->{subdir}$pkg->{src}\n";
 		}
 

@@ -10,14 +10,26 @@ curdir:=tools
 
 # subdirectories to descend into
 tools-y :=
+ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 tools-$(CONFIG_GCC_VERSION_4_3)$(CONFIG_GCC_VERSION_4_4) += gmp mpfr
+endif
 tools-y += m4 autoconf automake bison pkg-config sed mklibs
-tools-y += sstrip ipkg-utils genext2fs squashfs squashfs4 mtd-utils lzma-old mkimage
+tools-y += sstrip ipkg-utils genext2fs mtd-utils mkimage
 tools-y += firmware-utils patch-cmdline quilt yaffs2
-
+ifneq ($(CONFIG_LINUX_2_4)$(CONFIG_LINUX_2_6_21)$(CONFIG_LINUX_2_6_25)$(CONFIG_LINUX_2_6_28),)
+tools-y += squashfs lzma-old
+else
+ifneq ($(CONFIG_TARGET_ar71xx),)
+tools-y += squashfs lzma-old
+endif
+tools-y += squashfs4 lzma
+endif
 tools-$(CONFIG_CCACHE) += ccache
-tools-$(CONFIG_powerpc) += dtc
-tools-dep += lzma
+
+ifdef CONFIG_GCC_USE_GRAPHITE
+  tools-y += ppl cloog
+  $(curdir)/cloog/compile := $(curdir)/ppl/install
+endif
 
 # builddir dependencies
 $(curdir)/pkg-config/compile := $(curdir)/sed/install
@@ -76,5 +88,5 @@ $(curdir)//compile = $(STAGING_DIR)/.prepared $(STAGING_DIR_HOST)/.prepared $($(
 $(curdir)/ := .config prereq
 $(curdir)//install = $(1)/compile
 
-$(eval $(call stampfile,$(curdir),tools,install,,CONFIG_CCACHE CONFIG_powerpc CONFIG_GCC_VERSION_4_3))
+$(eval $(call stampfile,$(curdir),tools,install,,CONFIG_CCACHE CONFIG_powerpc CONFIG_GCC_VERSION_4_3 CONFIG_GCC_USE_GRAPHITE))
 $(eval $(call subdir,$(curdir)))
