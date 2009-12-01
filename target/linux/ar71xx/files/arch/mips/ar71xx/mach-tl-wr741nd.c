@@ -8,12 +8,14 @@
  *  by the Free Software Foundation.
  */
 
+#include <linux/pci.h>
 #include <linux/platform_device.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
 #include <linux/input.h>
+#include <linux/ath9k_platform.h>
 
 #include <asm/mips_machine.h>
 
@@ -105,6 +107,7 @@ static struct gpio_button tl_wr741nd_gpio_buttons[] __initdata = {
 	}
 };
 
+#ifdef CONFIG_PCI
 static struct ar71xx_pci_irq tl_wr741nd_pci_irqs[] __initdata = {
 	{
 		.slot	= 0,
@@ -112,6 +115,29 @@ static struct ar71xx_pci_irq tl_wr741nd_pci_irqs[] __initdata = {
 		.irq	= AR71XX_PCI_IRQ_DEV0,
 	}
 };
+
+static struct ath9k_platform_data tl_wr741nd_wmac_data;
+
+static int tl_wr741nd_pci_plat_dev_init(struct pci_dev *dev)
+{
+	dev->dev.platform_data = &tl_wr741nd_wmac_data;
+	return 0;
+}
+
+static void tl_wr741nd_pci_init(void)
+{
+	u8 *ee = (u8 *) KSEG1ADDR(0x1fff1000);
+
+	memcpy(tl_wr741nd_wmac_data.eeprom_data, ee,
+	       sizeof(tl_wr741nd_wmac_data.eeprom_data));
+
+	ar71xx_pci_plat_dev_init = tl_wr741nd_pci_plat_dev_init;
+
+	ar71xx_pci_init(ARRAY_SIZE(tl_wr741nd_pci_irqs), tl_wr741nd_pci_irqs);
+}
+#else
+static inline void tl_wr741nd_pci_init(void) { };
+#endif /* CONFIG_PCI */
 
 static void __init tl_wr741nd_setup(void)
 {
@@ -125,12 +151,18 @@ static void __init tl_wr741nd_setup(void)
 	ar71xx_eth0_data.phy_mask = 0x0;
 	ar71xx_eth0_data.speed = SPEED_100;
 	ar71xx_eth0_data.duplex = DUPLEX_FULL;
+	ar71xx_eth0_data.fifo_cfg1 = 0x0fff0000;
+	ar71xx_eth0_data.fifo_cfg2 = 0x00001fff;
+	ar71xx_eth0_data.fifo_cfg3 = 0x008001ff;
 
 	/* LAN ports */
 	ar71xx_eth1_data.phy_if_mode = PHY_INTERFACE_MODE_RMII;
 	ar71xx_eth1_data.phy_mask = 0x0;
 	ar71xx_eth1_data.speed = SPEED_1000;
 	ar71xx_eth1_data.duplex = DUPLEX_FULL;
+	ar71xx_eth1_data.fifo_cfg1 = 0x0fff0000;
+	ar71xx_eth1_data.fifo_cfg2 = 0x00001fff;
+	ar71xx_eth1_data.fifo_cfg3 = 0x008001ff;
 
 	ar71xx_add_device_eth(1);
 	ar71xx_add_device_eth(0);
@@ -145,6 +177,6 @@ static void __init tl_wr741nd_setup(void)
 					ARRAY_SIZE(tl_wr741nd_gpio_buttons),
 					tl_wr741nd_gpio_buttons);
 
-	ar71xx_pci_init(ARRAY_SIZE(tl_wr741nd_pci_irqs), tl_wr741nd_pci_irqs);
+	tl_wr741nd_pci_init();
 }
 MIPS_MACHINE(AR71XX_MACH_TL_WR741ND, "TP-LINK TL-WR741ND", tl_wr741nd_setup);

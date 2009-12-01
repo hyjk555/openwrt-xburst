@@ -13,6 +13,7 @@ define KernelPackage/video-core
   TITLE=Video4Linux support
   DEPENDS:=@PCI_SUPPORT||USB_SUPPORT
   KCONFIG:= \
+	CONFIG_MEDIA_SUPPORT=m \
 	CONFIG_VIDEO_DEV \
 	CONFIG_VIDEO_V4L1=y \
 	CONFIG_VIDEO_CAPTURE_DRIVERS=y \
@@ -184,7 +185,7 @@ define KernelPackage/video-gspca-core
   SUBMENU:=$(VIDEO_MENU)
   MENU:=1
   TITLE:=GSPCA webcam core support framework
-  DEPENDS:=@LINUX_2_6 @!LINUX_2_6_21 @!LINUX_2_6_25 @!LINUX_2_6_27 @USB_SUPPORT +kmod-usb-core +kmod-video-core
+  DEPENDS:=@LINUX_2_6 @!LINUX_2_6_21 @!LINUX_2_6_25 @USB_SUPPORT +kmod-usb-core +kmod-video-core
   KCONFIG:=CONFIG_USB_GSPCA
   FILES:=$(LINUX_DIR)/drivers/media/video/gspca/gspca_main.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,70,gspca_main)

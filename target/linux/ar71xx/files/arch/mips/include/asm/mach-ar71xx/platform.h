@@ -33,10 +33,15 @@ struct ag71xx_platform_data {
 
 	void		(* ddr_flush)(void);
 	void		(* set_pll)(int speed);
+
+	u32		fifo_cfg1;
+	u32		fifo_cfg2;
+	u32		fifo_cfg3;
 };
 
 struct ag71xx_mdio_platform_data {
 	u32		phy_mask;
+	int		is_ar7240;
 };
 
 struct ar71xx_ehci_platform_data {

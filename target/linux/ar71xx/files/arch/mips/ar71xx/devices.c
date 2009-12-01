@@ -42,6 +42,19 @@ static struct resource ar71xx_ohci_resources[] = {
 	},
 };
 
+static struct resource ar7240_ohci_resources[] = {
+	[0] = {
+		.start	= AR7240_OHCI_BASE,
+		.end	= AR7240_OHCI_BASE + AR7240_OHCI_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= AR71XX_CPU_IRQ_USB,
+		.end	= AR71XX_CPU_IRQ_USB,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
 static u64 ar71xx_ohci_dmamask = DMA_BIT_MASK(32);
 static struct platform_device ar71xx_ohci_device = {
 	.name		= "ar71xx-ohci",
@@ -90,7 +103,10 @@ static struct platform_device ar71xx_ehci_device = {
 	(RESET_MODULE_USB_HOST | RESET_MODULE_USB_PHY \
 	| RESET_MODULE_USB_OHCI_DLL)
 
-static void ar71xx_usb_setup(void)
+#define AR7240_USB_RESET_MASK \
+	(RESET_MODULE_USB_HOST | RESET_MODULE_USB_OHCI_DLL_7240)
+
+static void __init ar71xx_usb_setup(void)
 {
 	ar71xx_device_stop(AR71XX_USB_RESET_MASK);
 	mdelay(1000);
@@ -105,7 +121,19 @@ static void ar71xx_usb_setup(void)
 	mdelay(900);
 }
 
-static void ar91xx_usb_setup(void)
+static void __init ar7240_usb_setup(void)
+{
+	ar71xx_ohci_device.resource = ar7240_ohci_resources;
+
+	ar71xx_device_stop(AR7240_USB_RESET_MASK);
+	mdelay(1000);
+	ar71xx_device_start(AR7240_USB_RESET_MASK);
+
+	/* WAR for HW bug. Here it adjusts the duration between two SOFS */
+	ar71xx_usb_ctrl_wr(USB_CTRL_REG_FLADJ, 0x3);
+}
+
+static void __init ar91xx_usb_setup(void)
 {
 	ar71xx_device_stop(RESET_MODULE_USBSUS_OVERRIDE);
 	mdelay(10);
@@ -120,6 +148,11 @@ static void ar91xx_usb_setup(void)
 void __init ar71xx_add_device_usb(void)
 {
 	switch (ar71xx_soc) {
+	case AR71XX_SOC_AR7240:
+		ar7240_usb_setup();
+		platform_device_register(&ar71xx_ohci_device);
+		break;
+
 	case AR71XX_SOC_AR7130:
 	case AR71XX_SOC_AR7141:
 	case AR71XX_SOC_AR7161:
@@ -186,9 +219,7 @@ static struct resource ar71xx_mdio_resources[] = {
 	}
 };
 
-static struct ag71xx_mdio_platform_data ar71xx_mdio_data = {
-	.phy_mask	= 0xffffffff,
-};
+static struct ag71xx_mdio_platform_data ar71xx_mdio_data;
 
 static struct platform_device ar71xx_mdio_device = {
 	.name		= "ag71xx-mdio",
@@ -202,7 +233,11 @@ static struct platform_device ar71xx_mdio_device = {
 
 void __init ar71xx_add_device_mdio(u32 phy_mask)
 {
+	if (ar71xx_soc == AR71XX_SOC_AR7240)
+		ar71xx_mdio_data.is_ar7240 = 1;
+
 	ar71xx_mdio_data.phy_mask = phy_mask;
+
 	platform_device_register(&ar71xx_mdio_device);
 }
 

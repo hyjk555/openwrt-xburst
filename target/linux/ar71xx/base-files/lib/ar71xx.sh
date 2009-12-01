@@ -22,6 +22,9 @@ ar71xx_board_name() {
 	*"Bullet M")
 		name="bullet-m"
 		;;
+	*"Nanostation M")
+		name="nanostation-m"
+		;;
 	*LS-SR71)
 		name="ls-sr71"
 		;;
@@ -49,6 +52,9 @@ ar71xx_board_name() {
 	*RB-493)
 		name="rb-493"
 		;;
+	*"Rocket M")
+		name="rocket-m"
+		;;
 	*RouterStation)
 		name="routerstation"
 		;;
@@ -66,6 +72,9 @@ ar71xx_board_name() {
 		;;
 	*WP543)
 		name="wp543"
+		;;
+	*WNDR3700)
+		name="wndr3700"
 		;;
 	*WNR2000)
 		name="wnr2000"
