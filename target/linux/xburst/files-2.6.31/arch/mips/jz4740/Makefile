@@ -4,7 +4,7 @@
 
 # Object file lists.
 
-obj-y += prom.o irq.o time.o reset.o setup.o dma.o \
+obj-y += prom.o irq.o time2.o reset.o setup.o dma.o \
 	gpio.o clock.o platform.o
 
 obj-$(CONFIG_PROC_FS)		+= proc.o
@@ -17,6 +17,7 @@ obj-$(CONFIG_JZ4740_LYRA)	+= board-lyra.o
 obj-$(CONFIG_JZ4725_DIPPER)	+= board-dipper.o
 obj-$(CONFIG_JZ4720_VIRGO)	+= board-virgo.o
 obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
+obj-$(CONFIG_JZ4740_N526)	+= board-n526.o
 
 # PM support
 
