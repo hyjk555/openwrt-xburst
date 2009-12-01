@@ -356,7 +356,6 @@ static void __init board_gpio_setup(void)
 	 * drivers. Everything else is done by the drivers themselfs. */
 	jz_gpio_disable_pullup(GPIO_SD_VCC_EN_N);
 	jz_gpio_disable_pullup(GPIO_SD_CD_N);
-	jz_gpio_disable_pullup(GPIO_SD_WP);
 }
 
 static int __init qi_lb60_init_platform_devices(void)

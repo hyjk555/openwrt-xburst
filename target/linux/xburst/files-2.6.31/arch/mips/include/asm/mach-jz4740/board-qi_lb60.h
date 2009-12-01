@@ -41,7 +41,6 @@
 
 #define GPIO_SD_CD_N            JZ_GPIO_PORTD(0)
 #define GPIO_SD_VCC_EN_N        JZ_GPIO_PORTD(2)
-#define GPIO_SD_WP              JZ_GPIO_PORTD(16)
 
 #define GPIO_USB_DETE           JZ_GPIO_PORTD(28)
 #define GPIO_BUZZ_PWM           JZ_GPIO_PORTD(27)
@@ -53,36 +52,5 @@
 #define GPIO_KEYOUT_BASE        JZ_GPIO_PORTC(10)
 #define GPIO_KEYIN_BASE         JZ_GPIO_PORTD(18)
 #define GPIO_KEYIN_8            JZ_GPIO_PORTD(26)
-
-/*
- * MMC/SD
- */
-#define MSC_WP_PIN		GPIO_SD_WP
-#define MSC_HOTPLUG_PIN		GPIO_SD_CD_N
-#define MSC_HOTPLUG_IRQ		(JZ_IRQ_GPIO(GPIO_SD_CD_N))
-
-#define __msc_init_io()				\
-do {						\
-	__gpio_as_output(GPIO_SD_VCC_EN_N);	\
-	__gpio_as_input(GPIO_SD_CD_N);		\
-} while (0)
-
-#define __msc_enable_power()			\
-do {						\
-	__gpio_clear_pin(GPIO_SD_VCC_EN_N);	\
-} while (0)
-
-#define __msc_disable_power()			\
-do {						\
-	__gpio_set_pin(GPIO_SD_VCC_EN_N);	\
-} while (0)
-
-#define __msc_card_detected(s)			\
-({						\
-	int detected = 1;			\
-	if (!__gpio_get_pin(GPIO_SD_CD_N))	\
-		detected = 0;			\
-	detected;				\
-})
 
 #endif /* __ASM_JZ4740_QI_LB60_H__ */
