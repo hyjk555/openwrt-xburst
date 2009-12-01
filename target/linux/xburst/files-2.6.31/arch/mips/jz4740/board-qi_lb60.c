@@ -7,7 +7,7 @@
  * Author: Xiangfu Liu <xiangfu@qi-hardware.com>
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 or later 
+ * it under the terms of the GNU General Public License version 2 or later
  * as published by the Free Software Foundation.
  */
 
@@ -329,8 +329,9 @@ static struct platform_device qi_lb60_gpio_keys = {
 
 static struct jz4740_mmc_platform_data qi_lb60_mmc_pdata = {
 	.gpio_card_detect	= JZ_GPIO_PORTD(0),
-	.gpio_read_only		= JZ_GPIO_PORTD(16),
+	.gpio_read_only		= -1,
 	.gpio_power		= JZ_GPIO_PORTD(2),
+	.power_active_low	= 1,
 };
 
 static struct platform_device *jz_platform_devices[] __initdata = {
@@ -363,7 +364,7 @@ static int __init qi_lb60_init_platform_devices(void)
 	jz4740_framebuffer_device.dev.platform_data = &qi_lb60_fb_pdata;
 	jz4740_nand_device.dev.platform_data = &qi_lb60_nand_pdata;
 	jz4740_battery_device.dev.platform_data = &qi_lb60_battery_pdata;
-/*	jz4740_mmc_device.dev.platform_data = &qi_lb60_mmc_pdata;*/
+	jz4740_mmc_device.dev.platform_data = &qi_lb60_mmc_pdata;
 
 	spi_register_board_info(qi_lb60_spi_board_info,
 				ARRAY_SIZE(qi_lb60_spi_board_info));

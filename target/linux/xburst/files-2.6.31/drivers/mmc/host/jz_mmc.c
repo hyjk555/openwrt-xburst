@@ -226,7 +226,7 @@ err:
 
 static void jz4740_mmc_timeout(unsigned long data)
 {
-	struct jz4740_mmc_host *host = (struct jz4740_mmc_host*)host;
+	struct jz4740_mmc_host *host = (struct jz4740_mmc_host*)data;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->lock, flags);
@@ -350,8 +350,6 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 		writew(JZ_MMC_IRQ_SDIO, host->base + JZ_REG_MMC_IREG);
 		mmc_signal_sdio_irq(host->mmc);
 	}
-	writew(0xff, host->base + JZ_REG_MMC_IREG);
-
 	return ret;
 }
 
@@ -470,7 +468,7 @@ static void jz4740_mmc_request(struct mmc_host *mmc, struct mmc_request *req)
 
 	host->req = req;
 
-	writel(0xffffffff, host->base + JZ_REG_MMC_IREG);
+	writew(0xffff, host->base + JZ_REG_MMC_IREG);
 
 	writew(JZ_MMC_IRQ_END_CMD_RES, host->base + JZ_REG_MMC_IREG);
 	jz4740_mmc_enable_irq(host, JZ_MMC_IRQ_END_CMD_RES);
@@ -487,7 +485,8 @@ static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	switch(ios->power_mode) {
 	case MMC_POWER_UP:
 		if (gpio_is_valid(host->pdata->gpio_power))
-			gpio_set_value(host->pdata->gpio_power, 0);
+			gpio_set_value(host->pdata->gpio_power,
+					!host->pdata->power_active_low);
 		host->cmdat |= JZ_MMC_CMDAT_INIT;
 		clk_enable(host->clk);
 		break;
@@ -495,7 +494,8 @@ static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		break;
 	default:
 		if (gpio_is_valid(host->pdata->gpio_power))
-			gpio_set_value(host->pdata->gpio_power, 1);
+			gpio_set_value(host->pdata->gpio_power,
+					host->pdata->power_active_low);
 		clk_disable(host->clk);
 		break;
 	}
@@ -599,7 +599,7 @@ static int __devinit jz4740_mmc_request_gpios(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Failed to request power gpio: %d\n", ret);
 			goto err_free_gpio_read_only;
 		}
-		gpio_direction_output(pdata->gpio_card_detect, 1);
+		gpio_direction_output(pdata->gpio_power, pdata->power_active_low);
 	}
 
 	return 0;
@@ -706,8 +706,9 @@ static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
 	mmc->f_max = JZ_MMC_CLK_RATE;
 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 	mmc->caps = (pdata && pdata->data_1bit) ? 0 : MMC_CAP_4_BIT_DATA;
+	mmc->caps |= MMC_CAP_SDIO_IRQ;
 	mmc->max_seg_size = 4096;
-	mmc->max_phys_segs = 10;
+	mmc->max_phys_segs = 128;
 
 	mmc->max_blk_size = (1 << 10) - 1;
 	mmc->max_blk_count = (1 << 15) - 1;
@@ -717,6 +718,7 @@ static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
 	host->pdev = pdev;
 	host->pdata = pdata;
 	host->max_clock = JZ_MMC_CLK_RATE;
+	spin_lock_init(&host->lock);
 
 	host->card_detect_irq = gpio_to_irq(pdata->gpio_card_detect);
 
