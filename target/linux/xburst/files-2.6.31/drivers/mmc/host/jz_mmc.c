@@ -815,10 +815,14 @@ static int jz4740_mmc_remove(struct platform_device *pdev)
 static int jz4740_mmc_suspend(struct device *dev)
 {
 	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
-
-	/* TODO: Set gpio pins to high Z */
+	struct jz4740_mmc_platform_data *pdata = host->pdata;
 
 	mmc_suspend_host(host->mmc, PMSG_SUSPEND);
+
+	if (pdata && pdata->data_1bit)
+		jz_gpio_bulk_suspend(jz4740_mmc_pins, ARRAY_SIZE(jz4740_mmc_pins) - 3);
+	else
+		jz_gpio_bulk_suspend(jz4740_mmc_pins, ARRAY_SIZE(jz4740_mmc_pins));
 
 	return 0;
 }
@@ -826,6 +830,12 @@ static int jz4740_mmc_suspend(struct device *dev)
 static int jz4740_mmc_resume(struct device *dev)
 {
 	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
+	struct jz4740_mmc_platform_data *pdata = host->pdata;
+
+	if (pdata && pdata->data_1bit)
+		jz_gpio_bulk_resume(jz4740_mmc_pins, ARRAY_SIZE(jz4740_mmc_pins) - 3);
+	else
+		jz_gpio_bulk_resume(jz4740_mmc_pins, ARRAY_SIZE(jz4740_mmc_pins));
 
 	mmc_resume_host(host->mmc);
 
