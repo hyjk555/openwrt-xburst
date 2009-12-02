@@ -78,6 +78,7 @@
 #define GPIO_TO_SEL_REG(gpio)		GPIO_TO_REG(gpio, 0x50)
 #define GPIO_TO_SEL_SET_REG(gpio)	GPIO_TO_REG(gpio, 0x54)
 #define GPIO_TO_SEL_CLEAR_REG(gpio)	GPIO_TO_REG(gpio, 0x58)
+#define GPIO_TO_DIRECTION_CLEAR_REG(chip)	GPIO_TO_REG(chip, 0x68)
 #define GPIO_TO_TRIGGER_REG(gpio)	GPIO_TO_REG(gpio, 0x70)
 #define GPIO_TO_TRIGGER_SET_REG(gpio)	GPIO_TO_REG(gpio, 0x74)
 #define GPIO_TO_TRIGGER_CLEAR_REG(gpio)	GPIO_TO_REG(gpio, 0x78)
@@ -161,6 +162,28 @@ void jz_gpio_bulk_free(const struct jz_gpio_bulk_request *request, size_t num)
 
 }
 EXPORT_SYMBOL_GPL(jz_gpio_bulk_free);
+
+void jz_gpio_bulk_suspend(const struct jz_gpio_bulk_request *request, size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; ++i, ++request) {
+		jz_gpio_set_function(request->gpio, JZ_GPIO_FUNC_NONE);
+		writel(BIT(request->gpio), GPIO_TO_DIRECTION_CLEAR_REG(request->gpio));
+	}
+}
+EXPORT_SYMBOL_GPL(jz_gpio_bulk_suspend);
+
+void jz_gpio_bulk_resume(const struct jz_gpio_bulk_request *request, size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; ++i, ++request) {
+		jz_gpio_set_function(request->gpio, request->function);
+	}
+}
+EXPORT_SYMBOL_GPL(jz_gpio_bulk_resume);
+
 
 void jz_gpio_enable_pullup(unsigned gpio)
 {
