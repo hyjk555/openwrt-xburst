@@ -90,7 +90,7 @@ static struct resource jz4740_mmc_resources[] = {
 static u64 jz4740_mmc_dmamask =  ~(u32)0;
 
 struct platform_device jz4740_mmc_device = {
-	.name = "jz-mmc",
+	.name = "jz4740-mmc",
 	.id = 0,
 	.dev = {
 		.dma_mask		= &jz4740_mmc_dmamask,
