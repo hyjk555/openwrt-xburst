@@ -866,5 +866,5 @@ static void __exit jz4740_mmc_exit(void) {
 module_exit(jz4740_mmc_exit);
 
 MODULE_DESCRIPTION("JZ4720/JZ4740 SD/MMC controller driver");
-MODULE_LICENSE("GPLv2");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
