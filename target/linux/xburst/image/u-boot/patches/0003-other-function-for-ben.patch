@@ -1,8 +1,17 @@
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
-index d13f2ab..30ee73c 100644
+index d13f2ab..d20d853 100644
 --- a/board/qi_lb60/qi_lb60.c
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -25,11 +25,6 @@ static void gpio_init(void)
+@@ -12,6 +12,8 @@
+ #include <asm/mipsregs.h>
+ #include <asm/jz4740.h>
+ 
++DECLARE_GLOBAL_DATA_PTR;
++
+ static void gpio_init(void)
+ {
+ 	/*
+@@ -25,11 +27,6 @@ static void gpio_init(void)
  	__gpio_as_sdram_32bit();
  
  	/*
@@ -14,7 +23,7 @@ index d13f2ab..30ee73c 100644
  	 * Initialize LCD pins
  	 */
  	__gpio_as_lcd_18bit();
-@@ -43,17 +38,30 @@ static void gpio_init(void)
+@@ -43,17 +40,30 @@ static void gpio_init(void)
  	 * Initialize Other pins
  	 */
  	unsigned int i;
@@ -51,6 +60,79 @@ index d13f2ab..30ee73c 100644
  
  	__gpio_as_output(GPIO_AUDIO_POP);
  	__gpio_set_pin(GPIO_AUDIO_POP);
+@@ -73,6 +83,11 @@ static void gpio_init(void)
+ 
+ 	__gpio_as_input(GPIO_USB_DETECT);
+ 	__gpio_enable_pull(GPIO_USB_DETECT);
++
++	if (__gpio_get_pin(GPIO_KEYIN_BASE + 3) == 0) {
++		printf("[M] pressed, boot from sd card\n");
++		gd->boot_from_sd = 1;
++	}
+ }
+ 
+ static void cpm_init(void)
+@@ -96,7 +111,6 @@ void board_early_init(void)
+ 
+ int checkboard (void)
+ {
+-	DECLARE_GLOBAL_DATA_PTR;
+ 
+ 	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC, Speed %d MHz)\n",
+ 	       gd->cpu_clk/1000000);
+diff --git a/common/env_common.c b/common/env_common.c
+index be64d13..54bf0ea 100644
+--- a/common/env_common.c
++++ b/common/env_common.c
+@@ -134,7 +134,7 @@ uchar default_environment[] = {
+ 	"pcidelay="	MK_STR(CONFIG_PCI_BOOTDELAY)	"\0"
+ #endif
+ #ifdef  CONFIG_EXTRA_ENV_SETTINGS
+-	CONFIG_EXTRA_ENV_SETTINGS
++	"bootargsfromsd="	CONFIG_BOOTARGSFROMSD	"\0"
+ #endif
+ 	"\0"
+ };
+diff --git a/include/asm-mips/global_data.h b/include/asm-mips/global_data.h
+index db88704..9b4dd77 100644
+--- a/include/asm-mips/global_data.h
++++ b/include/asm-mips/global_data.h
+@@ -47,6 +47,7 @@ typedef	struct	global_data {
+         unsigned long   mem_clk;        /* Memory bus clock */
+         unsigned long   dev_clk;        /* Device clock */
+         unsigned long   fb_base;        /* base address of framebuffer */
++        unsigned long   boot_from_sd;
+ #endif
+ 	unsigned long	baudrate;
+ 	unsigned long	have_console;	/* serial_init() was called */
+diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
+index 02af607..c3bf9c7 100644
+--- a/include/configs/qi_lb60.h
++++ b/include/configs/qi_lb60.h
+@@ -45,6 +45,8 @@
+ #define CONFIG_BOOTDELAY	0
+ #define CONFIG_BOOTFILE		"uImage"	/* file to load */
+ #define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
++#define CONFIG_EXTRA_ENV_SETTINGS	1
++#define CONFIG_BOOTARGSFROMSD	"mem=32M console=ttyS0,57600n8 rootfstype=ext2 root=/dev/mmcblk0p1 rw rootwait"
+ #define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
+ 
+ /*
+diff --git a/lib_mips/bootm.c b/lib_mips/bootm.c
+index 54af24c..01cfd37 100644
+--- a/lib_mips/bootm.c
++++ b/lib_mips/bootm.c
+@@ -46,7 +46,9 @@ static void linux_env_set (char * env_name, char * env_val);
+ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ {
+ 	void	(*theKernel) (int, char **, char **, int *);
+-	char	*commandline = getenv ("bootargs");
++	char	*commandline = gd->boot_from_sd == 1 ? 
++		getenv ("bootargsfromsd") : 
++		getenv ("bootargs");
+ 	char	env_buf[12];
+ 	char	*cp;
+ 
 diff --git a/nand_spl/nand_boot_jz4740.c b/nand_spl/nand_boot_jz4740.c
 index 924a47a..146de19 100644
 --- a/nand_spl/nand_boot_jz4740.c
