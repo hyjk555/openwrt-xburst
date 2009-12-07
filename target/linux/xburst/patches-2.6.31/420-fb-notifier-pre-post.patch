@@ -1,0 +1,29 @@
+--- a/drivers/video/fbmem.c	2009-10-05 13:18:19.000000000 +0200
++++ b/drivers/video/fbmem.c	2009-12-03 05:08:15.000000000 +0100
+@@ -997,12 +997,12 @@
+ int
+ fb_blank(struct fb_info *info, int blank)
+ {	
+- 	int ret = -EINVAL;
++ 	int ret = 0;
+ 
+  	if (blank > FB_BLANK_POWERDOWN)
+  		blank = FB_BLANK_POWERDOWN;
+ 
+-	if (info->fbops->fb_blank)
++	if (info->fbops->fb_blank && blank == FB_BLANK_UNBLANK)
+  		ret = info->fbops->fb_blank(blank, info);
+ 
+  	if (!ret) {
+@@ -1013,6 +1013,10 @@
+ 		fb_notifier_call_chain(FB_EVENT_BLANK, &event);
+ 	}
+ 
++	if (info->fbops->fb_blank && blank != FB_BLANK_UNBLANK)
++ 		ret = info->fbops->fb_blank(blank, info);
++
++
+  	return ret;
+ }
+ 
+

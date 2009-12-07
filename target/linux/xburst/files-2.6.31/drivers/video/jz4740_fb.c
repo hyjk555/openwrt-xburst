@@ -21,6 +21,9 @@
 #include <linux/jz4740_fb.h>
 
 #include <linux/delay.h>
+#include <linux/clk.h>
+
+#include <asm/mach-jz4740/gpio.h>
 
 #define JZ_REG_LCD_CFG		0x00
 #define JZ_REG_LCD_VSYNC	0x04
@@ -98,6 +101,8 @@
 
 #define JZ_LCD_SYNC_MASK 0x3ff
 
+#define JZ_LCD_STATE_DISABLED BIT(0)
+
 struct jzfb_framedesc {
 	uint32_t next;
 	uint32_t addr;
@@ -120,7 +125,11 @@ struct jzfb {
 	dma_addr_t vidmem_phys;
 	struct jzfb_framedesc *framedesc;
 
+	struct clk *ldclk;
+	struct clk *lpclk;
+
 	uint32_t pseudo_palette[16];
+	unsigned is_enabled:1;
 };
 
 static struct fb_fix_screeninfo jzfb_fix __devinitdata = {
@@ -133,8 +142,23 @@ static struct fb_fix_screeninfo jzfb_fix __devinitdata = {
 	.accel =	FB_ACCEL_NONE,
 };
 
+const static struct jz_gpio_bulk_request jz_lcd_pins[] = {
+	JZ_GPIO_BULK_PIN(LCD_PCLK),
+	JZ_GPIO_BULK_PIN(LCD_HSYNC),
+	JZ_GPIO_BULK_PIN(LCD_VSYNC),
+	JZ_GPIO_BULK_PIN(LCD_DATA0),
+	JZ_GPIO_BULK_PIN(LCD_DATA1),
+	JZ_GPIO_BULK_PIN(LCD_DATA2),
+	JZ_GPIO_BULK_PIN(LCD_DATA3),
+	JZ_GPIO_BULK_PIN(LCD_DATA4),
+	JZ_GPIO_BULK_PIN(LCD_DATA5),
+	JZ_GPIO_BULK_PIN(LCD_DATA6),
+	JZ_GPIO_BULK_PIN(LCD_DATA7),
+};
+
+
 int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue,
-		    unsigned transp, struct fb_info *fb)
+			unsigned transp, struct fb_info *fb)
 {
 	((uint32_t*)fb->pseudo_palette)[regno] = red << 16 | green << 8 | blue;
 	return 0;
@@ -142,14 +166,14 @@ int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue,
 
 static int jzfb_get_controller_bpp(struct jzfb *jzfb)
 {
-    switch(jzfb->pdata->bpp) {
-        case 18:
-        case 24:
-            return 32;
-            break;
-        default:
-            return jzfb->pdata->bpp;
-    }
+	switch(jzfb->pdata->bpp) {
+		case 18:
+		case 24:
+			return 32;
+			break;
+		default:
+			return jzfb->pdata->bpp;
+	}
 }
 
 static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
@@ -159,7 +183,7 @@ static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	int i;
 
 	if (fb->var.bits_per_pixel != jzfb_get_controller_bpp(jzfb) &&
-        fb->var.bits_per_pixel != jzfb->pdata->bpp)
+		fb->var.bits_per_pixel != jzfb->pdata->bpp)
 		return -EINVAL;
 
 	for (i = 0; i < jzfb->pdata->num_modes; ++i, ++mode) {
@@ -278,6 +302,50 @@ static int jzfb_set_par(struct fb_info *info)
 	return 0;
 }
 
+static int jzfb_blank(int blank_mode, struct fb_info *info)
+{
+	struct jzfb* jzfb = info->par;
+	uint32_t ctrl = readl(jzfb->base + JZ_REG_LCD_CTRL);
+
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+		if (jzfb->is_enabled)
+			return 0;
+
+		jz_gpio_bulk_resume(jz_lcd_pins, ARRAY_SIZE(jz_lcd_pins));
+		clk_enable(jzfb->ldclk);
+		clk_enable(jzfb->lpclk);
+
+		writel(0, jzfb->base + JZ_REG_LCD_STATE);
+
+		writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
+
+		ctrl |= JZ_LCD_CTRL_ENABLE;
+		ctrl &= ~JZ_LCD_CTRL_DISABLE;
+		writel(ctrl, jzfb->base + JZ_REG_LCD_CTRL);
+
+		jzfb->is_enabled = 1;
+		break;
+	default:
+		if (!jzfb->is_enabled)
+			return 0;
+
+		ctrl |= JZ_LCD_CTRL_DISABLE;
+		writel(ctrl, jzfb->base + JZ_REG_LCD_CTRL);
+		do {
+			ctrl = readl(jzfb->base + JZ_REG_LCD_STATE);
+		} while (!(ctrl & JZ_LCD_STATE_DISABLED));
+
+		clk_disable(jzfb->lpclk);
+		clk_disable(jzfb->ldclk);
+		jz_gpio_bulk_suspend(jz_lcd_pins, ARRAY_SIZE(jz_lcd_pins));
+		jzfb->is_enabled = 0;
+		break;
+	}
+
+	return 0;
+}
+
 
 static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 {
@@ -299,16 +367,16 @@ static int jzfb_alloc_vidmem(struct jzfb *jzfb)
 
 	jzfb->devmem_size = devmem_size;
 	jzfb->devmem = dma_alloc_coherent(&jzfb->pdev->dev,
-					    PAGE_ALIGN(devmem_size),
-					    &jzfb->devmem_phys, GFP_KERNEL);
+						PAGE_ALIGN(devmem_size),
+						&jzfb->devmem_phys, GFP_KERNEL);
 
 	if (!jzfb->devmem) {
 		return -ENOMEM;
 	}
 
 	for (page = jzfb->vidmem;
-	     page < jzfb->vidmem + PAGE_ALIGN(jzfb->vidmem_size);
-	     page += PAGE_SIZE) {
+		 page < jzfb->vidmem + PAGE_ALIGN(jzfb->vidmem_size);
+		 page += PAGE_SIZE) {
 		SetPageReserved(virt_to_page(page));
 	}
 
@@ -339,7 +407,7 @@ static struct  fb_ops jzfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_check_var = jzfb_check_var,
 	.fb_set_par = jzfb_set_par,
-/*	.fb_blank = jzfb_blank,*/
+	.fb_blank = jzfb_blank,
 	.fb_fillrect	= sys_fillrect,
 	.fb_copyarea	= sys_copyarea,
 	.fb_imageblit	= sys_imageblit,
@@ -390,6 +458,24 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
 	jzfb->pdata = pdata;
 	jzfb->mem = mem;
 
+	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
+	jzfb->lpclk = clk_get(&pdev->dev, "lcd_pclk");
+
+	jzfb->is_enabled = 1;
+
+	if (IS_ERR(jzfb->ldclk)) {
+		ret = PTR_ERR(jzfb->ldclk);
+		dev_err(&pdev->dev, "Faild to get device clock: %d\n", ret);
+		goto err_framebuffer_release;
+	}
+
+	if (IS_ERR(jzfb->lpclk)) {
+		ret = PTR_ERR(jzfb->ldclk);
+		dev_err(&pdev->dev, "Faild to get pixel clock: %d\n", ret);
+		goto err_framebuffer_release;
+	}
+
+
 	jzfb->base = ioremap(mem->start, resource_size(mem));
 
 	if (!jzfb->base) {
@@ -428,6 +514,8 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
 	jzfb_set_par(fb);
 	writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
 
+	jz_gpio_bulk_request(jz_lcd_pins, ARRAY_SIZE(jz_lcd_pins));
+
 	ret = register_framebuffer(fb);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to register framebuffer: %d\n", ret);
@@ -450,6 +538,7 @@ static int __devexit jzfb_remove(struct platform_device *pdev)
 {
 	struct jzfb *jzfb = platform_get_drvdata(pdev);
 
+	jz_gpio_bulk_free(jz_lcd_pins, ARRAY_SIZE(jz_lcd_pins));
 	iounmap(jzfb->base);
 	release_mem_region(jzfb->mem->start, resource_size(jzfb->mem));
 	jzfb_free_devmem(jzfb);

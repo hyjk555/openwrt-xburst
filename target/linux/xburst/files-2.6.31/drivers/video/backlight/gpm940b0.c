@@ -55,12 +55,14 @@ static int gpm940b0_set_power(struct lcd_device *lcd, int power)
 
 	switch (power) {
 	case FB_BLANK_UNBLANK:
+		mdelay(20);
 		gpm940b0->enabled = 1;
 		gpm940b0_power_enable(gpm940b0);
 		break;
 	default:
 		gpm940b0->enabled = 0;
 		gpm940b0_power_disable(gpm940b0);
+		mdelay(20);
 		break;
 	}
 	return 0;
