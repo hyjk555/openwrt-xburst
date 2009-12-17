@@ -110,7 +110,7 @@ static const struct snd_kcontrol_new jz_codec_output_controls[] = {
 	SOC_DAPM_SINGLE("Bypass Switch", JZ_REG_CODEC_1,
 			JZ_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
 	SOC_DAPM_SINGLE("DAC Switch", JZ_REG_CODEC_1,
-			JZ_CODEC_1_SW2_ENABLE_OFFSET, 1, 1),
+			JZ_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
 };
 
 static const struct snd_kcontrol_new jz_codec_input_controls[] =
