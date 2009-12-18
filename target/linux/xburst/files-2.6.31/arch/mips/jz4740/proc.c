@@ -218,57 +218,12 @@ void show_tlb(void)
 }
 
 /*
- * UDC hotplug
- */
-#ifdef CONFIG_JZ_UDC_HOTPLUG
-extern int jz_udc_active;	/* defined in drivers/char/jzchar/jz_udc_hotplug.c */
-#endif
-
-#ifndef GPIO_UDC_HOTPLUG
-#define GPIO_UDC_HOTPLUG 86
-#endif
-
-static int udc_read_proc(char *page, char **start, off_t off,
-			 int count, int *eof, void *data)
-{
-        int len = 0;
-
-	if (__gpio_get_pin(GPIO_UDC_HOTPLUG)) {
-
-#ifdef CONFIG_JZ_UDC_HOTPLUG
-
-		/* Cable has connected, wait for disconnection. */
-		__gpio_as_irq_fall_edge(GPIO_UDC_HOTPLUG);
-
-		if (jz_udc_active)
-			len += sprintf (page+len, "CONNECT_CABLE\n");
-		else
-			len += sprintf (page+len, "CONNECT_POWER\n");
-#else
-		len += sprintf (page+len, "CONNECT\n");
-#endif
-	}
-	else {
-
-#ifdef CONFIG_JZ_UDC_HOTPLUG
-		/* Cable has disconnected, wait for connection. */
-		__gpio_as_irq_rise_edge(GPIO_UDC_HOTPLUG);
-#endif
-
-		len += sprintf (page+len, "REMOVE\n");
-	}
-                                                                                                               
-        return len;
-}
-
-/*
  * /proc/jz/xxx entry
  *
  */
 static int __init jz_proc_init(void)
 {
 	struct proc_dir_entry *res;
-	unsigned int virt_addr, i;
 
 	proc_jz_root = proc_mkdir("jz", 0);
 
@@ -293,14 +248,6 @@ static int __init jz_proc_init(void)
 	if (res) {
 		res->read_proc = cgm_read_proc;
 		res->write_proc = cgm_write_proc;
-		res->data = NULL;
-	}
-
-	/* udc hotplug */
-	res = create_proc_entry("udc", 0644, proc_jz_root);
-	if (res) {
-		res->read_proc = udc_read_proc;
-		res->write_proc = NULL;
 		res->data = NULL;
 	}
 
