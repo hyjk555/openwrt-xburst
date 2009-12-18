@@ -444,6 +444,10 @@ static int __devinit jz_codec_probe(struct platform_device *pdev)
 
 	jz_codec_codec = codec;
 
+	snd_soc_update_bits(codec, JZ_REG_CODEC_1,
+				JZ_CODEC_1_SW2_ENABLE, JZ_CODEC_1_SW2_ENABLE);
+
+
 	platform_set_drvdata(pdev, jz_codec);
 	ret = snd_soc_register_codec(codec);
 
