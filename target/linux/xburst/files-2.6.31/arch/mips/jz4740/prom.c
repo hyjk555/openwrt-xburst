@@ -47,117 +47,33 @@
 int prom_argc;
 char **prom_argv, **prom_envp;
 
-char * prom_getcmdline(void)
+char *prom_getcmdline(void)
 {
 	return &(arcs_cmdline[0]);
 }
 
-void  prom_init_cmdline(void)
+void prom_init_cmdline(void)
 {
-	char *cp;
-	int actr;
-
-	actr = 1; /* Always ignore argv[0] */
+	char *cp, *c;
+	size_t i = 1;
 
 	cp = &(arcs_cmdline[0]);
-	while(actr < prom_argc) {
-	        strcpy(cp, prom_argv[actr]);
-		cp += strlen(prom_argv[actr]);
-		*cp++ = ' ';
-		actr++;
-	}
-	if (cp != &(arcs_cmdline[0])) /* get rid of trailing space */
-		--cp;
-	if (prom_argc > 1)
-		*cp = '\0';
-
-}
-
-
-char *prom_getenv(char *envname)
-{
-#if 0
-	/*
-	 * Return a pointer to the given environment variable.
-	 * YAMON uses "name", "value" pairs, while U-Boot uses "name=value".
-	 */
-
-	char **env = prom_envp;
-	int i = strlen(envname);
-	int yamon = (*env && strchr(*env, '=') == NULL);
-
-	while (*env) {
-		if (yamon) {
-			if (strcmp(envname, *env++) == 0)
-				return *env;
-		} else {
-			if (strncmp(envname, *env, i) == 0 && (*env)[i] == '=')
-				return *env + i + 1;
+	while(i < prom_argc) {
+		c = prom_argv[i];
+		while (*c) {
+			*cp++ = *c++;
 		}
-		env++;
+		*cp++ = ' ';
+		i++;
 	}
-#endif
-	return NULL;
-}
-
-inline unsigned char str2hexnum(unsigned char c)
-{
-	if(c >= '0' && c <= '9')
-		return c - '0';
-	if(c >= 'a' && c <= 'f')
-		return c - 'a' + 10;
-	if(c >= 'A' && c <= 'F')
-		return c - 'A' + 10;
-	return 0; /* foo */
-}
-
-inline void str2eaddr(unsigned char *ea, unsigned char *str)
-{
-	int i;
-
-	for(i = 0; i < 6; i++) {
-		unsigned char num;
-
-		if((*str == '.') || (*str == ':'))
-			str++;
-		num = str2hexnum(*str++) << 4;
-		num |= (str2hexnum(*str++));
-		ea[i] = num;
+	if (i > 1) {
+		*(cp - 1) = '\0';
 	}
-}
 
-int get_ethernet_addr(char *ethernet_addr)
-{
-        char *ethaddr_str;
-
-        ethaddr_str = prom_getenv("ethaddr");
-	if (!ethaddr_str) {
-	        printk("ethaddr not set in boot prom\n");
-		return -1;
-	}
-	str2eaddr(ethernet_addr, ethaddr_str);
-
-#if 0
-	{
-		int i;
-
-	printk("get_ethernet_addr: ");
-	for (i=0; i<5; i++)
-		printk("%02x:", (unsigned char)*(ethernet_addr+i));
-	printk("%02x\n", *(ethernet_addr+i));
-	}
-#endif
-
-	return 0;
-}
-
-void __init prom_free_prom_memory(void)
-{
 }
 
 void __init prom_init(void)
 {
-	unsigned char *memsize_str;
 	unsigned long memsize;
 
 	prom_argc = (int) fw_arg0;
@@ -167,13 +83,12 @@ void __init prom_init(void)
 	mips_machtype = MACH_INGENIC_JZ4740;
 
 	prom_init_cmdline();
-	memsize_str = prom_getenv("memsize");
-	if (!memsize_str) {
-		memsize = 0x04000000;
-	} else {
-		memsize = simple_strtol(memsize_str, NULL, 0);
-	}
+	memsize = 0x04000000;
 	add_memory_region(0, memsize, BOOT_MEM_RAM);
+}
+
+void __init prom_free_prom_memory(void)
+{
 }
 
 /* used by early printk */
@@ -194,5 +109,3 @@ const char *get_system_type(void)
 }
 
 EXPORT_SYMBOL(prom_getcmdline);
-EXPORT_SYMBOL(get_ethernet_addr);
-EXPORT_SYMBOL(str2eaddr);
