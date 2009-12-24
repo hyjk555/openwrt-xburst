@@ -1281,7 +1281,7 @@ index 360b070..88717e9 100644
 +	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
 +
 +	for (i = 0; i < chip->ecc.total; i++) {
-+		ecc_code[i] = chip->oob_poi[eccpos[i]];
++		ecc_code[i] = chip->oob_poi[CONFIG_NAND_ECC_POS + i];
 +		if (ecc_code[i] != 0xff) 
 +			flag = 1;
 +	}
