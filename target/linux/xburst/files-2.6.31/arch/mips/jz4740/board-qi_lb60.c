@@ -58,11 +58,7 @@ static struct mtd_partition qi_lb60_partitions_1gb[] = {
  	},
 	{ .name = "NAND ROOTFS partition",
 	  .offset = 8 * 0x100000,
-	  .size = 504 * 0x100000,
- 	},
-	{ .name = "NAND DATA partition",
-	  .offset = 512 * 0x100000,
-	  .size = 512 * 0x100000,
+	  .size = (504 + 512) * 0x100000,
  	},
 };
 
@@ -96,11 +92,7 @@ static struct mtd_partition qi_lb60_partitions_2gb[] = {
  	},
 	{ .name = "NAND ROOTFS partition",
 	  .offset = 8 * 0x100000,
-	  .size = 504 * 0x100000,
- 	},
-	{ .name = "NAND DATA partition",
-	  .offset = 512 * 0x100000,
-	  .size = (512 + 1024) * 0x100000,
+	  .size = (504 + 512 + 1024) * 0x100000,
  	},
 };
 
@@ -133,9 +125,9 @@ static struct jz_nand_platform_data qi_lb60_nand_pdata = {
  */
 
 #define KEY_QI_QI	KEY_F13
-#define KEY_QI_UPRED	KEY_RIGHTSHIFT
-#define KEY_QI_VOLUP	KEY_F15
-#define KEY_QI_VOLDOWN	KEY_F16
+#define KEY_QI_UPRED	KEY_RIGHTALT
+#define KEY_QI_VOLUP	KEY_VOLUMEUP
+#define KEY_QI_VOLDOWN	KEY_VOLUMEDOWN
 #define KEY_QI_FN	KEY_RIGHTCTRL
 
 static const uint32_t qi_lb60_keymap[] = {
