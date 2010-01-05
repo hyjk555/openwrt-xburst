@@ -27,6 +27,7 @@
 #include <linux/gpio.h>
 #include <asm/mach-jz4740/gpio.h>
 #include <asm/cacheflush.h>
+#include <linux/dma-mapping.h>
 
 #define JZ_REG_MMC_STRPCL	0x00
 #define JZ_REG_MMC_STATUS	0x04
@@ -100,7 +101,6 @@
 
 #define JZ_MMC_CLK_RATE 24000000
 
-
 struct jz4740_mmc_host {
 	struct mmc_host *mmc;
 	struct platform_device *pdev;
@@ -124,7 +124,6 @@ struct jz4740_mmc_host {
 	struct timer_list clock_timer;
 	struct timer_list timeout_timer;
 	unsigned waiting:1;
-
 };
 
 static void jz4740_mmc_cmd_done(struct jz4740_mmc_host *host);
@@ -205,7 +204,6 @@ static void jz4740_mmc_write_data(struct jz4740_mmc_host *host, struct mmc_data 
 	uint32_t *sg_pointer;
 	int status;
 	size_t i, j;
-	uint16_t snob;
 
 	for (sg = data->sg; sg; sg = sg_next(sg)) {
 		sg_pointer = sg_virt(sg);
@@ -288,7 +286,7 @@ static void jz4740_mmc_read_data(struct jz4740_mmc_host *host, struct mmc_data *
 	struct scatterlist *sg;
 	uint32_t *sg_pointer;
 	uint32_t d;
-	int status = 0;
+	uint16_t status = 0;
 	size_t i, j;
 
 	for (sg = data->sg; sg; sg = sg_next(sg)) {
@@ -333,6 +331,7 @@ static void jz4740_mmc_read_data(struct jz4740_mmc_host *host, struct mmc_data *
 		flush_dcache_page(sg_page(sg));
 	}
 
+	status = readl(host->base + JZ_REG_MMC_STATUS);
 	if (status & JZ_MMC_STATUS_READ_ERROR_MASK)
 		goto err;
 
@@ -411,7 +410,7 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 		host->cmd->data->error = -EIO;
 	} else if(status & (JZ_MMC_STATUS_CRC_READ_ERROR |
 						JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
-		host->cmd->data->error = -ETIMEDOUT;
+		host->cmd->data->error = -EIO;
 	}
 
 	if (irq_reg & JZ_MMC_IRQ_END_CMD_RES) {
@@ -422,6 +421,7 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 
 	return ret;
 handled:
+
 	writew(0xff, host->base + JZ_REG_MMC_IREG);
 	return IRQ_HANDLED;
 }
@@ -809,7 +809,7 @@ static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
 		}
 	}
 
-	ret = request_threaded_irq(host->irq, jz_mmc_irq, jz_mmc_irq_worker, 0, "MMC/SD", host);
+	ret = request_threaded_irq(host->irq, jz_mmc_irq, jz_mmc_irq_worker, IRQF_DISABLED, "MMC/SD", host);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
 		goto err_free_card_detect_irq;
