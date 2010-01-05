@@ -24,28 +24,6 @@
 #include "jz4740-pcm.h"
 #include "jz4740-i2s.h"
 
-static struct jz4740_dma_client jz4740_dma_client_out = {
-	.name = "I2S PCM Stereo out"
-};
-
-static struct jz4740_dma_client jz4740_dma_client_in = {
-	.name = "I2S PCM Stereo in"
-};
-
-static struct jz4740_pcm_dma_params jz4740_i2s_pcm_stereo_out = {
-	.client		= &jz4740_dma_client_out,
-	.channel	= DMA_ID_AIC_TX,
-	.dma_addr	= AIC_DR,
-	.dma_size	= 2,
-};
-
-static struct jz4740_pcm_dma_params jz4740_i2s_pcm_stereo_in = {
-	.client		= &jz4740_dma_client_in,
-	.channel	= DMA_ID_AIC_RX,
-	.dma_addr	= AIC_DR,
-	.dma_size	= 2,
-};
-
 static int jz4740_i2s_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	/*struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -136,14 +114,6 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	jz4740_snd_rx_ctrl(0);
 	jz4740_snd_rx_ctrl(0);
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_out;
-		/*if (channels == 1)
-			__aic_enable_mono2stereo();
-		else
-		__aic_disable_mono2stereo();*/
-	} else
-		cpu_dai->dma_data = &jz4740_i2s_pcm_stereo_in;
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S8:
