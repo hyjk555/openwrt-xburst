@@ -1,5 +1,5 @@
---- drivers/mmc/core/sdio_cis.c	2010-01-05 03:36:51.000000000 +0100
-+++ /opt/Projects/linux-2.6/drivers/mmc/core/sdio_cis.c	2010-01-05 03:38:44.000000000 +0100
+--- a/drivers/mmc/core/sdio_cis.c	2010-01-05 03:36:51.000000000 +0100
++++ b/drivers/mmc/core/sdio_cis.c	2010-01-05 03:38:44.000000000 +0100
 @@ -123,14 +123,14 @@
  	vsn = func->card->cccr.sdio_vsn;
  	min_size = (vsn == SDIO_SDIO_REV_1_00) ? 28 : 42;
