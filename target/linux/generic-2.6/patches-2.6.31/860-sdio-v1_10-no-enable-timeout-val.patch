@@ -1,19 +1,19 @@
---- drivers/mmc/core/sdio_cis.c	2010-01-05 03:36:51.000000000 +0100
-+++ /opt/Projects/linux-2.6/drivers/mmc/core/sdio_cis.c	2010-01-05 03:38:44.000000000 +0100
+--- a/drivers/mmc/core/sdio_cis.c	2010-01-05 03:36:51.000000000 +0100
++++ b/drivers/mmc/core/sdio_cis.c	2010-01-05 03:38:44.000000000 +0100
 @@ -123,14 +123,14 @@
  	vsn = func->card->cccr.sdio_vsn;
  	min_size = (vsn == SDIO_SDIO_REV_1_00) ? 28 : 42;
  
--	if (buf[0] != 1)
-+	if (size < min_size || buf[0] != 1)
+-	if (size < min_size || buf[0] != 1)
++	if (buf[0] != 1)
  		return -EINVAL;
  
  	/* TPLFE_MAX_BLK_SIZE */
  	func->max_blksize = buf[12] | (buf[13] << 8);
  
  	/* TPLFE_ENABLE_TIMEOUT_VAL, present in ver 1.1 and above */
--	if (vsn > SDIO_SDIO_REV_1_00 && size >= min_size)
-+	if (vsn > SDIO_SDIO_REV_1_00)
+-	if (vsn > SDIO_SDIO_REV_1_00)
++	if (vsn > SDIO_SDIO_REV_1_00 && size >= min_size)
  		func->enable_timeout = (buf[28] | (buf[29] << 8)) * 10;
  	else
  		func->enable_timeout = jiffies_to_msecs(HZ);
