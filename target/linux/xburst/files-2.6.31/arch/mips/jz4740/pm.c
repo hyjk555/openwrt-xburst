@@ -29,29 +29,22 @@
 
 extern void jz4740_intc_suspend(void);
 extern void jz4740_intc_resume(void);
-extern void jz_gpiolib_suspend(void);
-extern void jz_gpiolib_resume(void);
 
 static int jz_pm_enter(suspend_state_t state)
 {
-	unsigned long delta;
 	unsigned long nfcsr = REG_EMC_NFCSR;
 	uint32_t scr = REG_CPM_SCR;
 
-	/* Preserve current time */
-	delta = xtime.tv_sec - REG_RTC_RSR;
-
-    /* Disable nand flash */
+	/* Disable nand flash */
 	REG_EMC_NFCSR = ~0xff;
 
  	udelay(100);
 
-    /*stop udc and usb*/
+	/*stop udc and usb*/
 	REG_CPM_SCR &= ~( 1<<6 | 1<<7);
 	REG_CPM_SCR |= 0<<6 | 1<<7;
 
-    jz_gpiolib_suspend();
-    jz4740_intc_suspend();
+	jz4740_intc_suspend();
 
  	/* Enter SLEEP mode */
 	REG_CPM_LCR &= ~CPM_LCR_LPM_MASK;
@@ -64,17 +57,13 @@ static int jz_pm_enter(suspend_state_t state)
 	REG_CPM_LCR &= ~CPM_LCR_LPM_MASK;
 	REG_CPM_LCR |= CPM_LCR_LPM_IDLE;
 
-    /* Restore nand flash control register */
+	/* Restore nand flash control register */
 	REG_EMC_NFCSR = nfcsr;
 
-    jz4740_intc_resume();
-    jz_gpiolib_resume();
+	jz4740_intc_resume();
 
 	/* Restore sleep control register */
 	REG_CPM_SCR = scr;
-
-	/* Restore current time */
-	xtime.tv_sec = REG_RTC_RSR + delta;
 
 	return 0;
 }
