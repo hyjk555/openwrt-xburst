@@ -7206,7 +7206,7 @@ new file mode 100644
 index 0000000..6c3788f
 --- /dev/null
 +++ b/cpu/mips/usb_boot.S
-@@ -0,0 +1,821 @@
+@@ -0,0 +1,880 @@
 +/*
 + *  for jz4740 usb boot
 + *
@@ -7239,6 +7239,65 @@ index 0000000..6c3788f
 +// data from D-Cache to I-Cache, and jump to execute the code in I-Cache.
 +// So init caches first and then dispatch to a proper boot routine.
 +//----------------------------------------------------------------------
++
++.macro load_addr reg addr
++	li \reg, 0x80000000
++	addiu \reg, \reg, \addr
++	la $2, usbboot_begin
++	subu \reg, \reg, $2
++.endm
++
++usb_boot:
++	//--------------------------------------------------------------
++	// Initialize PLL: set ICLK to 84MHz and HCLK to 42MHz.
++	//--------------------------------------------------------------
++	la	$9, 0xB0000000		// CPCCR: Clock Control Register
++	la	$8, 0x42041110		// I:S:M:P=1:2:2:2
++	sw	$8, 0($9)
++
++	la	$9, 0xB0000010		// CPPCR: PLL Control Register
++	la	$8, 0x06000120		// M=12 N=0 D=0 CLK=12*(M+2)/(N+2)
++	sw	$8, 0($9)
++
++	mtc0	$0, $26			// CP0_ERRCTL, restore WST reset state
++	nop
++
++	mtc0	$0, $16			// CP0_CONFIG
++	nop
++
++	// Relocate code to beginning of the ram
++
++	la $2, usbboot_begin
++	la $3, usbboot_end
++	li $4, 0x80000000
++
++1:
++	lw $5, 0($2)
++	sw $5, 0($4)
++	addiu $2, $2, 4
++	bne $2, $3, 1b
++	addiu $4, $4, 4
++
++	li $2, 0x80000000
++	ori $3, $2, 0
++	addiu $3, $3, usbboot_end
++	la $4, usbboot_begin
++	subu $3, $3, $4
++
++
++2:
++	cache	0x0, 0($2)		// Index_Invalidate_I
++	cache	0x1, 0($2)		// Index_Writeback_Inv_D
++	addiu	$2, $2, 32
++	subu $4, $3, $2
++	bgtz	$4, 2b
++	nop
++
++	load_addr $3, usb_boot_return
++
++	jr $3
++
++usbboot_begin:
 +
 +init_caches:
 +	li	$2, 3			// cacheable for kseg0 access
@@ -7282,20 +7341,31 @@ index 0000000..6c3788f
 +	// $20: jump target address
 +	//--------------------------------------------------------------
 +xfer_d2i:
-+	ori	$2, $28, 0		// start address
-+	add	$3, $2, $19		// end addres
-+	addiu	$3, $3, -4
 +
-+xfer_a_word:
-+	lw	$4, 0($2)
-+	mtc0	$4, $28, 1		// CP0_DATALO
-+	cache	0xc, 0($2)		// Index_Store_Data_I
-+	bne	$2, $3, xfer_a_word
-+	addiu	$2, $2, 4
++	ori	$8, $20, 0
++	addu	$9, $8, $19		// total 16KB
 +
-+	mtc0	$0, $26			// CP0_ERRCTL, restore WST reset state
++1:
++	cache	0x0, 0($8)		// Index_Invalidate_I
++	cache	0x1, 0($8)		// Index_Writeback_Inv_D
++	bne	$8, $9, 1b
++	addiu	$8, $8, 32
 +
-+	jalr	$20			// jump, and place the return address in $31
++	// flush write-buffer
++	sync
++
++	// Invalidate BTB
++	mfc0	$8, $16, 7		// CP0_CONFIG
++	nop
++	ori	$8, 2
++	mtc0	$8, $16, 7
++	nop
++
++	// Overwrite config to disable ram initalisation
++	li $2, 0xff
++	sb $2, 20($20)
++
++	jalr	$20
 +	nop
 +
 +icache_return:
@@ -7306,18 +7376,6 @@ index 0000000..6c3788f
 +	b	usb_boot_return
 +	nop
 +
-+
-+usb_boot:
-+	//--------------------------------------------------------------
-+	// Initialize PLL: set ICLK to 84MHz and HCLK to 42MHz.
-+	//--------------------------------------------------------------
-+	la	$9, 0xB0000000		// CPCCR: Clock Control Register
-+	la	$8, 0x42041110		// I:S:M:P=1:2:2:2
-+	sw	$8, 0($9)
-+
-+	la	$9, 0xB0000010		// CPPCR: PLL Control Register
-+	la	$8, 0x06000120		// M=12 N=0 D=0 CLK=12*(M+2)/(N+2)
-+	sw	$8, 0($9)
 +
 +usb_boot_return:
 +	//--------------------------------------------------------------
@@ -7385,7 +7443,7 @@ index 0000000..6c3788f
 +
 +	//--------------------------------------------------------------
 +	// 2. Check and handle EP0 interrupt
-+	//--------------------------------------------------------------	
++	//--------------------------------------------------------------
 +check_intr_ep0in:
 +	lhu	$10, 0x02($27)		// read INTRIN
 +	andi	$9, $10, 0x1		// check EP0 interrupt
@@ -7460,7 +7518,7 @@ index 0000000..6c3788f
 +	nop
 +
 +__ep0_get_cpu_info:
-+	la	$20, cpu_info_data	// data pointer to transfer
++	load_addr $20, cpu_info_data	// data pointer to transfer
 +	li	$21, 8			// bytes left to transfer
 +	li	$22, 1			// set EP0 to TX state
 +	li	$23, 0			// NoData = 0
@@ -7524,7 +7582,7 @@ index 0000000..6c3788f
 +	or	$20, $9, $8		// target address
 +
 +	b	xfer_d2i
-+	li	$19, 0x4000		// 16KB data length
++	li	$19, 0x2000		// 16KB data length
 +
 +__ep0_prog_start2:
 +	li	$9, 0x48		// SVDOUTPKTRDY and DATAEND
@@ -7600,7 +7658,7 @@ index 0000000..6c3788f
 +	nop
 +
 +___ep0_get_dev_desc:
-+	la	$20, device_desc	// data pointer
++	load_addr	$20, device_desc	// data pointer
 +	li	$22, 1			// set EP0 to TX state
 +	sub	$8, $21, 18
 +	blez	$8, _ep0_idle_state_fini // wLength <= 18
@@ -7610,7 +7668,7 @@ index 0000000..6c3788f
 +	nop
 +
 +___ep0_get_dev_qualifier:
-+	la	$20, dev_qualifier	// data pointer
++	load_addr	$20, dev_qualifier	// data pointer
 +	li	$22, 1			// set EP0 to TX state
 +	sub	$8, $21, 10
 +	blez	$8, _ep0_idle_state_fini // wLength <= 10
@@ -7620,12 +7678,12 @@ index 0000000..6c3788f
 +	nop
 +
 +___ep0_get_conf_desc:
-+	la	$20, config_desc_fs	// data pointer of FS mode
++	load_addr	$20, config_desc_fs	// data pointer of FS mode
 +	lbu	$8, 0x01($27)		// read POWER
 +	andi	$8, 0x10		// test HS_MODE
 +	beqz	$8, ___ep0_get_conf_desc2
 +	nop
-+	la	$20, config_desc_hs	// data pointer of HS mode
++	load_addr $20, config_desc_hs	// data pointer of HS mode
 +
 +___ep0_get_conf_desc2:
 +	li	$22, 1			// set EP0 to TX state
@@ -7649,17 +7707,17 @@ index 0000000..6c3788f
 +	nop
 +
 +___ep0_get_string_lang_ids:
-+	la	$20, string_lang_ids	// data pointer
++	load_addr	$20, string_lang_ids	// data pointer
 +	b	_ep0_idle_state_fini
 +	li	$21, 4			// data length
 +
 +___ep0_get_string_manufacture:
-+	la	$20, string_manufacture	// data pointer
++	load_addr	$20, string_manufacture	// data pointer
 +	b	_ep0_idle_state_fini
 +	li	$21, 16			// data length
 +
 +___ep0_get_string_product:
-+	la	$20, string_product	// data pointer
++	load_addr	$20, string_product	// data pointer
 +	b	_ep0_idle_state_fini
 +	li	$21, 46			// data length
 +
@@ -7675,8 +7733,8 @@ index 0000000..6c3788f
 +
 +	//--------------------------------------------------------------
 +	// 2.2 Handle EP0 TX state interrupt
-+	//--------------------------------------------------------------	
-+ep0_tx_state:	
++	//--------------------------------------------------------------
++ep0_tx_state:
 +	sub	$9, $22, 1
 +	bnez	$9, check_intr_ep1in
 +	nop
@@ -8026,6 +8084,7 @@ index 0000000..6c3788f
 +	.byte	0x30
 +	.byte	0x56	
 +	.byte	0x31
++usbboot_end:
 +
 +    .set reorder
 diff --git a/include/asm-mips/jz4740.h b/include/asm-mips/jz4740.h
