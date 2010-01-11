@@ -16,7 +16,6 @@
 #define __ASM_JZ4740_H__
 
 #include <asm/mach-jz4740/regs.h>
-#include <asm/mach-jz4740/ops.h>
 #include <asm/mach-jz4740/dma.h>
 
 /*------------------------------------------------------------------
@@ -34,7 +33,6 @@
  * Follows are related to platform definitions
  */
 
-#include <asm/mach-jz4740/clock.h>
 #include <asm/mach-jz4740/serial.h>
 
 #endif /* __ASM_JZ4740_H__ */

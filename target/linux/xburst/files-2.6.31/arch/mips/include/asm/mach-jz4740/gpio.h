@@ -19,11 +19,12 @@
 #include <linux/types.h>
 
 enum jz_gpio_function {
-	JZ_GPIO_FUNC_NONE,
-	JZ_GPIO_FUNC1,
-	JZ_GPIO_FUNC2,
-	JZ_GPIO_FUNC3,
+    JZ_GPIO_FUNC_NONE,
+    JZ_GPIO_FUNC1,
+    JZ_GPIO_FUNC2,
+    JZ_GPIO_FUNC3,
 };
+
 
 /*
  Usually a driver for a SoC component has to request several gpio pins and
@@ -38,13 +39,13 @@ enum jz_gpio_function {
 
  inside the probe function:
 
-	ret = jz_gpio_bulk_request(i2c_pins, ARRAY_SIZE(i2c_pins));
-	if (ret) {
+    ret = jz_gpio_bulk_request(i2c_pins, ARRAY_SIZE(i2c_pins));
+    if (ret) {
 	...
 
  inside the remove function:
 
-	jz_gpio_bulk_free(i2c_pins, ARRAY_SIZE(i2c_pins));
+    jz_gpio_bulk_free(i2c_pins, ARRAY_SIZE(i2c_pins));
 
 
 */
@@ -55,9 +56,9 @@ struct jz_gpio_bulk_request {
 };
 
 #define JZ_GPIO_BULK_PIN(pin) { \
-	.gpio = JZ_GPIO_ ## pin, \
-	.name = #pin, \
-	.function = JZ_GPIO_FUNC_ ## pin \
+    .gpio = JZ_GPIO_ ## pin, \
+    .name = #pin, \
+    .function = JZ_GPIO_FUNC_ ## pin \
 }
 
 int jz_gpio_bulk_request(const struct jz_gpio_bulk_request *request, size_t num);
@@ -67,6 +68,11 @@ void jz_gpio_bulk_resume(const struct jz_gpio_bulk_request *request, size_t num)
 void jz_gpio_enable_pullup(unsigned gpio);
 void jz_gpio_disable_pullup(unsigned gpio);
 int jz_gpio_set_function(int gpio, enum jz_gpio_function function);
+
+int jz_gpio_port_direction_input(int port, uint32_t mask);
+int jz_gpio_port_direction_output(int port, uint32_t mask);
+void jz_gpio_port_set_value(int port, uint32_t value, uint32_t mask);
+uint32_t jz_gpio_port_get_value(int port, uint32_t mask);
 
 #include <asm/mach-generic/gpio.h>
 
@@ -193,7 +199,7 @@ int jz_gpio_set_function(int gpio, enum jz_gpio_function function);
 #define JZ_GPIO_FUNC_MEM_ADDR14		JZ_GPIO_FUNC1
 #define JZ_GPIO_FUNC_MEM_ADDR15		JZ_GPIO_FUNC1
 #define JZ_GPIO_FUNC_MEM_ADDR16		JZ_GPIO_FUNC1
-#define JZ_GPIO_FUNC_MEM_CLS		JZ_GPIO_FUNC1
+#define JZ_GPIO_FUNC_MEM_CLS	        JZ_GPIO_FUNC1
 #define JZ_GPIO_FUNC_MEM_SPL		JZ_GPIO_FUNC1
 #define JZ_GPIO_FUNC_MEM_DCS		JZ_GPIO_FUNC1
 #define JZ_GPIO_FUNC_MEM_RAS		JZ_GPIO_FUNC1

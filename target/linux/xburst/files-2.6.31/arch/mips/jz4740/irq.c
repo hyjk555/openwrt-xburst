@@ -1,18 +1,17 @@
 /*
- * linux/arch/mips/jz4740/irq.c
- *
- * JZ4740 interrupt routines.
- *
- * Copyright (c) 2006-2007  Ingenic Semiconductor Inc.
- * Author: <lhhuang@ingenic.cn>
+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
+ *  	JZ4740 platform IRQ support
  *
  *  This program is free software; you can redistribute	 it and/or modify it
  *  under  the terms of	 the GNU General  Public License as published by the
  *  Free Software Foundation;  either version 2 of the	License, or (at your
  *  option) any later version.
+ *
+ *  You should have received a copy of the  GNU General Public License along
+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
+ *  675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  */
-#include <asm/mach-jz4740/irq.h>
-#include <linux/irq.h>
 
 #include <linux/errno.h>
 #include <linux/init.h>
@@ -78,7 +77,6 @@ static struct irq_chip intc_irq_type = {
 	.mask =		intc_irq_mask,
 	.unmask =	intc_irq_unmask,
 	.ack =		intc_irq_ack,
-	.end =		intc_irq_end,
 	.set_wake =	intc_irq_set_wake,
 };
 
@@ -130,7 +128,6 @@ asmlinkage void plat_irq_dispatch(void)
 void jz4740_intc_suspend(void)
 {
 	jz_intc_saved = readl(jz_intc_base + JZ_REG_INTC_MASK);
-    printk("intc wakeup: %d\n", jz_intc_wakeup);
 	writel(~jz_intc_wakeup, jz_intc_base + JZ_REG_INTC_SET_MASK);
 }
 

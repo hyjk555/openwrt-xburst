@@ -37,7 +37,6 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/system.h>
-#include <asm/mach-jz4740/regs.h>
 #include <asm/mach-jz4740/clock.h>
 
 #include "jz4740_udc.h"
@@ -49,7 +48,7 @@
 #define JZ_REG_UDC_INTRINE	0x06 /* Intr IN enable 16-bit */
 #define JZ_REG_UDC_INTROUTE	0x08 /* Intr OUT enable 16-bit */
 #define JZ_REG_UDC_INTRUSB	0x0a /* Interrupt USB 8-bit */
-#define JZ_REG_UDC_INTRUSBE	0x0b /* Interrupt USB Enable 8-bit */
+	#define JZ_REG_UDC_INTRUSBE	0x0b /* Interrupt USB Enable 8-bit */
 #define JZ_REG_UDC_FRAME	0x0c /* Frame number 16-bit */
 #define JZ_REG_UDC_INDEX	0x0e /* Index register 8-bit */
 #define JZ_REG_UDC_TESTMODE	0x0f /* USB test mode 8-bit */
@@ -75,6 +74,78 @@
 #define JZ_REG_UDC_CNTL2	0x214 /* DMA channel 2 control */
 #define JZ_REG_UDC_ADDR2	0x218 /* DMA channel 2 AHB memory addr */
 #define JZ_REG_UDC_COUNT2	0x21c /* DMA channel 2 byte count */
+
+/* Power register bit masks */
+#define USB_POWER_SUSPENDM	0x01
+#define USB_POWER_RESUME	0x04
+#define USB_POWER_HSMODE	0x10
+#define USB_POWER_HSENAB	0x20
+#define USB_POWER_SOFTCONN	0x40
+
+/* Interrupt register bit masks */
+#define USB_INTR_SUSPEND	0x01
+#define USB_INTR_RESUME		0x02
+#define USB_INTR_RESET		0x04
+
+#define USB_INTR_EP0		0x0001
+#define USB_INTR_INEP1		0x0002
+#define USB_INTR_INEP2		0x0004
+#define USB_INTR_OUTEP1		0x0002
+
+/* CSR0 bit masks */
+#define USB_CSR0_OUTPKTRDY	0x01
+#define USB_CSR0_INPKTRDY	0x02
+#define USB_CSR0_SENTSTALL	0x04
+#define USB_CSR0_DATAEND	0x08
+#define USB_CSR0_SETUPEND	0x10
+#define USB_CSR0_SENDSTALL	0x20
+#define USB_CSR0_SVDOUTPKTRDY	0x40
+#define USB_CSR0_SVDSETUPEND	0x80
+
+/* Endpoint CSR register bits */
+#define USB_INCSRH_AUTOSET	0x80
+#define USB_INCSRH_ISO		0x40
+#define USB_INCSRH_MODE		0x20
+#define USB_INCSRH_DMAREQENAB	0x10
+#define USB_INCSRH_DMAREQMODE	0x04
+#define USB_INCSR_CDT		0x40
+#define USB_INCSR_SENTSTALL	0x20
+#define USB_INCSR_SENDSTALL	0x10
+#define USB_INCSR_FF		0x08
+#define USB_INCSR_UNDERRUN	0x04
+#define USB_INCSR_FFNOTEMPT	0x02
+#define USB_INCSR_INPKTRDY	0x01
+#define USB_OUTCSRH_AUTOCLR	0x80
+#define USB_OUTCSRH_ISO		0x40
+#define USB_OUTCSRH_DMAREQENAB	0x20
+#define USB_OUTCSRH_DNYT	0x10
+#define USB_OUTCSRH_DMAREQMODE	0x08
+#define USB_OUTCSR_CDT		0x80
+#define USB_OUTCSR_SENTSTALL	0x40
+#define USB_OUTCSR_SENDSTALL	0x20
+#define USB_OUTCSR_FF		0x10
+#define USB_OUTCSR_DATAERR	0x08
+#define USB_OUTCSR_OVERRUN	0x04
+#define USB_OUTCSR_FFFULL	0x02
+#define USB_OUTCSR_OUTPKTRDY	0x01
+
+/* Testmode register bits */
+#define USB_TEST_SE0NAK		0x01
+#define USB_TEST_J		0x02
+#define USB_TEST_K		0x04
+#define USB_TEST_PACKET		0x08
+
+/* DMA control bits */
+#define USB_CNTL_ENA		0x01
+#define USB_CNTL_DIR_IN		0x02
+#define USB_CNTL_MODE_1		0x04
+#define USB_CNTL_INTR_EN	0x08
+#define USB_CNTL_EP(n)		((n) << 4)
+#define USB_CNTL_BURST_0	(0 << 9)
+#define USB_CNTL_BURST_4	(1 << 9)
+#define USB_CNTL_BURST_8	(2 << 9)
+#define USB_CNTL_BURST_16	(3 << 9)
+
 
 #ifndef DEBUG
 # define DEBUG(fmt,args...) do {} while(0)
