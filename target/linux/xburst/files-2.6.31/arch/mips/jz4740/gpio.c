@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
- *  	JZ74xx platform GPIO support
+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
+ *  	JZ4740 platform GPIO support
  *
  *  This program is free software; you can redistribute	 it and/or modify it
  *  under  the terms of	 the GNU General  Public License as published by the
@@ -22,12 +22,8 @@
 #include <linux/io.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
-#include <linux/irq.h>
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
-
-
-#include <asm/mach-jz4740/regs.h>
 
 #define JZ_GPIO_BASE_A (32*0)
 #define JZ_GPIO_BASE_B (32*1)
@@ -99,7 +95,7 @@ static struct jz_gpio_chip *jz_irq_to_chip(unsigned int irq)
 
 static inline void jz_gpio_write_bit(unsigned int gpio, unsigned int reg)
 {
-    writel(GPIO_TO_BIT(gpio), GPIO_TO_REG(gpio, reg));
+	writel(GPIO_TO_BIT(gpio), GPIO_TO_REG(gpio, reg));
 }
 
 int jz_gpio_set_function(int gpio, enum jz_gpio_function function)
@@ -183,7 +179,6 @@ void jz_gpio_bulk_resume(const struct jz_gpio_bulk_request *request, size_t num)
 }
 EXPORT_SYMBOL_GPL(jz_gpio_bulk_resume);
 
-
 void jz_gpio_enable_pullup(unsigned gpio)
 {
 	jz_gpio_write_bit(gpio, JZ_REG_GPIO_PULL_CLEAR);
@@ -258,24 +253,7 @@ EXPORT_SYMBOL(jz_gpio_port_get_value);
 #define IRQ_TO_GPIO(irq) (irq - JZ_IRQ_GPIO(0))
 #define IRQ_TO_BIT(irq) BIT(IRQ_TO_GPIO(irq) & 0x1f)
 
-
 #define IRQ_TO_REG(irq, reg)  GPIO_TO_REG(IRQ_TO_GPIO(irq), reg)
-#define IRQ_TO_PIN_REG(irq)		IRQ_TO_REG(irq, 0x00)
-#define IRQ_TO_MASK_REG(irq)		IRQ_TO_REG(irq, 0x20)
-#define IRQ_TO_MASK_SET_REG(irq)	IRQ_TO_REG(irq, 0x24)
-#define IRQ_TO_MASK_CLEAR_REG(irq)	IRQ_TO_REG(irq, 0x28)
-#define IRQ_TO_SELECT_REG(irq)		IRQ_TO_REG(irq, 0x50)
-#define IRQ_TO_SELECT_SET_REG(irq)	IRQ_TO_REG(irq, 0x54)
-#define IRQ_TO_SELECT_CLEAR_REG(irq)	IRQ_TO_REG(irq, 0x58)
-#define IRQ_TO_DIRECTION_REG(irq)	IRQ_TO_REG(irq, 0x60)
-#define IRQ_TO_DIRECTION_SET_REG(irq)	IRQ_TO_REG(irq, 0x64)
-#define IRQ_TO_DIRECTION_CLEAR_REG(irq) IRQ_TO_REG(irq, 0x68)
-#define IRQ_TO_TRIGGER_REG(irq)		IRQ_TO_REG(irq, 0x70)
-#define IRQ_TO_TRIGGER_SET_REG(irq)	IRQ_TO_REG(irq, 0x74)
-#define IRQ_TO_TRIGGER_CLEAR_REG(irq)	IRQ_TO_REG(irq, 0x78)
-#define IRQ_TO_FLAG_REG(irq)		IRQ_TO_REG(irq, 0x80)
-#define IRQ_TO_FLAG_CLEAR_REG(irq)	IRQ_TO_REG(irq, 0x14)
-
 
 static void jz_gpio_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
 {
