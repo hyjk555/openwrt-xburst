@@ -206,7 +206,7 @@ new file mode 100644
 index 0000000..d13f2ab
 --- /dev/null
 +++ b/board/qi_lb60/qi_lb60.c
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,107 @@
 +/*
 + * Authors: Xiangfu Liu <xiangfu.z@gmail.com>
 + *
@@ -293,6 +293,8 @@ index 0000000..d13f2ab
 +	__cpm_stop_uart1();
 +	__cpm_stop_sadc();
 +	__cpm_stop_uhc();
++	__cpm_stop_aic1();
++	__cpm_stop_aic2();
 +}
 +
 +void board_early_init(void)
