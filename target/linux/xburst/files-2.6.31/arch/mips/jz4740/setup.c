@@ -38,7 +38,6 @@
 #include <asm/pgtable.h>
 #include <asm/time.h>
 #include <asm/mach-jz4740/regs.h>
-#include <asm/mach-jz4740/ops.h>
 #include <asm/mach-jz4740/clock.h>
 #include <asm/mach-jz4740/serial.h>
 
@@ -49,17 +48,6 @@ extern void jz_halt(void);
 extern void jz_power_off(void);
 extern void jz_time_init(void);
 
-static void __init sysclocks_setup(void)
-{
-#if 0
-	printk("CPU clock: %dMHz, System clock: %dMHz, Peripheral clock: %dMHz, Memory clock: %dMHz\n",
-	       (jz_clocks.cclk + 500000) / 1000000,
-	       (jz_clocks.hclk + 500000) / 1000000,
-	       (jz_clocks.pclk + 500000) / 1000000,
-	       (jz_clocks.mclk + 500000) / 1000000);
-#endif
-}
-
 static void __init soc_cpm_setup(void)
 {
 	/* Enable CKO to external memory */
@@ -67,33 +55,6 @@ static void __init soc_cpm_setup(void)
 
 	/* CPU enters IDLE mode when executing 'wait' instruction */
 	__cpm_idle_mode();
-
-	/* Setup system clocks */
-	sysclocks_setup();
-}
-
-static void __init soc_harb_setup(void)
-{
-//	__harb_set_priority(0x00);  /* CIM>LCD>DMA>ETH>PCI>USB>CBB */
-//	__harb_set_priority(0x03);  /* LCD>CIM>DMA>ETH>PCI>USB>CBB */
-//	__harb_set_priority(0x0a);  /* ETH>LCD>CIM>DMA>PCI>USB>CBB */
-}
-
-static void __init soc_emc_setup(void)
-{
-}
-
-static void __init soc_dmac_setup(void)
-{
-	__dmac_enable_module();
-}
-
-static void __init jz_soc_setup(void)
-{
-	soc_cpm_setup();
-	soc_harb_setup();
-	soc_emc_setup();
-	soc_dmac_setup();
 }
 
 static void __init jz_serial_setup(void)
@@ -140,7 +101,7 @@ void __init plat_mem_setup(void)
 	_machine_restart = jz_restart;
 	_machine_halt = jz_halt;
 	pm_power_off = jz_power_off;
-	jz_soc_setup();
+	soc_cpm_setup();
 	jz_serial_setup();
 }
 

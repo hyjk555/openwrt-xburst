@@ -1938,6 +1938,7 @@
   #define SADC_CFG_XYZ		(1 << SADC_CFG_XYZ_BIT)
   #define SADC_CFG_XYZ1Z2	(2 << SADC_CFG_XYZ_BIT)
 #define SADC_CFG_SNUM_BIT	10  /* Sample Number */
+#define SADC_CFG_DNUM_BIT	18  /* Sample Number */
 #define SADC_CFG_SNUM_MASK	(0x7 << SADC_CFG_SNUM_BIT)
   #define SADC_CFG_SNUM_1	(0x0 << SADC_CFG_SNUM_BIT)
   #define SADC_CFG_SNUM_2	(0x1 << SADC_CFG_SNUM_BIT)
@@ -1947,6 +1948,8 @@
   #define SADC_CFG_SNUM_6	(0x5 << SADC_CFG_SNUM_BIT)
   #define SADC_CFG_SNUM_8	(0x6 << SADC_CFG_SNUM_BIT)
   #define SADC_CFG_SNUM_9	(0x7 << SADC_CFG_SNUM_BIT)
+  #define SADC_CFG_SNUM(x)	((x) << SADC_CFG_SNUM_BIT)
+  #define SADC_CFG_DNUM(x)	((x) << SADC_CFG_DNUM_BIT)
 #define SADC_CFG_CLKDIV_BIT	5  /* AD Converter frequency clock divider */
 #define SADC_CFG_CLKDIV_MASK	(0x1f << SADC_CFG_CLKDIV_BIT)
 #define SADC_CFG_PBAT_HIGH	(0 << 4)  /* PBAT >= 2.5V */

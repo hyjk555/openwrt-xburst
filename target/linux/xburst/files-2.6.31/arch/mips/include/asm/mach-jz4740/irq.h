@@ -4,7 +4,7 @@
 #define MIPS_CPU_IRQ_BASE 0
 #define JZ_IRQ_BASE 8
 
-// 1st-level interrupts
+/* 1st-level interrupts */
 #define JZ_IRQ(x)	(JZ_IRQ_BASE + (x))
 #define JZ_IRQ_I2C	JZ_IRQ(1)
 #define JZ_IRQ_UHC	JZ_IRQ(3)
