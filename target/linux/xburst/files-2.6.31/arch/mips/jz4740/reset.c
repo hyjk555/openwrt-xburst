@@ -18,6 +18,7 @@
 #include <asm/reboot.h>
 #include <asm/system.h>
 #include <asm/mach-jz4740/regs.h>
+#include <asm/mach-jz4740/timer.h>
 #include <asm/mach-jz4740/jz4740.h>
 
 void jz_restart(char *command)
@@ -26,7 +27,7 @@ void jz_restart(char *command)
 	REG_WDT_TCSR = WDT_TCSR_PRESCALE4 | WDT_TCSR_EXT_EN;
 	REG_WDT_TCNT = 0;
 	REG_WDT_TDR = JZ_EXTAL/1000;   /* reset after 4ms */
-	REG_TCU_TSCR = TCU_TSSR_WDTSC; /* enable wdt clock */
+	jz4740_timer_enable_watchdog();
 	REG_WDT_TCER = WDT_TCER_TCEN;  /* wdt start */
 	while (1);
 }

@@ -23,7 +23,6 @@
 #include <linux/string.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
-#include <linux/irq.h>
 #include <linux/ioport.h>
 #include <linux/tty.h>
 #include <linux/serial.h>
@@ -41,7 +40,7 @@
 #include <asm/mach-jz4740/clock.h>
 #include <asm/mach-jz4740/serial.h>
 
-extern char * __init prom_getcmdline(void);
+extern char *__init prom_getcmdline(void);
 extern void __init jz_board_setup(void);
 extern void jz_restart(char *);
 extern void jz_halt(void);
@@ -56,6 +55,7 @@ static void __init soc_cpm_setup(void)
 	/* CPU enters IDLE mode when executing 'wait' instruction */
 	__cpm_idle_mode();
 }
+
 
 static void __init jz_serial_setup(void)
 {
