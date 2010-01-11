@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2009 OpenWrt.org
+# Copyright (C) 2009-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -11,7 +11,7 @@ BOARD:=xburst
 BOARDNAME:=XBurst JZ47x0
 FEATURES:=jffs2 tgz ubifs
 
-LINUX_VERSION:=2.6.31
+LINUX_VERSION:=2.6.32.3
 
 DEVICE_TYPE=other
 

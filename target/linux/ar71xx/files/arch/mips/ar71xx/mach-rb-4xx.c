@@ -15,13 +15,15 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
 #include <linux/spi/mmc_spi.h>
-#include <linux/input.h>
 
-#include <asm/mips_machine.h>
 #include <asm/mach-ar71xx/ar71xx.h>
 #include <asm/mach-ar71xx/pci.h>
 
+#include "machtype.h"
 #include "devices.h"
+#include "dev-gpio-buttons.h"
+#include "dev-leds-gpio.h"
+#include "dev-usb.h"
 
 #define RB4XX_GPIO_USER_LED	4
 #define RB4XX_GPIO_RESET_SWITCH	7
@@ -181,7 +183,8 @@ static void __init rb411_setup(void)
 	ar71xx_pci_init(ARRAY_SIZE(rb4xx_pci_irqs), rb4xx_pci_irqs);
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_411, "MikroTik RouterBOARD 411/A/AH", rb411_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_411, "411", "MikroTik RouterBOARD 411/A/AH",
+	     rb411_setup);
 
 static void __init rb411u_setup(void)
 {
@@ -198,7 +201,8 @@ static void __init rb411u_setup(void)
 	ar71xx_add_device_usb();
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_411U, "MikroTik RouterBOARD 411U", rb411u_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_411U, "411U", "MikroTik RouterBOARD 411U",
+	     rb411u_setup);
 
 static void __init rb433_setup(void)
 {
@@ -221,7 +225,8 @@ static void __init rb433_setup(void)
 	ar71xx_pci_init(ARRAY_SIZE(rb4xx_pci_irqs), rb4xx_pci_irqs);
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_433, "MikroTik RouterBOARD 433/AH", rb433_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_433, "433", "MikroTik RouterBOARD 433/AH",
+	     rb433_setup);
 
 static void __init rb433u_setup(void)
 {
@@ -229,7 +234,8 @@ static void __init rb433u_setup(void)
 	ar71xx_add_device_usb();
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_433U, "MikroTik RouterBOARD 433UAH", rb433u_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_433U, "433U", "MikroTik RouterBOARD 433UAH",
+	     rb433u_setup);
 
 static void __init rb450_generic_setup(int gige)
 {
@@ -255,14 +261,16 @@ static void __init rb450_setup(void)
 	rb450_generic_setup(0);
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_450, "MikroTik RouterBOARD 450", rb450_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_450, "450", "MikroTik RouterBOARD 450",
+	     rb450_setup);
 
 static void __init rb450g_setup(void)
 {
 	rb450_generic_setup(1);
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_450G, "MikroTik RouterBOARD 450G", rb450g_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_450G, "450G", "MikroTik RouterBOARD 450G",
+	     rb450g_setup);
 
 static void __init rb493_setup(void)
 {
@@ -285,4 +293,5 @@ static void __init rb493_setup(void)
 	ar71xx_pci_init(ARRAY_SIZE(rb4xx_pci_irqs), rb4xx_pci_irqs);
 }
 
-MIPS_MACHINE(AR71XX_MACH_RB_493, "MikroTik RouterBOARD 493/AH", rb493_setup);
+MIPS_MACHINE(AR71XX_MACH_RB_493, "493", "MikroTik RouterBOARD 493/AH",
+	     rb493_setup);

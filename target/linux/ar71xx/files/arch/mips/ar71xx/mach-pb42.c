@@ -9,48 +9,19 @@
  *  by the Free Software Foundation.
  */
 
-#include <linux/init.h>
-#include <linux/bitops.h>
-#include <linux/input.h>
-#include <linux/platform_device.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/flash.h>
-
-#include <asm/mips_machine.h>
 #include <asm/mach-ar71xx/ar71xx.h>
-#include <asm/mach-ar71xx/pci.h>
 
+#include "machtype.h"
 #include "devices.h"
+#include "dev-m25p80.h"
+#include "dev-gpio-buttons.h"
+#include "dev-pb42-pci.h"
+#include "dev-usb.h"
 
 #define PB42_BUTTONS_POLL_INTERVAL	20
 
 #define PB42_GPIO_BTN_SW4	8
 #define PB42_GPIO_BTN_SW5	3
-
-static struct spi_board_info pb42_spi_info[] = {
-	{
-		.bus_num	= 0,
-		.chip_select	= 0,
-		.max_speed_hz	= 25000000,
-		.modalias	= "m25p80",
-	}
-};
-
-static struct ar71xx_pci_irq pb42_pci_irqs[] __initdata = {
-	{
-		.slot	= 0,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV0,
-	}, {
-		.slot	= 1,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV1,
-	}, {
-		.slot	= 2,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV2,
-	}
-};
 
 static struct gpio_button pb42_gpio_buttons[] __initdata = {
 	{
@@ -76,8 +47,7 @@ static struct gpio_button pb42_gpio_buttons[] __initdata = {
 
 static void __init pb42_init(void)
 {
-	ar71xx_add_device_spi(NULL, pb42_spi_info,
-				ARRAY_SIZE(pb42_spi_info));
+	ar71xx_add_device_m25p80(NULL);
 
 	ar71xx_add_device_mdio(~PB42_MDIO_PHYMASK);
 
@@ -96,7 +66,7 @@ static void __init pb42_init(void)
 				       ARRAY_SIZE(pb42_gpio_buttons),
 				       pb42_gpio_buttons);
 
-	ar71xx_pci_init(ARRAY_SIZE(pb42_pci_irqs), pb42_pci_irqs);
+	pb42_pci_init();
 }
 
-MIPS_MACHINE(AR71XX_MACH_PB42, "Atheros PB42", pb42_init);
+MIPS_MACHINE(AR71XX_MACH_PB42, "PB42", "Atheros PB42", pb42_init);

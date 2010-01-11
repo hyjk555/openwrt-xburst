@@ -1,7 +1,7 @@
 /*
  *  Atheros AR71xx built-in ethernet mac driver
  *
- *  Copyright (C) 2008-2009 Gabor Juhos <juhosg@openwrt.org>
+ *  Copyright (C) 2008-2010 Gabor Juhos <juhosg@openwrt.org>
  *  Copyright (C) 2008 Imre Kaloz <kaloz@openwrt.org>
  *
  *  Based on Atheros' AG7100 driver
@@ -262,9 +262,58 @@ static int ag71xx_phy_connect_multi(struct ag71xx *ag)
 	return ret;
 }
 
+static int dev_is_class(struct device *dev, void *class)
+{
+	if (dev->class != NULL && !strcmp(dev->class->name, class))
+		return 1;
+
+	return 0;
+}
+
+static struct device *dev_find_class(struct device *parent, char *class)
+{
+	if (dev_is_class(parent, class)) {
+		get_device(parent);
+		return parent;
+	}
+
+	return device_find_child(parent, class, dev_is_class);
+}
+
+static struct mii_bus *dev_to_mii_bus(struct device *dev)
+{
+	struct device *d;
+
+	d = dev_find_class(dev, "mdio_bus");
+	if (d != NULL) {
+		struct mii_bus *bus;
+
+		bus = to_mii_bus(d);
+		put_device(d);
+
+		return bus;
+	}
+
+	return NULL;
+}
+
 int ag71xx_phy_connect(struct ag71xx *ag)
 {
 	struct ag71xx_platform_data *pdata = ag71xx_get_pdata(ag);
+
+	ag->mii_bus = dev_to_mii_bus(pdata->mii_bus_dev);
+	if (ag->mii_bus == NULL) {
+		printk(KERN_ERR "%s: unable to find MII bus on device '%s'\n",
+			ag->dev->name, dev_name(pdata->mii_bus_dev));
+		return -ENODEV;
+	}
+
+	/* Reset the mdio bus explicitly */
+	if (ag->mii_bus->reset) {
+		mutex_lock(&ag->mii_bus->mdio_lock);
+		ag->mii_bus->reset(ag->mii_bus);
+		mutex_unlock(&ag->mii_bus->mdio_lock);
+	}
 
 	if (pdata->phy_mask)
 		return ag71xx_phy_connect_multi(ag);

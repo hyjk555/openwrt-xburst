@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=firewall
 
 PKG_VERSION:=1
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -18,7 +18,7 @@ define Package/firewall
   CATEGORY:=Base system
   URL:=http://openwrt.org/
   TITLE:=OpenWrt firewall
-  DEPENDS:=+iptables-mod-conntrack +iptables-mod-nat
+  DEPENDS:=+iptables +iptables-mod-conntrack +iptables-mod-nat
   PKGARCH:=all
 endef
 

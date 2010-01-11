@@ -19,6 +19,12 @@ ar71xx_board_name() {
 	*AW-NR580)
 		name="aw-nr580"
 		;;
+	*"DIR-600 rev. A1")
+		name="dir-600-a1"
+		;;
+	*"DIR-825 rev. B1")
+		name="dir-825-b1"
+		;;
 	*"Bullet M")
 		name="bullet-m"
 		;;
@@ -64,8 +70,17 @@ ar71xx_board_name() {
 	*TEW-632BRP)
 		name="tew-632brp"
 		;;
+	*TL-WR1043ND)
+		name="tl-wr1043nd"
+		;;
+	*"DIR-615 rev. C1")
+		name="dir-615-c1"
+		;;
 	*TL-WR741ND)
 		name="tl-wr741nd"
+		;;
+	*"TL-WR841N v1")
+		name="tl-wr841n-v1"
 		;;
 	*TL-WR941ND)
 		name="tl-wr941nd"

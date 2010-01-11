@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=opkg
-PKG_REV:=284
+PKG_REV:=513
 PKG_VERSION:=$(PKG_REV)
 PKG_RELEASE:=1
 
@@ -47,7 +47,8 @@ EXTRA_CFLAGS += $(TARGET_CPPFLAGS)
 CONFIGURE_ARGS += \
 	--disable-curl \
 	--disable-gpg \
-	--with-ipkgetcdir=/etc
+	--with-opkgetcdir=/etc \
+	--with-opkglockfile=/var/lock/opkg.lock
 
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \

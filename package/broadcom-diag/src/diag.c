@@ -61,6 +61,7 @@ enum {
 	WRTSL54GS,
 	WRT54G3G,
 	WRT160N,
+	WRT300NV11,
 	WRT350N,
 	WRT600N,
 	WRT600NV11,
@@ -131,6 +132,12 @@ enum {
 
 	/* Sitecom */
 	WL105B,
+
+	/* Western Digital */
+	WDNetCenter,
+
+	/* Askey */
+	RT210W,
 };
 
 static void __init bcm4780_init(void) {
@@ -145,6 +152,21 @@ static void __init bcm4780_init(void) {
 		/* Wait 5s, so the HDD can spin up */
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule_timeout(HZ * 5);
+}
+
+static void __init NetCenter_init(void) {
+		/* unset pin 6 (+12V) */
+		int pin = 1 << 6;
+		gpio_outen(pin, pin);
+		gpio_control(pin, 0);
+		gpio_out(pin, pin);
+		/* unset pin 1 (turn off red led, blue will light alone if +5V comes up) */
+		pin = 1 << 1;
+		gpio_outen(pin, pin);
+		gpio_control(pin, 0);
+		gpio_out(pin, pin);
+		/* unset pin 3 (+5V) and wait 5 seconds (harddisk spin up) */
+		bcm4780_init();
 }
 
 static void __init bcm57xx_init(void) {
@@ -254,6 +276,19 @@ static struct platform_t __initdata platforms[] = {
 			{ .name = "ses_blue",	.gpio = 1 << 5, .polarity = REVERSE },
 			{ .name = "ses_orange", .gpio = 1 << 3, .polarity = REVERSE },
 		},
+	},
+	[WRT300NV11] = {
+		.name           = "Linksys WRT300N V1.1",
+		.buttons        = {
+			{ .name = "reset",     .gpio = 1 << 6 }, // "Reset" on back panel
+			{ .name = "ses",       .gpio = 1 << 4 }, // "Reserved" on top panel
+		},
+		.leds           = {
+			{ .name = "power",     .gpio = 1 << 1, .polarity = NORMAL  }, // "Power"
+			{ .name = "ses_amber", .gpio = 1 << 3, .polarity = REVERSE }, // "Security" Amber
+			{ .name = "ses_green", .gpio = 1 << 5, .polarity = REVERSE }, // "Security" Green
+		},
+		.platform_init = bcm57xx_init,
 	},
 	[WRT350N] = {
 		.name		= "Linksys WRT350N",
@@ -793,6 +828,30 @@ static struct platform_t __initdata platforms[] = {
 			{ .name = "power",	.gpio = 1 << 3},
 		},
 	},
+	/* Western Digital Net Center */
+	[WDNetCenter] = {
+		.name   = "Western Digital NetCenter",
+		.buttons        = {
+			{ .name = "power",	.gpio = 1 << 0},
+			{ .name = "reset",	.gpio = 1 << 7},
+		},
+		.platform_init = NetCenter_init,
+	},
+	/* Askey (and clones) */
+	[RT210W] = {
+		.name		= "Askey RT210W",
+		.buttons	= {
+			/* Power button is hard-wired to hardware reset */
+			/* but is also connected to GPIO 7 (probably for bootloader recovery)  */
+			{ .name = "power",	.gpio = 1 << 7},
+		},
+		.leds		= {
+		 	/* These were verified and named based on Belkin F5D4230-4 v1112 */
+			{ .name = "connected",	.gpio = 1 << 0, .polarity = REVERSE },
+			{ .name = "wlan",	.gpio = 1 << 3, .polarity = REVERSE },
+			{ .name = "power",	.gpio = 1 << 5, .polarity = REVERSE },
+		},
+	},
 };
 
 static struct platform_t __init *platform_detect(void)
@@ -886,6 +945,9 @@ static struct platform_t __init *platform_detect(void)
 	if (startswith(getvar("pmon_ver"), "CFE")) {
 		/* CFE based - newer hardware */
 		if (!strcmp(boardnum, "42")) { /* Linksys */
+			if (!strcmp(boardtype, "0x478") && !strcmp(getvar("boot_hw_model"), "WRT300N") && !strcmp(getvar("boot_hw_ver"), "1.1"))
+				return &platforms[WRT300NV11];
+
 			if (!strcmp(boardtype, "0x478") && !strcmp(getvar("cardbus"), "1"))
 				return &platforms[WRT350N];
 
@@ -930,6 +992,10 @@ static struct platform_t __init *platform_detect(void)
 				!strcmp(getvar("boardflags"), "0x750")) /* D-Link DIR-320 */
 			return &platforms[DIR320];
 
+		if (!strncmp(boardnum, "TH",2) && !strcmp(boardtype,"0x042f")) {
+			return &platforms[WDNetCenter];
+		}
+
 	} else { /* PMON based - old stuff */
 		if ((simple_strtoul(getvar("GemtekPmonVer"), NULL, 0) == 9) &&
 			(simple_strtoul(getvar("et0phyaddr"), NULL, 0) == 30)) {
@@ -959,6 +1025,18 @@ static struct platform_t __init *platform_detect(void)
 		/* unknown asus stuff, probably bcm4702 */
 		if (startswith(boardnum, "asusX"))
 			return &platforms[ASUS_4702];
+
+		/* bcm4702 based Askey RT210W clones, Including:
+		 * Askey RT210W (duh?)
+		 * Siemens SE505v1
+		 * Belkin F5D7230-4 before version v1444 (MiniPCI slot, not integrated)
+		 */
+		if (!strcmp(boardtype,"bcm94710r4")
+		 && !strcmp(boardnum ,"100")
+		 && !strcmp(getvar("pmon_ver"),"v1.03.12.bk")
+		   ){
+			return &platforms[RT210W];
+		}
 	}
 
 	if (buf || !strcmp(boardnum, "00")) {/* probably buffalo */

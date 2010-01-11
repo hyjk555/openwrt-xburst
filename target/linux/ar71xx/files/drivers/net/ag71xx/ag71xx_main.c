@@ -1,7 +1,7 @@
 /*
  *  Atheros AR71xx built-in ethernet mac driver
  *
- *  Copyright (C) 2008-2009 Gabor Juhos <juhosg@openwrt.org>
+ *  Copyright (C) 2008-2010 Gabor Juhos <juhosg@openwrt.org>
  *  Copyright (C) 2008 Imre Kaloz <kaloz@openwrt.org>
  *
  *  Based on Atheros' AG7100 driver
@@ -587,7 +587,7 @@ static void ag71xx_oom_timer_handler(unsigned long data)
 	struct net_device *dev = (struct net_device *) data;
 	struct ag71xx *ag = netdev_priv(dev);
 
-	netif_rx_schedule(dev, &ag->napi);
+	napi_schedule(&ag->napi);
 }
 
 static void ag71xx_tx_timeout(struct net_device *dev)
@@ -608,10 +608,10 @@ static void ag71xx_restart_work_func(struct work_struct *work)
 	ag71xx_open(ag->dev);
 }
 
-static void ag71xx_tx_packets(struct ag71xx *ag)
+static int ag71xx_tx_packets(struct ag71xx *ag)
 {
 	struct ag71xx_ring *ring = &ag->tx_ring;
-	unsigned int sent;
+	int sent;
 
 	DBG("%s: processing TX ring\n", ag->dev->name);
 
@@ -641,6 +641,7 @@ static void ag71xx_tx_packets(struct ag71xx *ag)
 	if ((ring->curr - ring->dirty) < AG71XX_TX_THRES_WAKEUP)
 		netif_wake_queue(ag->dev);
 
+	return sent;
 }
 
 static int ag71xx_rx_packets(struct ag71xx *ag, int limit)
@@ -711,13 +712,16 @@ static int ag71xx_poll(struct napi_struct *napi, int limit)
 	struct ag71xx_ring *rx_ring;
 	unsigned long flags;
 	u32 status;
-	int done;
+	int tx_done;
+	int rx_done;
 
 	pdata->ddr_flush();
-	ag71xx_tx_packets(ag);
+	tx_done = ag71xx_tx_packets(ag);
 
 	DBG("%s: processing RX ring\n", dev->name);
-	done = ag71xx_rx_packets(ag, limit);
+	rx_done = ag71xx_rx_packets(ag, limit);
+
+	ag71xx_debugfs_update_napi_stats(ag, rx_done, tx_done);
 
 	rx_ring = &ag->rx_ring;
 	if (rx_ring->buf[rx_ring->dirty % AG71XX_RX_RING_SIZE].skb == NULL)
@@ -732,7 +736,7 @@ static int ag71xx_poll(struct napi_struct *napi, int limit)
 		ag71xx_wr(ag, AG71XX_REG_RX_CTRL, RX_CTRL_RXE);
 	}
 
-	if (done < limit) {
+	if (rx_done < limit) {
 		if (status & RX_STATUS_PR)
 			goto more;
 
@@ -740,29 +744,29 @@ static int ag71xx_poll(struct napi_struct *napi, int limit)
 		if (status & TX_STATUS_PS)
 			goto more;
 
-		DBG("%s: disable polling mode, done=%d, limit=%d\n",
-			dev->name, done, limit);
+		DBG("%s: disable polling mode, rx=%d, tx=%d,limit=%d\n",
+			dev->name, rx_done, tx_done, limit);
 
-		netif_rx_complete(dev, napi);
+		napi_complete(napi);
 
 		/* enable interrupts */
 		spin_lock_irqsave(&ag->lock, flags);
 		ag71xx_int_enable(ag, AG71XX_INT_POLL);
 		spin_unlock_irqrestore(&ag->lock, flags);
-		return done;
+		return rx_done;
 	}
 
  more:
-	DBG("%s: stay in polling mode, done=%d, limit=%d\n",
-			dev->name, done, limit);
-	return done;
+	DBG("%s: stay in polling mode, rx=%d, tx=%d, limit=%d\n",
+			dev->name, rx_done, tx_done, limit);
+	return rx_done;
 
  oom:
 	if (netif_msg_rx_err(ag))
 		printk(KERN_DEBUG "%s: out of memory\n", dev->name);
 
 	mod_timer(&ag->oom_timer, jiffies + AG71XX_OOM_REFILL);
-	netif_rx_complete(dev, napi);
+	napi_complete(napi);
 	return 0;
 }
 
@@ -792,8 +796,10 @@ static irqreturn_t ag71xx_interrupt(int irq, void *dev_id)
 	if (likely(status & AG71XX_INT_POLL)) {
 		ag71xx_int_disable(ag, AG71XX_INT_POLL);
 		DBG("%s: enable polling mode\n", dev->name);
-		netif_rx_schedule(dev, &ag->napi);
+		napi_schedule(&ag->napi);
 	}
+
+	ag71xx_debugfs_update_int_stats(ag, status);
 
 	return IRQ_HANDLED;
 }
@@ -802,6 +808,18 @@ static void ag71xx_set_multicast_list(struct net_device *dev)
 {
 	/* TODO */
 }
+
+static const struct net_device_ops ag71xx_netdev_ops = {
+	.ndo_open		= ag71xx_open,
+	.ndo_stop		= ag71xx_stop,
+	.ndo_start_xmit		= ag71xx_hard_start_xmit,
+	.ndo_set_multicast_list	= ag71xx_set_multicast_list,
+	.ndo_do_ioctl		= ag71xx_do_ioctl,
+	.ndo_tx_timeout		= ag71xx_tx_timeout,
+	.ndo_change_mtu		= eth_change_mtu,
+	.ndo_set_mac_address	= eth_mac_addr,
+	.ndo_validate_addr	= eth_validate_addr,
+};
 
 static int __init ag71xx_probe(struct platform_device *pdev)
 {
@@ -818,6 +836,12 @@ static int __init ag71xx_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
+	if (pdata->mii_bus_dev == NULL) {
+		dev_err(&pdev->dev, "no MII bus device specified\n");
+		err = -EINVAL;
+		goto err_out;
+	}
+
 	dev = alloc_etherdev(sizeof(*ag));
 	if (!dev) {
 		dev_err(&pdev->dev, "alloc_etherdev failed\n");
@@ -830,7 +854,6 @@ static int __init ag71xx_probe(struct platform_device *pdev)
 	ag = netdev_priv(dev);
 	ag->pdev = pdev;
 	ag->dev = dev;
-	ag->mii_bus = ag71xx_mdio_bus->mii_bus;
 	ag->msg_enable = netif_msg_init(ag71xx_msg_level,
 					AG71XX_DEFAULT_MSG_ENABLE);
 	spin_lock_init(&ag->lock);
@@ -873,14 +896,9 @@ static int __init ag71xx_probe(struct platform_device *pdev)
 	}
 
 	dev->base_addr = (unsigned long)ag->mac_base;
-	dev->open = ag71xx_open;
-	dev->stop = ag71xx_stop;
-	dev->hard_start_xmit = ag71xx_hard_start_xmit;
-	dev->set_multicast_list = ag71xx_set_multicast_list;
-	dev->do_ioctl = ag71xx_do_ioctl;
+	dev->netdev_ops = &ag71xx_netdev_ops;
 	dev->ethtool_ops = &ag71xx_ethtool_ops;
 
-	dev->tx_timeout = ag71xx_tx_timeout;
 	INIT_WORK(&ag->restart_work, ag71xx_restart_work_func);
 
 	init_timer(&ag->oom_timer);
@@ -906,21 +924,20 @@ static int __init ag71xx_probe(struct platform_device *pdev)
 
 	ag71xx_dump_regs(ag);
 
-	/* Reset the mdio bus explicitly */
-	if (ag->mii_bus) {
-		mutex_lock(&ag->mii_bus->mdio_lock);
-		ag->mii_bus->reset(ag->mii_bus);
-		mutex_unlock(&ag->mii_bus->mdio_lock);
-	}
-
 	err = ag71xx_phy_connect(ag);
 	if (err)
 		goto err_unregister_netdev;
+
+	err = ag71xx_debugfs_init(ag);
+	if (err)
+		goto err_phy_disconnect;
 
 	platform_set_drvdata(pdev, dev);
 
 	return 0;
 
+ err_phy_disconnect:
+	ag71xx_phy_disconnect(ag);
  err_unregister_netdev:
 	unregister_netdev(dev);
  err_free_irq:
@@ -943,6 +960,7 @@ static int __exit ag71xx_remove(struct platform_device *pdev)
 	if (dev) {
 		struct ag71xx *ag = netdev_priv(dev);
 
+		ag71xx_debugfs_exit(ag);
 		ag71xx_phy_disconnect(ag);
 		unregister_netdev(dev);
 		free_irq(dev->irq, dev);
@@ -967,9 +985,13 @@ static int __init ag71xx_module_init(void)
 {
 	int ret;
 
-	ret = ag71xx_mdio_driver_init();
+	ret = ag71xx_debugfs_root_init();
 	if (ret)
 		goto err_out;
+
+	ret = ag71xx_mdio_driver_init();
+	if (ret)
+		goto err_debugfs_exit;
 
 	ret = platform_driver_register(&ag71xx_driver);
 	if (ret)
@@ -979,6 +1001,8 @@ static int __init ag71xx_module_init(void)
 
  err_mdio_exit:
 	ag71xx_mdio_driver_exit();
+ err_debugfs_exit:
+	ag71xx_debugfs_root_exit();
  err_out:
 	return ret;
 }
@@ -987,6 +1011,7 @@ static void __exit ag71xx_module_exit(void)
 {
 	platform_driver_unregister(&ag71xx_driver);
 	ag71xx_mdio_driver_exit();
+	ag71xx_debugfs_root_exit();
 }
 
 module_init(ag71xx_module_init);

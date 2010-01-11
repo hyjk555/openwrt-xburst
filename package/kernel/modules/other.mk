@@ -71,11 +71,7 @@ define KernelPackage/eeprom-93cx6
   TITLE:=EEPROM 93CX6 support
   DEPENDS:=@LINUX_2_6
   KCONFIG:=CONFIG_EEPROM_93CX6
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.29)),1)
   FILES:=$(LINUX_DIR)/drivers/misc/eeprom/eeprom_93cx6.$(LINUX_KMOD_SUFFIX)
-else
-  FILES:=$(LINUX_DIR)/drivers/misc/eeprom_93cx6.$(LINUX_KMOD_SUFFIX)
-endif
   AUTOLOAD:=$(call AutoLoad,20,eeprom_93cx6)
 endef
 
@@ -305,7 +301,6 @@ define KernelPackage/bluetooth/2.6
 #	CONFIG_BT_BNEP \
 #	CONFIG_BT_HCIUSB \
 #	CONFIG_BT_HCIUART
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.27)),1)
   FILES:= \
 	$(LINUX_DIR)/net/bluetooth/bluetooth.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/net/bluetooth/l2cap.$(LINUX_KMOD_SUFFIX) \
@@ -316,18 +311,6 @@ ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.27)),1)
 	$(LINUX_DIR)/drivers/bluetooth/hci_uart.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/drivers/bluetooth/btusb.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,90,bluetooth l2cap sco rfcomm bnep hidp hci_uart btusb)
-else
-  FILES:= \
-	$(LINUX_DIR)/net/bluetooth/bluetooth.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/net/bluetooth/l2cap.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/net/bluetooth/sco.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/net/bluetooth/rfcomm/rfcomm.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/net/bluetooth/bnep/bnep.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/net/bluetooth/hidp/hidp.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/drivers/bluetooth/hci_uart.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/drivers/bluetooth/hci_usb.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,90,bluetooth l2cap sco rfcomm bnep hidp hci_uart hci_usb)
-endif
 endef
 
 define KernelPackage/bluetooth/description
@@ -384,10 +367,7 @@ $(eval $(call KernelPackage,mmc-at91))
 ifeq ($(KERNEL),2.4)
   WATCHDOG_DIR=char
 endif
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.24)),1)
-  WATCHDOG_DIR=watchdog
-endif
-WATCHDOG_DIR?=char/watchdog
+WATCHDOG_DIR?=watchdog
 
 define KernelPackage/atmel-wdt
   SUBMENU:=$(OTHER_MENU)
@@ -425,7 +405,7 @@ define KernelPackage/rdc321x-wdt
   DEPENDS:=@TARGET_rdc
   KCONFIG:=CONFIG_RDC321X_WDT
   FILES:=$(LINUX_DIR)/drivers/$(WATCHDOG_DIR)/rdc321x_wdt.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,50,rdc321_wdt)
+  AUTOLOAD:=$(call AutoLoad,50,rdc321x_wdt)
 endef
 
 define KernelPackage/rdc321x-wdt/description
@@ -514,6 +494,22 @@ define KernelPackage/leds-alix/description
 endef
 
 $(eval $(call KernelPackage,leds-alix))
+
+
+define KernelPackage/leds-wndr3700-usb
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=WNDR3700 USB LED support
+  DEPENDS:= @TARGET_ar71xx
+  KCONFIG:=CONFIG_LEDS_WNDR3700_USB
+  FILES:=$(LINUX_DIR)/drivers/leds/leds-wndr3700-usb.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,60,leds-wndr3700-usb)
+endef
+
+define KernelPackage/leds-wndr3700-usb/description
+ Kernel module for the USB LED on the NETGWR WNDR3700 board.
+endef
+
+$(eval $(call KernelPackage,leds-wndr3700-usb))
 
 
 define KernelPackage/ledtrig-netdev
@@ -811,10 +807,10 @@ $(eval $(call KernelPackage,textsearch))
 define KernelPackage/rfkill
   SUBMENU:=$(OTHER_MENU)
   TITLE:=RF switch subsystem support
-  DEPENDS:=@TARGET_x86||TARGET_olpc||TARGET_s3c24xx||TARGET_brcm47xx
+  DEPENDS:=@TARGET_x86||TARGET_olpc||TARGET_s3c24xx||TARGET_brcm47xx||TARGET_ar71xx
   KCONFIG:= \
     CONFIG_RFKILL \
-    CONFIG_RFKILL_INPUT \
+    CONFIG_RFKILL_INPUT=y \
     CONFIG_RFKILL_LEDS=y
 ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.31)),1)
   FILES:= \

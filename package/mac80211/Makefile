@@ -10,12 +10,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2009-11-21
-PKG_RELEASE:=7
+PKG_VERSION:=2010-01-07
+PKG_RELEASE:=8
 PKG_SOURCE_URL:= \
-	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2009/11 \
+	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2009/12 \
 	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=00e80559cddaa160605098572f5c58b8
+PKG_MD5SUM:=f783d3d4a140a76855916b54fa18be47
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -33,17 +33,18 @@ WMENU:=Wireless Drivers
 define KernelPackage/mac80211/Default
   SUBMENU:=$(WMENU)
   URL:=http://linuxwireless.org/
-  DEPENDS:=@LINUX_2_6 @!TARGET_avr32
+  DEPENDS:=@LINUX_2_6 @!TARGET_avr32 @(!(TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
 endef
 
 define KernelPackage/mac80211
   $(call KernelPackage/mac80211/Default)
   TITLE:=Linux 802.11 Wireless Networking Stack
-  DEPENDS+= +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +@PACKAGE_iw @!LINUX_2_6_21 @!LINUX_2_6_25
+  DEPENDS+= +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_21 @!LINUX_2_6_25
   FILES:= \
+	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/net/mac80211/mac80211.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/net/wireless/cfg80211.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,20,cfg80211 mac80211)
+  AUTOLOAD:=$(call AutoLoad,20,compat cfg80211 mac80211)
 endef
 
 define KernelPackage/mac80211/config
@@ -155,7 +156,7 @@ endef
 
 define KernelPackage/rt2x00-lib
 $(call KernelPackage/rt2x00/Default)
-  DEPENDS+= @PCI_SUPPORT||@USB_SUPPORT +kmod-mac80211 +kmod-crc-itu-t
+  DEPENDS+= @(PCI_SUPPORT||USB_SUPPORT) +kmod-mac80211 +kmod-crc-itu-t
   TITLE+= (LIB)
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2x00lib.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,25,blkcipher ecb arc4 rt2x00lib)
@@ -489,6 +490,10 @@ $(call KernelPackage/b43-common)
   AUTOLOAD:=$(call AutoLoad,30,b43legacy)
 endef
 
+define KernelPackage/b43legacy/config
+	source "$(SOURCE)/Config.in.b43legacy"
+endef
+
 define KernelPackage/b43legacy/description
 Kernel module for Broadcom 43xx-legacy wireless support (mac80211 stack) new
 endef
@@ -615,9 +620,13 @@ define Build/Compile
 endef
 
 define Build/InstallDev
-	mkdir -p $(1)/usr/include/mac80211 $(1)/usr/include/net/mac80211
+	mkdir -p \
+		$(1)/usr/include/mac80211 \
+		$(1)/usr/include/mac80211/ath \
+		$(1)/usr/include/net/mac80211
 	$(CP) $(PKG_BUILD_DIR)/net/mac80211/*.h $(PKG_BUILD_DIR)/include/* $(1)/usr/include/mac80211/
 	$(CP) $(PKG_BUILD_DIR)/net/mac80211/rate.h $(1)/usr/include/net/mac80211/
+	$(CP) $(PKG_BUILD_DIR)/drivers/net/wireless/ath/*.h $(1)/usr/include/mac80211/ath/
 endef
 
 define KernelPackage/libertas/install
@@ -637,7 +646,7 @@ endef
 
 define KernelPackage/p54-usb/install
 	$(INSTALL_DIR) $(1)/lib/firmware
-	$(INSTALL_DATA) $(DL_DIR)/$(P54USBFW) $(1)/lib/firmware/isl3886usb
+	$(INSTALL_DATA) $(DL_DIR)/$(P54USBFW) $(1)/lib/firmware/isl3887usb
 endef
 
 define KernelPackage/rt61-pci/install
@@ -712,6 +721,9 @@ define KernelPackage/b43legacy/install
 	$(INSTALL_DIR) $(1)/lib/firmware/
 
 	b43-fwcutter --unsupported -w $(1)/lib/firmware/ $(DL_DIR)/$(PKG_B43_FWV3_SOURCE)
+ifneq ($(CONFIG_B43LEGACY_FW_SQUASH),)
+	b43-fwsquash.py "G" "$(CONFIG_B43LEGACY_FW_SQUASH_COREREVS)" "$(1)/lib/firmware/b43legacy"
+endif
 endef
 
 $(eval $(call KernelPackage,ath5k))

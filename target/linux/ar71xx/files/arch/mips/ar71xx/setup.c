@@ -24,14 +24,13 @@
 #include <asm/mach-ar71xx/ar71xx.h>
 #include <asm/mach-ar71xx/pci.h>
 
+#include "machtype.h"
 #include "devices.h"
 
 #define AR71XX_SYS_TYPE_LEN	64
 #define AR71XX_BASE_FREQ	40000000
 #define AR91XX_BASE_FREQ	5000000
 #define AR724X_BASE_FREQ	5000000
-
-enum ar71xx_mach_type ar71xx_mach;
 
 u32 ar71xx_cpu_freq;
 EXPORT_SYMBOL_GPL(ar71xx_cpu_freq);
@@ -275,6 +274,8 @@ void __init plat_time_init(void)
 	mips_hpt_frequency = ar71xx_cpu_freq / 2;
 }
 
+__setup("board=", mips_machtype_setup);
+
 static int __init ar71xx_machine_setup(void)
 {
 	ar71xx_gpio_init();
@@ -282,7 +283,7 @@ static int __init ar71xx_machine_setup(void)
 	ar71xx_add_device_uart();
 	ar71xx_add_device_wdt();
 
-	mips_machine_setup(ar71xx_mach);
+	mips_machine_setup();
 	return 0;
 }
 

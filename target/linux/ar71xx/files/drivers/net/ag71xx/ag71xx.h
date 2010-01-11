@@ -1,7 +1,7 @@
 /*
  *  Atheros AR71xx built-in ethernet mac driver
  *
- *  Copyright (C) 2008-2009 Gabor Juhos <juhosg@openwrt.org>
+ *  Copyright (C) 2008-2010 Gabor Juhos <juhosg@openwrt.org>
  *  Copyright (C) 2008 Imre Kaloz <kaloz@openwrt.org>
  *
  *  Based on Atheros' AG7100 driver
@@ -109,6 +109,38 @@ struct ag71xx_mdio {
 	struct ag71xx_mdio_platform_data *pdata;
 };
 
+struct ag71xx_int_stats {
+	unsigned long		rx_pr;
+	unsigned long		rx_be;
+	unsigned long		rx_of;
+	unsigned long		tx_ps;
+	unsigned long		tx_be;
+	unsigned long		tx_ur;
+	unsigned long		total;
+};
+
+struct ag71xx_napi_stats {
+	unsigned long		napi_calls;
+	unsigned long		rx_count;
+	unsigned long		rx_packets;
+	unsigned long		rx_packets_max;
+	unsigned long		tx_count;
+	unsigned long		tx_packets;
+	unsigned long		tx_packets_max;
+
+	unsigned long		rx[AG71XX_NAPI_WEIGHT + 1];
+	unsigned long		tx[AG71XX_NAPI_WEIGHT + 1];
+};
+
+struct ag71xx_debug {
+	struct dentry		*debugfs_dir;
+	struct dentry		*debugfs_int_stats;
+	struct dentry		*debugfs_napi_stats;
+
+	struct ag71xx_int_stats int_stats;
+	struct ag71xx_napi_stats napi_stats;
+};
+
 struct ag71xx {
 	void __iomem		*mac_base;
 	void __iomem		*mii_ctrl;
@@ -131,11 +163,14 @@ struct ag71xx {
 
 	struct work_struct	restart_work;
 	struct timer_list	oom_timer;
+
+#ifdef CONFIG_AG71XX_DEBUG_FS
+	struct ag71xx_debug	debug;
+#endif
 };
 
 extern struct ethtool_ops ag71xx_ethtool_ops;
 
-extern struct ag71xx_mdio *ag71xx_mdio_bus;
 int ag71xx_mdio_driver_init(void) __init;
 void ag71xx_mdio_driver_exit(void);
 
@@ -450,5 +485,23 @@ static inline int ag71xx_remove_ar8216_header(struct ag71xx *ag,
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_AG71XX_DEBUG_FS
+int ag71xx_debugfs_root_init(void);
+void ag71xx_debugfs_root_exit(void);
+int ag71xx_debugfs_init(struct ag71xx *ag);
+void ag71xx_debugfs_exit(struct ag71xx *ag);
+void ag71xx_debugfs_update_int_stats(struct ag71xx *ag, u32 status);
+void ag71xx_debugfs_update_napi_stats(struct ag71xx *ag, int rx, int tx);
+#else
+static inline int ag71xx_debugfs_root_init(void) { return 0; }
+static inline void ag71xx_debugfs_root_exit(void) {}
+static inline int ag71xx_debugfs_init(struct ag71xx *ag) { return 0; }
+static inline void ag71xx_debugfs_exit(struct ag71xx *ag) {}
+static inline void ag71xx_debugfs_update_int_stats(struct ag71xx *ag,
+						   u32 status) {}
+static inline void ag71xx_debugfs_update_napi_stats(struct ag71xx *ag,
+						    int rx, int tx) {}
+#endif /* CONFIG_AG71XX_DEBUG_FS */
 
 #endif /* _AG71XX_H */

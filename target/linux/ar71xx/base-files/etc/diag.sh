@@ -42,6 +42,15 @@ get_status_led() {
 	bullet-m | rocket-m | nano-m)
 		status_led="ubnt:green:link4"
 		;;
+	dir-600-a1)
+		status_led="dir-600-a1:green:power"
+		;;
+	dir-615-c1)
+		status_led="dir-615c1:green:status"
+		;;
+	dir-825-b1)
+		status_led="dir825b1:orange:power"
+		;;
 	ls-sr71)
 		status_led="ubnt:green:d22"
 		;;
@@ -54,14 +63,20 @@ get_status_led() {
 	pb44)
 		status_led="pb44:amber:jump1"
 		;;
-	routerstation)
+	routerstation | routerstation-pro)
 		status_led="ubnt:green:rf"
 		;;
 	tew-632brp)
 		status_led="tew-632brp:green:status"
 		;;
+	tl-wr1043nd)
+		status_led="tl-wr1043nd:green:system"
+		;;
 	tl-wr741nd)
 		status_led="tl-wr741nd:green:system"
+		;;
+	tl-wr841n-v1)
+		status_led="tl-wr841n:green:system"
 		;;
 	tl-wr941nd)
 		status_led="tl-wr941nd:green:system"

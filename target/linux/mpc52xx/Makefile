@@ -11,8 +11,7 @@ BOARD:=mpc52xx
 BOARDNAME:=Freescale MPC52xx
 FEATURES:=tgz ext2
 
-LINUX_VERSION:=2.6.30.9
-LINUX_KARCH:=powerpc
+LINUX_VERSION:=2.6.30.10
 
 include $(INCLUDE_DIR)/target.mk
 

@@ -15,10 +15,10 @@ start() {
 					vlan[0-9]|vlan1[0-5])
 						local id="${1#vlan}"
 						append batch "delete network.eth0.${1}${N}"
-						append batch "set network.eth0_${n}=switch_vlan${N}"
-						append batch "set network.eth0_${n}.device=eth0${N}"
-						append batch "set network.eth0_${n}.vlan=${id}${N}"
-						append batch "set network.eth0_${n}.ports='${2}'${N}"
+						append batch "set network.eth0_${id}=switch_vlan${N}"
+						append batch "set network.eth0_${id}.device=eth0${N}"
+						append batch "set network.eth0_${id}.vlan=${id}${N}"
+						append batch "set network.eth0_${id}.ports='${2}'${N}"
 					;;
 					esac
 				}
@@ -164,8 +164,10 @@ start() {
 			c["lan_ifname"] = "eth0"
 			c["wan_ifname"] = "eth1"
 		}
-		if (nvram["boardtype"] == "0x478") {
-			# generic broadcom 4785 processor with 5397 switch?
+		# generic broadcom 4705/4785 processor with 5397 switch?
+		#  EXCEPT Linksys WRT300N V1.1
+		if ((nvram["boardtype"] == "0x478") && \
+		    (model != "Linksys WRT300N V1.1")) {
 			c["vlan0ports"] = "1 2 3 4 8*"
 			c["vlan1ports"] = "0 8"
 		}

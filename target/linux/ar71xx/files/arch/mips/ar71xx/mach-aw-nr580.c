@@ -9,18 +9,18 @@
  *  by the Free Software Foundation.
  */
 
-#include <linux/platform_device.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/flash.h>
-#include <linux/input.h>
 
 #include <asm/mips_machine.h>
 #include <asm/mach-ar71xx/ar71xx.h>
-#include <asm/mach-ar71xx/pci.h>
 
+#include "machtype.h"
 #include "devices.h"
+#include "dev-m25p80.h"
+#include "dev-gpio-buttons.h"
+#include "dev-pb42-pci.h"
+#include "dev-leds-gpio.h"
 
 #define AW_NR580_GPIO_LED_READY_RED	0
 #define AW_NR580_GPIO_LED_WLAN		1
@@ -32,15 +32,6 @@
 #define AW_NR580_GPIO_BTN_RESET		11
 
 #define AW_NR580_BUTTONS_POLL_INTERVAL	20
-
-static struct spi_board_info aw_nr580_spi_info[] = {
-	{
-		.bus_num	= 0,
-		.chip_select	= 0,
-		.max_speed_hz	= 25000000,
-		.modalias	= "m25p80",
-	}
-};
 
 static struct gpio_led aw_nr580_leds_gpio[] __initdata = {
 	{
@@ -84,14 +75,6 @@ static struct gpio_button aw_nr580_gpio_buttons[] __initdata = {
 	}
 };
 
-static struct ar71xx_pci_irq aw_nr580_pci_irqs[] __initdata = {
-	{
-		.slot	= 1,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV1,
-	}
-};
-
 static void __init aw_nr580_setup(void)
 {
 	ar71xx_add_device_mdio(0x0);
@@ -103,10 +86,9 @@ static void __init aw_nr580_setup(void)
 
 	ar71xx_add_device_eth(0);
 
-	ar71xx_pci_init(ARRAY_SIZE(aw_nr580_pci_irqs), aw_nr580_pci_irqs);
+	pb42_pci_init();
 
-	ar71xx_add_device_spi(NULL, aw_nr580_spi_info,
-					ARRAY_SIZE(aw_nr580_spi_info));
+	ar71xx_add_device_m25p80(NULL);
 
 	ar71xx_add_device_leds_gpio(-1, ARRAY_SIZE(aw_nr580_leds_gpio),
 					aw_nr580_leds_gpio);
@@ -116,4 +98,5 @@ static void __init aw_nr580_setup(void)
 					aw_nr580_gpio_buttons);
 }
 
-MIPS_MACHINE(AR71XX_MACH_AW_NR580, "AzureWave AW-NR580", aw_nr580_setup);
+MIPS_MACHINE(AR71XX_MACH_AW_NR580, "AW-NR580", "AzureWave AW-NR580",
+	     aw_nr580_setup);

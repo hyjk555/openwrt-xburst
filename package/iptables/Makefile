@@ -10,7 +10,7 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=iptables
 PKG_VERSION:=1.4.4
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_MD5SUM:=08cd9196881657ea0615d926334cb7e9
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
@@ -33,7 +33,7 @@ endif
 
 define Package/iptables/Default
   SECTION:=net
-  CATEGORY:=Base system
+  CATEGORY:=Network
   URL:=http://netfilter.org/
 endef
 
@@ -52,6 +52,7 @@ endef
 define Package/iptables/description
  IPv4 firewall administration tool.
  Includes support for:
+ - comment
  - limit
  - LOG
  - mac
@@ -139,6 +140,18 @@ define Package/iptables-mod-ipsec/description
  - libipt_ah
  - libipt_esp
  - libipt_policy
+endef
+
+define Package/iptables-mod-ipset
+$(call Package/iptables/Module, @LINUX_2_6)
+  TITLE:=IPset iptables extensions
+endef
+
+define Package/iptables-mod-ipset/description
+ IPset iptables extensions.
+ Includes:
+ - libipt_set
+ - libipt_SET
 endef
 
 define Package/iptables-mod-nat
@@ -359,6 +372,7 @@ $(eval $(call BuildPlugin,iptables-mod-filter,$(IPT_FILTER-m),$(L7_INSTALL)))
 $(eval $(call BuildPlugin,iptables-mod-imq,$(IPT_IMQ-m)))
 $(eval $(call BuildPlugin,iptables-mod-ipopt,$(IPT_IPOPT-m)))
 $(eval $(call BuildPlugin,iptables-mod-ipsec,$(IPT_IPSEC-m)))
+$(eval $(call BuildPlugin,iptables-mod-ipset,ipt_set ipt_SET))
 $(eval $(call BuildPlugin,iptables-mod-nat,$(IPT_NAT-m)))
 $(eval $(call BuildPlugin,iptables-mod-nat-extra,$(IPT_NAT_EXTRA-m)))
 $(eval $(call BuildPlugin,iptables-mod-iprange,$(IPT_IPRANGE-m)))

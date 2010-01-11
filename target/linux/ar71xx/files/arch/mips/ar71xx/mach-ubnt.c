@@ -10,18 +10,16 @@
  *  by the Free Software Foundation.
  */
 
-#include <linux/pci.h>
-#include <linux/platform_device.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/flash.h>
-#include <linux/input.h>
-#include <linux/ath9k_platform.h>
-
-#include <asm/mips_machine.h>
 #include <asm/mach-ar71xx/ar71xx.h>
-#include <asm/mach-ar71xx/pci.h>
 
+#include "machtype.h"
 #include "devices.h"
+#include "dev-m25p80.h"
+#include "dev-ap91-pci.h"
+#include "dev-gpio-buttons.h"
+#include "dev-pb42-pci.h"
+#include "dev-leds-gpio.h"
+#include "dev-usb.h"
 
 #define UBNT_RS_GPIO_LED_RF	2
 #define UBNT_RS_GPIO_SW4	8
@@ -41,31 +39,6 @@
 #define UBNT_M_GPIO_BTN_RESET	12
 
 #define UBNT_BUTTONS_POLL_INTERVAL	20
-
-static struct spi_board_info ubnt_spi_info[] = {
-	{
-		.bus_num	= 0,
-		.chip_select	= 0,
-		.max_speed_hz	= 25000000,
-		.modalias	= "m25p80",
-	}
-};
-
-static struct ar71xx_pci_irq ubnt_pci_irqs[] __initdata = {
-	{
-		.slot	= 0,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV0,
-	}, {
-		.slot	= 1,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV1,
-	}, {
-		.slot	= 2,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV2,
-	}
-};
 
 static struct gpio_led ubnt_rs_leds_gpio[] __initdata = {
 	{
@@ -151,14 +124,13 @@ static struct gpio_button ubnt_m_gpio_buttons[] __initdata = {
 
 static void __init ubnt_generic_setup(void)
 {
-	ar71xx_add_device_spi(NULL, ubnt_spi_info,
-				    ARRAY_SIZE(ubnt_spi_info));
+	ar71xx_add_device_m25p80(NULL);
 
 	ar71xx_add_device_gpio_buttons(-1, UBNT_BUTTONS_POLL_INTERVAL,
 					ARRAY_SIZE(ubnt_gpio_buttons),
 					ubnt_gpio_buttons);
 
-	ar71xx_pci_init(ARRAY_SIZE(ubnt_pci_irqs), ubnt_pci_irqs);
+	pb42_pci_init();
 }
 
 #define UBNT_RS_WAN_PHYMASK	(1 << 20)
@@ -191,7 +163,11 @@ static void __init ubnt_rs_setup(void)
 					ubnt_rs_leds_gpio);
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_RS, "Ubiquiti RouterStation", ubnt_rs_setup);
+MIPS_MACHINE(AR71XX_MACH_UBNT_RS, "UBNT-RS", "Ubiquiti RouterStation",
+	     ubnt_rs_setup);
+
+MIPS_MACHINE(AR71XX_MACH_UBNT_AR71XX, "Ubiquiti AR71xx-based board",
+	     "Ubiquiti RouterStation", ubnt_rs_setup);
 
 static void __init ubnt_rspro_setup(void)
 {
@@ -217,7 +193,7 @@ static void __init ubnt_rspro_setup(void)
 					ubnt_rs_leds_gpio);
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_RSPRO, "Ubiquiti RouterStation Pro",
+MIPS_MACHINE(AR71XX_MACH_UBNT_RSPRO, "UBNT-RSPRO", "Ubiquiti RouterStation Pro",
 	     ubnt_rspro_setup);
 
 static void __init ubnt_lsx_setup(void)
@@ -225,7 +201,7 @@ static void __init ubnt_lsx_setup(void)
 	ubnt_generic_setup();
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_LSX, "Ubiquiti LSX", ubnt_lsx_setup);
+MIPS_MACHINE(AR71XX_MACH_UBNT_LSX, "UBNT-LSX", "Ubiquiti LSX", ubnt_lsx_setup);
 
 #define UBNT_LSSR71_PHY_MASK	(1 << 1)
 
@@ -244,49 +220,17 @@ static void __init ubnt_lssr71_setup(void)
 					ubnt_ls_sr71_leds_gpio);
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_LSSR71, "Ubiquiti LS-SR71", ubnt_lssr71_setup);
-
-#ifdef CONFIG_PCI
-static struct ar71xx_pci_irq ubnt_m_pci_irqs[] __initdata = {
-	{
-		.slot	= 0,
-		.pin	= 1,
-		.irq	= AR71XX_PCI_IRQ_DEV0,
-	}
-};
-
-static struct ath9k_platform_data ubnt_m_wmac_data;
-
-static int ubmnt_m_pci_plat_dev_init(struct pci_dev *dev)
-{
-	dev->dev.platform_data = &ubnt_m_wmac_data;
-	return 0;
-}
-
-static void __init ubnt_m_pci_init(void)
-{
-	u8 *ee = (u8 *) KSEG1ADDR(0x1fff1000);
-
-	memcpy(ubnt_m_wmac_data.eeprom_data, ee,
-	       sizeof(ubnt_m_wmac_data.eeprom_data));
-
-	ar71xx_pci_plat_dev_init = ubmnt_m_pci_plat_dev_init;
-
-	ar71xx_pci_init(ARRAY_SIZE(ubnt_m_pci_irqs),
-			ubnt_m_pci_irqs);
-}
-#else
-static inline void ubnt_m_pci_init(void) { };
-#endif /* CONFIG_PCI */
+MIPS_MACHINE(AR71XX_MACH_UBNT_LSSR71, "UBNT-LS-SR71", "Ubiquiti LS-SR71",
+	     ubnt_lssr71_setup);
 
 static void __init ubnt_m_setup(void)
 {
 	u8 *mac = (u8 *) KSEG1ADDR(0x1fff0000);
+	u8 *ee = (u8 *) KSEG1ADDR(0x1fff1000);
 
 	ar71xx_set_mac_base(mac);
 
-	ar71xx_add_device_spi(NULL, ubnt_spi_info,
-				    ARRAY_SIZE(ubnt_spi_info));
+	ar71xx_add_device_m25p80(NULL);
 
 	ar71xx_add_device_mdio(~0);
 
@@ -300,7 +244,7 @@ static void __init ubnt_m_setup(void)
 
 	ar71xx_add_device_eth(0);
 
-	ubnt_m_pci_init();
+	ap91_pci_init(ee, NULL);
 
 	ar71xx_add_device_leds_gpio(-1, ARRAY_SIZE(ubnt_m_leds_gpio),
 					ubnt_m_leds_gpio);
@@ -316,8 +260,10 @@ static void __init ubnt_rocket_m_setup(void)
 	ar71xx_add_device_usb();
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_BULLET_M, "Ubiquiti Bullet M", ubnt_m_setup);
-MIPS_MACHINE(AR71XX_MACH_UBNT_ROCKET_M, "Ubiquiti Rocket M", ubnt_rocket_m_setup);
+MIPS_MACHINE(AR71XX_MACH_UBNT_BULLET_M, "UBNT-BM", "Ubiquiti Bullet M",
+	     ubnt_m_setup);
+MIPS_MACHINE(AR71XX_MACH_UBNT_ROCKET_M, "UBNT-RM", "Ubiquiti Rocket M",
+	     ubnt_rocket_m_setup);
 
 /* TODO detect the second ethernet port and use one
    init function for all Ubiquiti MIMO series products */
@@ -336,4 +282,5 @@ static void __init ubnt_nano_m_setup(void)
 	ar71xx_add_device_eth(1);
 }
 
-MIPS_MACHINE(AR71XX_MACH_UBNT_NANO_M, "Ubiquiti Nanostation M", ubnt_nano_m_setup);
+MIPS_MACHINE(AR71XX_MACH_UBNT_NANO_M, "UBNT-NM", "Ubiquiti Nanostation M",
+	     ubnt_nano_m_setup);

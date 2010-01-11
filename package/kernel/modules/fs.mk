@@ -111,12 +111,6 @@ endef
 
 $(eval $(call KernelPackage,fs-ext3))
 
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),lt,2.6.28)),1)
-	EXT4_NAME:=ext4dev
-else
-	EXT4_NAME:=ext4
-endif
-
 define KernelPackage/fs-ext4
   SUBMENU:=$(FS_MENU)
   TITLE:=EXT4 filesystem support
@@ -129,7 +123,7 @@ define KernelPackage/fs-ext4
 	CONFIG_JBD2
   DEPENDS:= @LINUX_2_6 +kmod-crc16 $(if $(DUMP)$(CONFIG_FS_MBCACHE),+kmod-fs-mbcache)
   FILES:= \
-	$(LINUX_DIR)/fs/ext4/$(EXT4_NAME).$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/fs/ext4/ext4.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/fs/jbd2/jbd2.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,30,jbd2 $(EXT4_NAME))
 endef
@@ -277,21 +271,18 @@ endef
 
 $(eval $(call KernelPackage,fs-nfsd))
 
-
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.28)),1)
-  MSDOS_DIR:=fat
-endif
-MSDOS_DIR?=msdos
-
 define KernelPackage/fs-msdos
   SUBMENU:=$(FS_MENU)
   TITLE:=MSDOS filesystem support
   KCONFIG:=CONFIG_MSDOS_FS
-  FILES:=$(LINUX_DIR)/fs/$(MSDOS_DIR)/msdos.$(LINUX_KMOD_SUFFIX)
+  FILES:=$(LINUX_DIR)/fs/fat/msdos.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,40,msdos)
 $(call KernelPackage/nls/Depends)
 endef
 
+define KernelPackage/fs-msdos/2.4
+  FILES:=$(LINUX_DIR)/fs/msdos/msdos.$(LINUX_KMOD_SUFFIX)
+endef
 
 define KernelPackage/fs-msdos/description
  Kernel module for MSDOS filesystem support
@@ -314,11 +305,6 @@ endef
 
 $(eval $(call KernelPackage,fs-reiserfs))
 
-ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.28)),1)
-  VFAT_DIR:=fat
-endif
-VFAT_DIR?=vfat
-
 define KernelPackage/fs-vfat
   SUBMENU:=$(FS_MENU)
   TITLE:=VFAT filesystem support
@@ -327,11 +313,16 @@ define KernelPackage/fs-vfat
 	CONFIG_VFAT_FS
   FILES:= \
 	$(LINUX_DIR)/fs/fat/fat.$(LINUX_KMOD_SUFFIX) \
-	$(LINUX_DIR)/fs/$(VFAT_DIR)/vfat.$(LINUX_KMOD_SUFFIX)
+	$(LINUX_DIR)/fs/fat/vfat.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,30,fat vfat)
 $(call KernelPackage/nls/Depends)
 endef
 
+define KernelPackage/fs-vfat/2.4
+  FILES:= \
+	$(LINUX_DIR)/fs/fat/fat.$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/fs/vfat/vfat.$(LINUX_KMOD_SUFFIX)
+endef
 
 define KernelPackage/fs-vfat/description
  Kernel module for VFAT filesystem support
@@ -364,7 +355,7 @@ define KernelPackage/fs-btrfs
 	CONFIG_BTRFS_FS \
 	CONFIG_BTRFS_FS_POSIX_ACL=n
   # for crc32c
-  DEPENDS:=+kmod-crypto-core @!LINUX_2_6_21&&!LINUX_2_6_25&&!LINUX_2_6_28
+  DEPENDS:=+kmod-crypto-core @!LINUX_2_6_21&&!LINUX_2_6_25
   FILES:=\
 	$(LINUX_DIR)/crypto/crc32c.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/lib/libcrc32c.$(LINUX_KMOD_SUFFIX) \
@@ -457,6 +448,23 @@ define KernelPackage/nls-cp852/description
 endef
 
 $(eval $(call KernelPackage,nls-cp852))
+
+
+define KernelPackage/nls-cp866
+  SUBMENU:=$(FS_MENU)
+  TITLE:=Codepage 866 (Cyrillic)
+  KCONFIG:=CONFIG_NLS_CODEPAGE_866
+  FILES:=$(LINUX_DIR)/fs/nls/nls_cp866.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,25,nls_cp866)
+$(call KernelPackage/nls/Depends)
+endef
+
+
+define KernelPackage/nls-cp866/description
+  Kernel module for NLS Codepage 866 (Cyrillic)
+endef
+
+$(eval $(call KernelPackage,nls-cp866))
 
 
 define KernelPackage/nls-cp1250

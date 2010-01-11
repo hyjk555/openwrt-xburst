@@ -76,11 +76,13 @@ enable_mac80211() {
 	config_get channel "$device" channel
 	config_get vifs "$device" vifs
 	config_get txpower "$device" txpower
+	config_get country "$device" country
 	find_mac80211_phy "$device" || return 0
 	config_get phy "$device" phy
 	local i=0
 	fixed=""
 
+	[ -n "$country" ] && iw reg set "$country"
 	[ "$channel" = "auto" -o "$channel" = "0" ] || {
 		fixed=1
 	}
@@ -147,7 +149,7 @@ enable_mac80211() {
 			else
 				offset="0"
 			fi
-			vif_mac="$( printf %02x $(($mac_1 + $offset)) ):$mac_2"
+			vif_mac="$( printf %02x $((0x$mac_1 + $offset)) ):$mac_2"
 		}
 		ifconfig "$ifname" hw ether "$vif_mac"
 
@@ -176,10 +178,10 @@ enable_mac80211() {
 			case "$enc" in
 				wep)
 					config_get keymgmt "$vif" keymgmt
-					if [ -e "$keymgmt" ]; then
+					if [ -n "$keymgmt" ]; then
 						for idx in 1 2 3 4; do
 							local zidx
-							zidx = idx - 1
+							zidx=$(($idx - 1))
 							config_get key "$vif" "key${idx}"
 							if [ -n "$key" ]; then
 								append keystring "${zidx}:${key} "
@@ -187,7 +189,7 @@ enable_mac80211() {
 						done
 					fi
 				;;
-				wpa)
+				*wpa*|*psk*)
 					config_get key "$vif" key
 				;;
 			esac
@@ -207,7 +209,7 @@ enable_mac80211() {
 
 		config_get rts "$vif" rts
 		if [ -n "$rts" ]; then
-			iw phy "$phy" set rts "${frag%%.*}"
+			iw phy "$phy" set rts "${rts%%.*}"
 		fi
 
 		ifconfig "$ifname" up
@@ -240,7 +242,7 @@ enable_mac80211() {
 				config_get bssid "$vif" bssid
 				case "$enc" in
 					wep)
-						if [ -e "$keymgmt" ]; then
+						if [ -n "$keymgmt" ]; then
 							[ -n "$keystring" ] &&
 								iw dev "$ifname" connect "$ssid" ${fixed:+$freq} $bssid key "$keystring"
 						else
@@ -254,7 +256,7 @@ enable_mac80211() {
 							fi
 						fi
 					;;
-					wpa*|psk*)
+					*wpa*|*psk*)
 						config_get key "$vif" key
 						if eval "type wpa_supplicant_setup_vif" 2>/dev/null >/dev/null; then
 							wpa_supplicant_setup_vif "$vif" wext || {
@@ -279,7 +281,7 @@ enable_mac80211() {
 check_device() {
 	config_get phy "$1" phy
 	[ -z "$phy" ] && {
-		find_mac80211_phy "$1" || return 0
+		find_mac80211_phy "$1" >/dev/null || return 0
 		config_get phy "$1" phy
 	}
 	[ "$phy" = "$dev" ] && found=1
@@ -289,7 +291,7 @@ detect_mac80211() {
 	devidx=0
 	config_load wireless
 	while :; do
-		config_get type "wifi$devidx" type
+		config_get type "radio$devidx" type
 		[ -n "$type" ] || break
 		devidx=$(($devidx + 1))
 	done
@@ -318,7 +320,7 @@ detect_mac80211() {
 		iw phy "$dev" info | grep -q '2412 MHz' || { mode_band="a"; channel="36"; }
 
 		cat <<EOF
-config wifi-device  wifi$devidx
+config wifi-device  radio$devidx
 	option type     mac80211
 	option channel  ${channel}
 	option macaddr	$(cat /sys/class/ieee80211/${dev}/macaddress)
@@ -328,7 +330,7 @@ config wifi-device  wifi$devidx
 $ht_capab
 
 config wifi-iface
-	option device   wifi$devidx
+	option device   radio$devidx
 	option network  lan
 	option mode     ap
 	option ssid     OpenWrt

@@ -11,12 +11,13 @@
 
 #include <linux/init.h>
 
-#include <asm/mips_machine.h>
 #include <asm/mach-ar71xx/ar71xx.h>
+#include "machtype.h"
 
 static void __init ar71xx_generic_init(void)
 {
 	/* Nothing to do */
 }
 
-MIPS_MACHINE(AR71XX_MACH_GENERIC, "Generic AR71xx board", ar71xx_generic_init);
+MIPS_MACHINE(AR71XX_MACH_GENERIC, "Generic", "Generic AR71xx board",
+	     ar71xx_generic_init);

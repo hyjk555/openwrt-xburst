@@ -24,9 +24,9 @@ config BUSYBOX_CONFIG_FEATURE_SH_IS_HUSH
 ####	select LASH
 ####	bool "lash"
 
-config BUSYBOX_CONFIG_FEATURE_SH_IS_MSH
-	select BUSYBOX_CONFIG_MSH
-	bool "msh"
+####config FEATURE_SH_IS_MSH
+####	select MSH
+####	bool "msh"
 
 config BUSYBOX_CONFIG_FEATURE_SH_IS_NONE
 	bool "none"
@@ -42,9 +42,6 @@ config BUSYBOX_CONFIG_ASH
 	  busybox. This shell is actually a derivative of the Debian 'dash'
 	  shell (by Herbert Xu), which was created by porting the 'ash' shell
 	  (written by Kenneth Almquist) from NetBSD.
-
-comment "Ash Shell Options"
-	depends on BUSYBOX_CONFIG_ASH
 
 config BUSYBOX_CONFIG_ASH_BASH_COMPAT
 	bool "bash-compatible extensions"
@@ -169,16 +166,23 @@ config BUSYBOX_CONFIG_HUSH
 	  It does not handle select, aliases, brace expansion,
 	  tilde expansion, &>file and >&file redirection of stdout+stderr.
 
+config BUSYBOX_CONFIG_HUSH_BASH_COMPAT
+	bool "bash-compatible extensions"
+	default y
+	depends on BUSYBOX_CONFIG_HUSH
+	help
+	  Enable bash-compatible extensions.
+
 config BUSYBOX_CONFIG_HUSH_HELP
 	bool "help builtin"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable help builtin in hush. Code size + ~1 kbyte.
 
 config BUSYBOX_CONFIG_HUSH_INTERACTIVE
 	bool "Interactive mode"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable interactive mode (prompt and command editing).
@@ -188,7 +192,7 @@ config BUSYBOX_CONFIG_HUSH_INTERACTIVE
 
 config BUSYBOX_CONFIG_HUSH_JOB
 	bool "Job control"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH_INTERACTIVE
 	help
 	  Enable job control: Ctrl-Z backgrounds, Ctrl-C interrupts current
@@ -199,38 +203,52 @@ config BUSYBOX_CONFIG_HUSH_JOB
 
 config BUSYBOX_CONFIG_HUSH_TICK
 	bool "Process substitution"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable process substitution `command` and $(command) in hush.
 
 config BUSYBOX_CONFIG_HUSH_IF
 	bool "Support if/then/elif/else/fi"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable if/then/elif/else/fi in hush.
 
 config BUSYBOX_CONFIG_HUSH_LOOPS
 	bool "Support for, while and until loops"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable for, while and until loops in hush.
 
 config BUSYBOX_CONFIG_HUSH_CASE
 	bool "Support case ... esac statement"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable case ... esac statement in hush. +400 bytes.
 
 config BUSYBOX_CONFIG_HUSH_FUNCTIONS
 	bool "Support funcname() { commands; } syntax"
-	default n
+	default y
 	depends on BUSYBOX_CONFIG_HUSH
 	help
 	  Enable support for shell functions in hush. +800 bytes.
+
+config BUSYBOX_CONFIG_HUSH_LOCAL
+	bool "Support local builtin"
+	default y
+	depends on BUSYBOX_CONFIG_HUSH_FUNCTIONS
+	help
+	  Enable support for local variables in functions.
+
+config BUSYBOX_CONFIG_HUSH_EXPORT_N
+	bool "Support export '-n' option"
+	default y
+	depends on BUSYBOX_CONFIG_HUSH
+	help
+	  Enable support for export '-n' option in hush. It is a bash extension.
 
 config BUSYBOX_CONFIG_LASH
 	bool "lash (deprecated: aliased to hush)"
@@ -242,6 +260,7 @@ config BUSYBOX_CONFIG_LASH
 config BUSYBOX_CONFIG_MSH
 	bool "msh (deprecated: please use hush)"
 	default n
+	select BUSYBOX_CONFIG_HUSH
 	help
 	  msh is deprecated and will be removed, please migrate to hush.
 	  If there is a feature msh has but hush does not, please let us know.
@@ -253,9 +272,6 @@ config BUSYBOX_CONFIG_MSH
 #	  on it and compare vs bash) but for most things it works quite well.
 #	  It uses only vfork, so it can be used on uClinux systems.
 
-
-comment "Bourne Shell Options"
-	depends on BUSYBOX_CONFIG_MSH || BUSYBOX_CONFIG_LASH || BUSYBOX_CONFIG_HUSH || BUSYBOX_CONFIG_ASH
 
 config BUSYBOX_CONFIG_SH_MATH_SUPPORT
 	bool "POSIX math support"
