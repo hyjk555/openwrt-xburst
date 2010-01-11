@@ -24,7 +24,6 @@
 #include <sound/soc.h>
 
 #include <asm/mach-jz4740/dma.h>
-#include <asm/mach-jz4740/regs.h>
 #include "jz4740-pcm.h"
 
 struct jz4740_runtime_data {
@@ -32,25 +31,10 @@ struct jz4740_runtime_data {
 	dma_addr_t dma_start;
 	dma_addr_t dma_pos;
 	dma_addr_t dma_end;
+
 	struct jz4740_dma_chan *dma;
-};
 
-static struct jz4740_dma_config jz4740_pcm_dma_playback_config = {
-	.src_width = JZ4740_DMA_WIDTH_16BIT,
-	.dst_width = JZ4740_DMA_WIDTH_32BIT,
-	.transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE,
-	.request_type = JZ4740_DMA_TYPE_AIC_TRANSMIT,
-	.flags = JZ4740_DMA_SRC_AUTOINC,
-	.mode = JZ4740_DMA_MODE_SINGLE,
-};
-
-static struct jz4740_dma_config jz4740_pcm_dma_capture_config = {
-	.src_width = JZ4740_DMA_WIDTH_32BIT,
-	.dst_width = JZ4740_DMA_WIDTH_16BIT,
-	.transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE,
-	.request_type = JZ4740_DMA_TYPE_AIC_RECEIVE,
-	.flags = JZ4740_DMA_DST_AUTOINC,
-	.mode = JZ4740_DMA_MODE_SINGLE,
+	dma_addr_t fifo_addr;
 };
 
 /* identify hardware playback capabilities */
@@ -85,9 +69,9 @@ static void jz4740_pcm_start_transfer(struct jz4740_runtime_data *prtd, int stre
 
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		jz4740_dma_set_src_addr(prtd->dma, prtd->dma_pos);
-		jz4740_dma_set_dst_addr(prtd->dma, CPHYSADDR(AIC_DR));
+		jz4740_dma_set_dst_addr(prtd->dma, prtd->fifo_addr);
 	} else {
-		jz4740_dma_set_src_addr(prtd->dma, CPHYSADDR(AIC_DR));
+		jz4740_dma_set_src_addr(prtd->dma, prtd->fifo_addr);
 		jz4740_dma_set_dst_addr(prtd->dma, prtd->dma_pos);
 	}
 
@@ -117,53 +101,31 @@ static int jz4740_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct jz4740_runtime_data *prtd = runtime->private_data;
-	unsigned int size = params_buffer_bytes(params);
-	struct jz4740_dma_config *dma_config;
-	enum jz4740_dma_width width;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct jz4740_pcm_config *config;
 
-	switch (params_format(params)) {
-	case SNDRV_PCM_FORMAT_S8:
-		width = JZ4740_DMA_WIDTH_8BIT;
-		break;
-	case SNDRV_PCM_FORMAT_S16_LE:
-		width = JZ4740_DMA_WIDTH_16BIT;
-		break;
-	default:
-		BUG();
-		break;
-	}
-
+	config = rtd->dai->cpu_dai->dma_data;
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		dma_config = &jz4740_pcm_dma_playback_config;
-		dma_config->src_width = width;
-
 		prtd->dma = jz4740_dma_request(substream, "PCM Playback");
 	} else {
-		dma_config = &jz4740_pcm_dma_capture_config;
-		dma_config->dst_width = width;
-
 		prtd->dma = jz4740_dma_request(substream, "PCM Capture");
 	}
 
 	if (!prtd->dma)
 		return -EBUSY;
 
-	jz4740_dma_configure(prtd->dma, dma_config);
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		jz4740_dma_set_dst_addr(prtd->dma, CPHYSADDR(AIC_DR));
-	else
-		jz4740_dma_set_src_addr(prtd->dma, CPHYSADDR(AIC_DR));
+	jz4740_dma_configure(prtd->dma, config->dma_config);
+	prtd->fifo_addr = config->fifo_addr;
 
 	jz4740_dma_set_complete_cb(prtd->dma, jz4740_pcm_dma_transfer_done);
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
-	runtime->dma_bytes = size;
+	runtime->dma_bytes = params_buffer_bytes(params);
 
 	prtd->dma_period = params_period_bytes(params);
 	prtd->dma_start = runtime->dma_addr;
 	prtd->dma_pos = prtd->dma_start;
-	prtd->dma_end = prtd->dma_start + size;
+	prtd->dma_end = prtd->dma_start + runtime->dma_bytes;
 
 	return 0;
 }
@@ -271,7 +233,7 @@ static int jz4740_pcm_mmap(struct snd_pcm_substream *substream,
 		       vma->vm_end - vma->vm_start, vma->vm_page_prot);
 }
 
-struct snd_pcm_ops jz4740_pcm_ops = {
+static const struct snd_pcm_ops jz4740_pcm_ops = {
 	.open		= jz4740_pcm_open,
 	.close		= jz4740_pcm_close,
 	.ioctl		= snd_pcm_lib_ioctl,
@@ -303,7 +265,7 @@ static int jz4740_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
 	return 0;
 }
 
-static void jz4740_pcm_free_dma_buffers(struct snd_pcm *pcm)
+static void jz4740_pcm_free(struct snd_pcm *pcm)
 {
 	struct snd_pcm_substream *substream;
 	struct snd_dma_buffer *buf;
@@ -359,7 +321,7 @@ struct snd_soc_platform jz4740_soc_platform = {
 	.name		= "jz4740-pcm",
 	.pcm_ops 	= &jz4740_pcm_ops,
 	.pcm_new	= jz4740_pcm_new,
-	.pcm_free	= jz4740_pcm_free_dma_buffers,
+	.pcm_free	= jz4740_pcm_free,
 };
 EXPORT_SYMBOL_GPL(jz4740_soc_platform);
 
