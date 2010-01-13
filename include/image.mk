@@ -89,9 +89,9 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
   ifeq ($(CONFIG_TARGET_ROOTFS_UBIFS),y)
     define Image/mkfs/ubifs
 		$(CP) ./ubinize.cfg $(KDIR)
-		mkfs.ubifs $(UBIFS_OPTS) -o $(KDIR)/root.ubifs -d $(TARGET_DIR)
+		$(STAGING_DIR_HOST)/bin/mkfs.ubifs $(UBIFS_OPTS) -o $(KDIR)/root.ubifs -d $(TARGET_DIR)
 		(cd $(KDIR); \
-		ubinize $(UBINIZE_OPTS) -o $(BIN_DIR)/openwrt-$(BOARD)-rootfs.ubi ubinize.cfg)
+		$(STAGING_DIR_HOST)/bin/ubinize $(UBINIZE_OPTS) -o $(BIN_DIR)/openwrt-$(BOARD)-rootfs.ubi ubinize.cfg)
     endef
   endif
 else
