@@ -1,18 +1,18 @@
-From 23f08521fd9f997876d5e90354b9ad957bb4e982 Mon Sep 17 00:00:00 2001
+From 07e50d40b5c79fbaa244ae7f8a60873d63bc4924 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Wed, 18 Nov 2009 23:23:56 +0800
-Subject: [PATCH 1/2] add new file
+Date: Sat, 16 Jan 2010 12:56:31 +0800
+Subject: [PATCH 1/2] new files
 
 ---
  board/qi_lb60/Makefile            |   38 +
  board/qi_lb60/config.mk           |   31 +
  board/qi_lb60/flash.c             |   50 +
- board/qi_lb60/qi_lb60.c           |  105 +
+ board/qi_lb60/qi_lb60.c           |  107 +
  board/qi_lb60/u-boot-nand.lds     |   63 +
  board/qi_lb60/u-boot.lds          |   63 +
  cpu/mips/jz4740.c                 |  574 +++++
  cpu/mips/jz4740_cpm_test.c        |   98 +
- cpu/mips/jz4740_nand.c            |  198 ++
+ cpu/mips/jz4740_nand.c            |  199 ++
  cpu/mips/jz_cs8900.c              |  397 +++
  cpu/mips/jz_cs8900.h              |  258 ++
  cpu/mips/jz_eth.c                 |  376 +++
@@ -26,14 +26,14 @@ Subject: [PATCH 1/2] add new file
  cpu/mips/mmc_protocol.h           |  273 +++
  cpu/mips/qi_lb60_gpm940b0.c       |  420 ++++
  cpu/mips/qi_lb60_gpm940b0.h       |  212 ++
- cpu/mips/usb_boot.S               |  821 +++++++
+ cpu/mips/usb_boot.S               |  880 +++++++
  include/asm-mips/jz4740.h         | 4880 +++++++++++++++++++++++++++++++++++++
  include/configs/qi_lb60.h         |  213 ++
  nand_spl/board/qi_lb60/Makefile   |  104 +
  nand_spl/board/qi_lb60/config.mk  |   34 +
  nand_spl/board/qi_lb60/u-boot.lds |   63 +
  nand_spl/nand_boot_jz4740.c       |  456 ++++
- 29 files changed, 13575 insertions(+), 0 deletions(-)
+ 29 files changed, 13637 insertions(+), 0 deletions(-)
  create mode 100644 board/qi_lb60/Makefile
  create mode 100644 board/qi_lb60/config.mk
  create mode 100644 board/qi_lb60/flash.c
@@ -203,7 +203,7 @@ index 0000000..891c604
 +}
 diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
 new file mode 100644
-index 0000000..d13f2ab
+index 0000000..54625c3
 --- /dev/null
 +++ b/board/qi_lb60/qi_lb60.c
 @@ -0,0 +1,107 @@
@@ -1138,7 +1138,7 @@ index 0000000..70ebbf0
 +#endif /* CONFIG_JZ4740 */
 diff --git a/cpu/mips/jz4740_nand.c b/cpu/mips/jz4740_nand.c
 new file mode 100644
-index 0000000..7b1cdf3
+index 0000000..c1d1511
 --- /dev/null
 +++ b/cpu/mips/jz4740_nand.c
 @@ -0,0 +1,199 @@
@@ -7205,7 +7205,7 @@ index 0000000..a4f8b0b
 +#endif /* __QI_LB60_GPM940B0_H__ */
 diff --git a/cpu/mips/usb_boot.S b/cpu/mips/usb_boot.S
 new file mode 100644
-index 0000000..6c3788f
+index 0000000..f556e04
 --- /dev/null
 +++ b/cpu/mips/usb_boot.S
 @@ -0,0 +1,880 @@

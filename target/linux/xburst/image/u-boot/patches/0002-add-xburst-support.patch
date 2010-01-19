@@ -1,30 +1,36 @@
-From 7f32a7a2ec1cf7472684869a5cec40013134c92b Mon Sep 17 00:00:00 2001
-From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Wed, 18 Nov 2009 23:24:14 +0800
-Subject: [PATCH 2/2] add-xburst-support
+From 64c6e9b3ad9241d88411867cc4d5478bb6c6f3dd Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu@sharism.cc>
+Date: Mon, 18 Jan 2010 15:52:15 +0800
+Subject: [PATCH 2/2] change file
 
 ---
  Makefile                       |   10 +
+ board/qi_lb60/qi_lb60.c        |   39 +++-
+ common/env_common.c            |    2 +-
  common/lcd.c                   |   45 ++++-
+ common/main.c                  |    4 +-
  cpu/mips/Makefile              |    4 +
  cpu/mips/cache.S               |  280 ++++++++++----------------
  cpu/mips/config.mk             |    6 +-
  cpu/mips/cpu.c                 |   75 +++++++
  cpu/mips/start.S               |  432 +++++++++++++++++++++++++++++++--------
- drivers/mtd/nand/nand_base.c   |   87 ++++++++-
+ drivers/mtd/nand/nand_base.c   |   88 ++++++++-
  examples/standalone/mips.lds   |    2 +-
  include/asm-mips/addrspace.h   |    2 +-
- include/asm-mips/global_data.h |    9 +
+ include/asm-mips/global_data.h |   11 +
+ include/configs/qi_lb60.h      |    2 +
  include/lcd.h                  |   56 +++++-
  lib_mips/board.c               |   18 ++-
+ lib_mips/bootm.c               |    4 +-
  lib_mips/time.c                |    4 +
- 14 files changed, 744 insertions(+), 286 deletions(-)
+ nand_spl/nand_boot_jz4740.c    |   46 ++---
+ 20 files changed, 797 insertions(+), 333 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index e4499d7..e492d6a 100644
+index f06a97c..a318eb4 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -3381,6 +3381,16 @@ qemu_mips_config	: unconfig
+@@ -3439,6 +3439,16 @@ qemu_mips_config	: unconfig
  	@$(MKCONFIG) -a qemu-mips mips mips qemu-mips
  
  #########################################################################
@@ -41,8 +47,104 @@ index e4499d7..e492d6a 100644
  ## MIPS64 5Kc
  #########################################################################
  
+diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
+index 54625c3..aa7b85b 100644
+--- a/board/qi_lb60/qi_lb60.c
++++ b/board/qi_lb60/qi_lb60.c
+@@ -12,6 +12,8 @@
+ #include <asm/mipsregs.h>
+ #include <asm/jz4740.h>
+ 
++DECLARE_GLOBAL_DATA_PTR;
++
+ static void gpio_init(void)
+ {
+ 	/*
+@@ -25,11 +27,6 @@ static void gpio_init(void)
+ 	__gpio_as_sdram_32bit();
+ 
+ 	/*
+-	 * Initialize UART0 pins
+-	 */
+-	__gpio_as_uart0();
+-
+-	/*
+ 	 * Initialize LCD pins
+ 	 */
+ 	__gpio_as_lcd_18bit();
+@@ -43,17 +40,31 @@ static void gpio_init(void)
+ 	 * Initialize Other pins
+ 	 */
+ 	unsigned int i;
++	for (i = 0; i < 7; i++){
++		__gpio_as_input(GPIO_KEYIN_BASE + i);
++		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	}
++
+ 	for (i = 0; i < 8; i++) {
+ 		__gpio_as_output(GPIO_KEYOUT_BASE + i);
+-		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
++		__gpio_clear_pin(GPIO_KEYOUT_BASE + i);
+ 	}
+ 
+-	for (i = 0; i < 7; i++){
+-		__gpio_as_input(GPIO_KEYIN_BASE + i);
+-		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
++	/*
++	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
++	 * same gpio, init the gpio as uart0 cause a keyboard bug. so for
++	 * end user we disable the uart0
++	 */
++	if (__gpio_get_pin(GPIO_KEYIN_BASE + 2) == 0){
++		/* if pressed [S] */
++		printf("[S] pressed, enable UART0\n");
++		gd->boot_option = 5;
++		__gpio_as_uart0();
++	} else {
++		printf("[S] not pressed, disable UART0\n");
++		__gpio_as_input(GPIO_KEYIN_8);
++		__gpio_enable_pull(GPIO_KEYIN_8);
+ 	}
+-	/* __gpio_as_input( GPIO_KEYIN_8 ); */
+-	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
+ 
+ 	__gpio_as_output(GPIO_AUDIO_POP);
+ 	__gpio_set_pin(GPIO_AUDIO_POP);
+@@ -73,6 +84,11 @@ static void gpio_init(void)
+ 
+ 	__gpio_as_input(GPIO_USB_DETECT);
+ 	__gpio_enable_pull(GPIO_USB_DETECT);
++
++	if (__gpio_get_pin(GPIO_KEYIN_BASE + 3) == 0) {
++		printf("[M] pressed, boot from sd card\n");
++		gd->boot_option = 1;
++	}
+ }
+ 
+ static void cpm_init(void)
+@@ -98,7 +114,6 @@ void board_early_init(void)
+ 
+ int checkboard (void)
+ {
+-	DECLARE_GLOBAL_DATA_PTR;
+ 
+ 	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC, Speed %d MHz)\n",
+ 	       gd->cpu_clk/1000000);
+diff --git a/common/env_common.c b/common/env_common.c
+index 439a4a9..6cfe30b 100644
+--- a/common/env_common.c
++++ b/common/env_common.c
+@@ -134,7 +134,7 @@ uchar default_environment[] = {
+ 	"pcidelay="	MK_STR(CONFIG_PCI_BOOTDELAY)	"\0"
+ #endif
+ #ifdef  CONFIG_EXTRA_ENV_SETTINGS
+-	CONFIG_EXTRA_ENV_SETTINGS
++	"bootargsfromsd="	CONFIG_BOOTARGSFROMSD	"\0"
+ #endif
+ 	"\0"
+ };
 diff --git a/common/lcd.c b/common/lcd.c
-index dc8fea6..b68b1ca 100644
+index 4e31618..ddd5aa8 100644
 --- a/common/lcd.c
 +++ b/common/lcd.c
 @@ -64,7 +64,9 @@
@@ -56,7 +158,7 @@ index dc8fea6..b68b1ca 100644
  # endif
  #endif
  
-@@ -270,6 +272,14 @@ static void lcd_drawchars (ushort x, ushort y, uchar *str, int count)
+@@ -249,6 +251,14 @@ static void lcd_drawchars (ushort x, ushort y, uchar *str, int count)
  						lcd_color_fg : lcd_color_bg;
  				bits <<= 1;
  			}
@@ -71,7 +173,7 @@ index dc8fea6..b68b1ca 100644
  #endif
  		}
  #if LCD_BPP == LCD_MONOCHROME
-@@ -336,6 +346,9 @@ static void test_pattern (void)
+@@ -315,6 +325,9 @@ static void test_pattern (void)
  }
  #endif /* LCD_TEST_PATTERN */
  
@@ -81,7 +183,7 @@ index dc8fea6..b68b1ca 100644
  
  /************************************************************************/
  /* ** GENERIC Initialization Routines					*/
-@@ -402,6 +415,7 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+@@ -381,6 +394,7 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
  		COLOR_MASK(lcd_getbgcolor()),
  		lcd_line_length*panel_info.vl_row);
  #endif
@@ -89,7 +191,7 @@ index dc8fea6..b68b1ca 100644
  	/* Paint the logo and retrieve LCD base address */
  	debug ("[LCD] Drawing the logo...\n");
  	lcd_console_address = lcd_logo ();
-@@ -479,6 +493,8 @@ static void lcd_setfgcolor (int color)
+@@ -458,6 +472,8 @@ static void lcd_setfgcolor (int color)
  {
  #ifdef CONFIG_ATMEL_LCD
  	lcd_color_fg = color;
@@ -98,7 +200,7 @@ index dc8fea6..b68b1ca 100644
  #else
  	lcd_color_fg = color & 0x0F;
  #endif
-@@ -490,6 +506,8 @@ static void lcd_setbgcolor (int color)
+@@ -469,6 +485,8 @@ static void lcd_setbgcolor (int color)
  {
  #ifdef CONFIG_ATMEL_LCD
  	lcd_color_bg = color;
@@ -107,7 +209,7 @@ index dc8fea6..b68b1ca 100644
  #else
  	lcd_color_bg = color & 0x0F;
  #endif
-@@ -528,6 +546,7 @@ void bitmap_plot (int x, int y)
+@@ -507,6 +525,7 @@ void bitmap_plot (int x, int y)
  	uchar *bmap;
  	uchar *fb;
  	ushort *fb16;
@@ -115,7 +217,7 @@ index dc8fea6..b68b1ca 100644
  #if defined(CONFIG_PXA250)
  	struct pxafb_info *fbi = &panel_info.pxa;
  #elif defined(CONFIG_MPC823)
-@@ -588,13 +607,25 @@ void bitmap_plot (int x, int y)
+@@ -567,13 +586,25 @@ void bitmap_plot (int x, int y)
  		}
  	}
  	else { /* true color mode */
@@ -147,6 +249,21 @@ index dc8fea6..b68b1ca 100644
  		}
  	}
  
+diff --git a/common/main.c b/common/main.c
+index 10d8904..ff11ad7 100644
+--- a/common/main.c
++++ b/common/main.c
+@@ -372,7 +372,9 @@ void main_loop (void)
+ #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
+ 	s = getenv ("bootdelay");
+ 	bootdelay = s ? (int)simple_strtol(s, NULL, 10) : CONFIG_BOOTDELAY;
+-
++	DECLARE_GLOBAL_DATA_PTR;
++	if (gd->boot_option == 5)
++		bootdelay = gd->boot_option;
+ 	debug ("### main_loop entered: bootdelay=%d\n\n", bootdelay);
+ 
+ # ifdef CONFIG_BOOT_RETRY_TIME
 diff --git a/cpu/mips/Makefile b/cpu/mips/Makefile
 index 28a1cbb..5207bc5 100644
 --- a/cpu/mips/Makefile
@@ -1217,7 +1334,7 @@ index 57db589..fa6e352 100644
 +
 +#endif /* CONFIG_JZ4730 */
 diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 360b070..88717e9 100644
+index 426bb95..6e5fbd3 100644
 --- a/drivers/mtd/nand/nand_base.c
 +++ b/drivers/mtd/nand/nand_base.c
 @@ -109,6 +109,22 @@ static struct nand_ecclayout nand_oob_16 = {
@@ -1251,7 +1368,7 @@ index 360b070..88717e9 100644
  
  static struct nand_ecclayout nand_oob_128 = {
  	.eccbytes = 48,
-@@ -1068,6 +1085,60 @@ static int nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
+@@ -1116,6 +1133,60 @@ static int nand_read_page_hwecc_oob_first(struct mtd_info *mtd,
  }
  
  /**
@@ -1312,25 +1429,27 @@ index 360b070..88717e9 100644
   * nand_read_page_syndrome - [REPLACABLE] hardware ecc syndrom based page read
   * @mtd:	mtd info structure
   * @chip:	nand chip info structure
-@@ -1222,8 +1293,15 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
- 				ret = chip->ecc.read_page_raw(mtd, chip, bufpoi);
+@@ -1271,9 +1342,17 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
+ 						bufpoi, page);
  			else if (!aligned && NAND_SUBPAGE_READ(chip) && !oob)
  				ret = chip->ecc.read_subpage(mtd, chip, col, bytes, bufpoi);
 -			else
-+			else {
++ 			else {
 +#if defined(CONFIG_JZ4740)
 +				bufpoi[0] = (uint8_t)page;
 +				bufpoi[1] = (uint8_t)(page >> 8);
 +				bufpoi[2] = (uint8_t)(page >> 16);
 +				bufpoi[3] = (uint8_t)(page >> 24);
 +#endif
- 				ret = chip->ecc.read_page(mtd, chip, bufpoi);
++
+ 				ret = chip->ecc.read_page(mtd, chip, bufpoi,
+ 						page);
 +			}
  			if (ret < 0)
  				break;
  
-@@ -2730,8 +2808,13 @@ int nand_scan_tail(struct mtd_info *mtd)
- 	switch (chip->ecc.mode) {
+@@ -2791,8 +2870,13 @@ int nand_scan_tail(struct mtd_info *mtd)
+ 
  	case NAND_ECC_HW:
  		/* Use standard hwecc read page function ? */
 -		if (!chip->ecc.read_page)
@@ -1372,10 +1491,10 @@ index 3a1e6d6..2ee6920 100644
     cannot access physical memory directly from core */
  #define UNCACHED_SDRAM(a) (((unsigned long)(a)) | 0x20000000)
 diff --git a/include/asm-mips/global_data.h b/include/asm-mips/global_data.h
-index b2c4891..db88704 100644
+index b2c4891..23f597e 100644
 --- a/include/asm-mips/global_data.h
 +++ b/include/asm-mips/global_data.h
-@@ -39,6 +39,15 @@
+@@ -39,6 +39,17 @@
  typedef	struct	global_data {
  	bd_t		*bd;
  	unsigned long	flags;
@@ -1387,10 +1506,25 @@ index b2c4891..db88704 100644
 +        unsigned long   mem_clk;        /* Memory bus clock */
 +        unsigned long   dev_clk;        /* Device clock */
 +        unsigned long   fb_base;        /* base address of framebuffer */
++        unsigned long   boot_option;	/* 1: boot from sd
++					 * 5: boot delay for 5 secs*/
 +#endif
  	unsigned long	baudrate;
  	unsigned long	have_console;	/* serial_init() was called */
  	phys_size_t	ram_size;	/* RAM size */
+diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
+index 02af607..c3bf9c7 100644
+--- a/include/configs/qi_lb60.h
++++ b/include/configs/qi_lb60.h
+@@ -45,6 +45,8 @@
+ #define CONFIG_BOOTDELAY	0
+ #define CONFIG_BOOTFILE		"uImage"	/* file to load */
+ #define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
++#define CONFIG_EXTRA_ENV_SETTINGS	1
++#define CONFIG_BOOTARGSFROMSD	"mem=32M console=ttyS0,57600n8 rootfstype=ext2 root=/dev/mmcblk0p1 rw rootwait"
+ #define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
+ 
+ /*
 diff --git a/include/lcd.h b/include/lcd.h
 index 1f85daa..997e246 100644
 --- a/include/lcd.h
@@ -1493,10 +1627,10 @@ index 1f85daa..997e246 100644
  #else
  # error Unsupported LCD BPP.
 diff --git a/lib_mips/board.c b/lib_mips/board.c
-index aa5b129..ea5166c 100644
+index b2d113e..87cb12d 100644
 --- a/lib_mips/board.c
 +++ b/lib_mips/board.c
-@@ -45,6 +45,10 @@ DECLARE_GLOBAL_DATA_PTR;
+@@ -49,6 +49,10 @@ DECLARE_GLOBAL_DATA_PTR;
  
  #undef DEBUG
  
@@ -1507,15 +1641,15 @@ index aa5b129..ea5166c 100644
  extern int timer_init(void);
  
  extern int incaip_set_cpuclk(void);
-@@ -109,7 +113,6 @@ void *sbrk (ptrdiff_t increment)
- 	return ((void *) old);
+@@ -78,7 +82,6 @@ int __board_early_init_f(void)
  }
+ int board_early_init_f(void) __attribute__((weak, alias("__board_early_init_f")));
  
 -
  static int init_func_ram (void)
  {
  #ifdef	CONFIG_BOARD_TYPES
-@@ -129,7 +132,6 @@ static int init_func_ram (void)
+@@ -98,7 +101,6 @@ static int init_func_ram (void)
  
  static int display_banner(void)
  {
@@ -1523,7 +1657,7 @@ index aa5b129..ea5166c 100644
  	printf ("\n\n%s\n\n", version_string);
  	return (0);
  }
-@@ -178,6 +180,9 @@ static int init_baudrate (void)
+@@ -147,6 +149,9 @@ static int init_baudrate (void)
  typedef int (init_fnc_t) (void);
  
  init_fnc_t *init_sequence[] = {
@@ -1533,7 +1667,7 @@ index aa5b129..ea5166c 100644
  	board_early_init_f,
  	timer_init,
  	env_init,		/* initialize environment */
-@@ -193,7 +198,6 @@ init_fnc_t *init_sequence[] = {
+@@ -162,7 +167,6 @@ init_fnc_t *init_sequence[] = {
  	NULL,
  };
  
@@ -1541,7 +1675,7 @@ index aa5b129..ea5166c 100644
  void board_init_f(ulong bootflag)
  {
  	gd_t gd_data, *id;
-@@ -233,6 +237,12 @@ void board_init_f(ulong bootflag)
+@@ -202,6 +206,12 @@ void board_init_f(ulong bootflag)
  	addr &= ~(4096 - 1);
  	debug ("Top of RAM usable for U-Boot at: %08lx\n", addr);
  
@@ -1554,7 +1688,7 @@ index aa5b129..ea5166c 100644
  	/* Reserve memory for U-Boot code, data & bss
  	 * round down to next 16 kB limit
  	 */
-@@ -379,9 +389,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
+@@ -349,9 +359,9 @@ void board_init_r (gd_t *id, ulong dest_addr)
  	size = flash_init();
  	display_flash_config (size);
  	bd->bi_flashsize = size;
@@ -1565,6 +1699,21 @@ index aa5b129..ea5166c 100644
  #if CONFIG_SYS_MONITOR_BASE == CONFIG_SYS_FLASH_BASE
  	bd->bi_flashoffset = monitor_flash_len;	/* reserved area for U-Boot */
  #else
+diff --git a/lib_mips/bootm.c b/lib_mips/bootm.c
+index 54af24c..34150e9 100644
+--- a/lib_mips/bootm.c
++++ b/lib_mips/bootm.c
+@@ -46,7 +46,9 @@ static void linux_env_set (char * env_name, char * env_val);
+ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ {
+ 	void	(*theKernel) (int, char **, char **, int *);
+-	char	*commandline = getenv ("bootargs");
++	char	*commandline = gd->boot_option == 1 ? 
++		getenv ("bootargsfromsd") : 
++		getenv ("bootargs");
+ 	char	env_buf[12];
+ 	char	*cp;
+ 
 diff --git a/lib_mips/time.c b/lib_mips/time.c
 index 07e356d..4654bf4 100644
 --- a/lib_mips/time.c
@@ -1584,6 +1733,86 @@ index 07e356d..4654bf4 100644
  }
 +
 +#endif /* !CONFIG_JzRISC */
+diff --git a/nand_spl/nand_boot_jz4740.c b/nand_spl/nand_boot_jz4740.c
+index 924a47a..146de19 100644
+--- a/nand_spl/nand_boot_jz4740.c
++++ b/nand_spl/nand_boot_jz4740.c
+@@ -24,10 +24,8 @@
+ #include <asm/io.h>
+ #include <asm/jz4740.h>
+ 
+-#define KEY_1_OUT       (32 * 3 + 21)
+-#define KEY_1_IN        (32 * 3 + 19)
+-#define KEY_2_OUT       (32 * 3 + 25)
+-#define KEY_2_IN        (32 * 3 + 26)
++#define KEY_U_OUT       (32 * 2 + 16)
++#define KEY_U_IN        (32 * 3 + 19)
+ 
+ /*
+  * NAND flash definitions
+@@ -350,40 +348,25 @@ static void gpio_init(void)
+ 
+ static int is_usb_boot()
+ {
+-	int key2,keyh;
+-
+-	key2 = 0;
+-	keyh = 0;
++	int keyU = 0;
+     
+-	__gpio_as_output(KEY_1_OUT);
+-	__gpio_as_output(KEY_2_OUT);
+-	__gpio_as_input(KEY_1_IN);
+-	__gpio_as_input(KEY_2_IN);
+-	__gpio_disable_pull(KEY_1_IN);
+-	__gpio_disable_pull(KEY_2_IN);
++	__gpio_as_input(KEY_U_IN);
++	__gpio_enable_pull(KEY_U_IN);
+     
+-	__gpio_clear_pin(KEY_1_OUT);
+-	__gpio_clear_pin(KEY_2_OUT);
+-
+-	key2 = __gpio_get_pin(KEY_2_IN);
+-	keyh = __gpio_get_pin(KEY_1_IN);
++	__gpio_as_output(KEY_U_OUT);
++	__gpio_clear_pin(KEY_U_OUT);
+ 
+-	if(key2)
+-		serial_puts("key2");
+-	else
+-		serial_puts("key2--");
++	keyU = __gpio_get_pin(KEY_U_IN);
+ 
+-	if(keyh)
+-		serial_puts("keyh");
++	if (keyU)
++		serial_puts("[U] not pressed\n");
+ 	else
+-		serial_puts("keyh--");
++		serial_puts("[U] pressed\n");
+ 
+-
+-	if( ( key2 == 0 ) && ( keyh == 0 ) )
++	if (keyU == 0)
+ 		return 1;
+ 	else
+ 		return 0;
+-    
+ }
+ 
+ void nand_boot(void)
+@@ -402,9 +385,8 @@ void nand_boot(void)
+ 	pll_init();
+ 	sdram_init();
+ 
+-	int ret = 0;
+-	ret = is_usb_boot();
+-	if(ret) {
++	if(is_usb_boot()) {
++		serial_puts("enter USB BOOT mode\n");
+ 		usb_boot();
+ 	}
+ 
 -- 
 1.6.3.3
 
