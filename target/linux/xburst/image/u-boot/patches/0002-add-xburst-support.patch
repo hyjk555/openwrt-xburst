@@ -1,30 +1,32 @@
-From 64c6e9b3ad9241d88411867cc4d5478bb6c6f3dd Mon Sep 17 00:00:00 2001
+this patch include the u-boot2009.11 change files
+
 From: Xiangfu Liu <xiangfu@sharism.cc>
-Date: Mon, 18 Jan 2010 15:52:15 +0800
-Subject: [PATCH 2/2] change file
+
 
 ---
+
  Makefile                       |   10 +
  board/qi_lb60/qi_lb60.c        |   39 +++-
- common/env_common.c            |    2 +-
- common/lcd.c                   |   45 ++++-
- common/main.c                  |    4 +-
- cpu/mips/Makefile              |    4 +
+ common/env_common.c            |    2 
+ common/lcd.c                   |   45 ++++
+ common/main.c                  |    4 
+ cpu/mips/Makefile              |    4 
  cpu/mips/cache.S               |  280 ++++++++++----------------
- cpu/mips/config.mk             |    6 +-
+ cpu/mips/config.mk             |    6 -
  cpu/mips/cpu.c                 |   75 +++++++
- cpu/mips/start.S               |  432 +++++++++++++++++++++++++++++++--------
- drivers/mtd/nand/nand_base.c   |   88 ++++++++-
- examples/standalone/mips.lds   |    2 +-
- include/asm-mips/addrspace.h   |    2 +-
+ cpu/mips/start.S               |  432 ++++++++++++++++++++++++++++++++--------
+ drivers/mtd/nand/nand_base.c   |   88 ++++++++
+ examples/standalone/mips.lds   |    2 
+ include/asm-mips/addrspace.h   |    2 
  include/asm-mips/global_data.h |   11 +
- include/configs/qi_lb60.h      |    2 +
- include/lcd.h                  |   56 +++++-
- lib_mips/board.c               |   18 ++-
- lib_mips/bootm.c               |    4 +-
- lib_mips/time.c                |    4 +
- nand_spl/nand_boot_jz4740.c    |   46 ++---
- 20 files changed, 797 insertions(+), 333 deletions(-)
+ include/configs/qi_lb60.h      |    2 
+ include/lcd.h                  |   56 +++++
+ lib_mips/board.c               |   18 +-
+ lib_mips/bootm.c               |    7 +
+ lib_mips/time.c                |    4 
+ nand_spl/nand_boot_jz4740.c    |   46 +---
+ 20 files changed, 800 insertions(+), 333 deletions(-)
+
 
 diff --git a/Makefile b/Makefile
 index f06a97c..a318eb4 100644
@@ -1700,7 +1702,7 @@ index b2d113e..87cb12d 100644
  	bd->bi_flashoffset = monitor_flash_len;	/* reserved area for U-Boot */
  #else
 diff --git a/lib_mips/bootm.c b/lib_mips/bootm.c
-index 54af24c..34150e9 100644
+index 54af24c..64bcad9 100644
 --- a/lib_mips/bootm.c
 +++ b/lib_mips/bootm.c
 @@ -46,7 +46,9 @@ static void linux_env_set (char * env_name, char * env_val);
@@ -1714,6 +1716,16 @@ index 54af24c..34150e9 100644
  	char	env_buf[12];
  	char	*cp;
  
+@@ -98,6 +100,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ 	}
+ 
+ 	/* we assume that the kernel is in place */
++	if (gd->boot_option == 1)
++		printf ("\n *** Booting from mircoSD ***\n");
++
+ 	printf ("\nStarting kernel ...\n\n");
+ 
+ 	theKernel (linux_argc, linux_argv, linux_env, 0);
 diff --git a/lib_mips/time.c b/lib_mips/time.c
 index 07e356d..4654bf4 100644
 --- a/lib_mips/time.c
@@ -1813,6 +1825,3 @@ index 924a47a..146de19 100644
  		usb_boot();
  	}
  
--- 
-1.6.3.3
-
