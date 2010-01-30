@@ -7,7 +7,10 @@ config GCC_VERSION
 	default "4.3.3+cs"  if GCC_VERSION_4_3_3_CS
 	default "4.3.4"     if GCC_VERSION_4_3_4
 	default "4.4.1"	    if GCC_VERSION_4_4_1
+	default "4.4.1+cs"  if GCC_VERSION_4_4_1_CS
 	default "4.4.2"	    if GCC_VERSION_4_4_2
+	default "4.4.3"	    if GCC_VERSION_4_4_3
+	default "4.4.3+cs"  if GCC_VERSION_4_4_3_CS
 	default "llvm"	    if GCC_VERSION_LLVM
 	default "4.1.2"
 
@@ -46,7 +49,10 @@ config GCC_VERSION_4_3
 config GCC_VERSION_4_4
 	bool
 	default y	if GCC_VERSION_4_4_1
+	default y	if GCC_VERSION_4_4_1_CS
 	default y	if GCC_VERSION_4_4_2
+	default y	if GCC_VERSION_4_4_3
+	default y	if GCC_VERSION_4_4_3_CS
 
 endif
 
@@ -56,7 +62,7 @@ if !TOOLCHAINOPTS
 
 if !LINUX_2_4
 	config GCC_VERSION_4_2_4
-		default y if TARGET_avr32
+		default y if avr32
 		default y if TARGET_ppc40x
 		default y if TARGET_ppc44x
 

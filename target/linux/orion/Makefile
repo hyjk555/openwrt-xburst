@@ -11,6 +11,7 @@ BOARD:=orion
 BOARDNAME:=Marvell Orion
 FEATURES:=squashfs
 SUBTARGETS=generic harddisk
+CFLAGS=-Os -pipe -march=armv5t -mtune=xscale -funit-at-a-time
 
 LINUX_VERSION:=2.6.30.10
 
@@ -18,6 +19,6 @@ include $(INCLUDE_DIR)/target.mk
 
 KERNELNAME:="uImage"
 
-DEFAULT_PACKAGES += kmod-ath9k hostapd-mini
+DEFAULT_PACKAGES += kmod-ath9k wpad-mini
 
 $(eval $(call BuildTarget))

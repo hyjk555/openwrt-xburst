@@ -1,6 +1,6 @@
 --- a/config.mk
 +++ b/config.mk
-@@ -270,10 +270,10 @@ endif
+@@ -283,10 +283,10 @@ endif
  
  CONFIG_P54_PCI=m
  

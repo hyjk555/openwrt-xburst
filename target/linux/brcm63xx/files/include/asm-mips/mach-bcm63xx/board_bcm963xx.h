@@ -55,10 +55,10 @@ struct board_info {
 	struct bcm63xx_dsp_platform_data dsp;
 
 	/* GPIO LEDs */
-	struct gpio_led leds[5];
+	struct gpio_led leds[8];
 
 	/* Reset button */
-	unsigned int	reset_btn;
+	struct gpio_button reset_buttons[1];
 };
 
 #endif /* ! BOARD_BCM963XX_H_ */

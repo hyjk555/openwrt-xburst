@@ -10,12 +10,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2010-01-11
-PKG_RELEASE:=1
+PKG_VERSION:=2010-01-25
+PKG_RELEASE:=2
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 #	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2010/11 \
 #	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=78a36bb7d28be7028f640a10eaa4692b
+PKG_MD5SUM:=66a1d519e7ebcbadd4e47e6e56f705af
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -39,12 +39,13 @@ endef
 define KernelPackage/mac80211
   $(call KernelPackage/mac80211/Default)
   TITLE:=Linux 802.11 Wireless Networking Stack
-  DEPENDS+= +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_21 @!LINUX_2_6_25
+  DEPENDS+= +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_21 @!LINUX_2_6_25
   FILES:= \
 	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
+	$(PKG_BUILD_DIR)/compat/compat_firmware_class.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/net/mac80211/mac80211.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/net/wireless/cfg80211.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,20,compat cfg80211 mac80211)
+  AUTOLOAD:=$(call AutoLoad,20,compat compat_firmware_class cfg80211 mac80211)
 endef
 
 define KernelPackage/mac80211/config
@@ -159,7 +160,7 @@ $(call KernelPackage/rt2x00/Default)
   DEPENDS+= @(PCI_SUPPORT||USB_SUPPORT) +kmod-mac80211 +kmod-crc-itu-t
   TITLE+= (LIB)
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2x00lib.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,25,blkcipher ecb arc4 rt2x00lib)
+  AUTOLOAD:=$(call AutoLoad,25,rt2x00lib)
 endef
 
 define KernelPackage/rt2x00-pci
@@ -176,6 +177,14 @@ $(call KernelPackage/rt2x00/Default)
   TITLE+= (USB)
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2x00usb.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,26,rt2x00usb)
+endef
+
+define KernelPackage/rt2800-lib
+$(call KernelPackage/rt2x00/Default)
+  DEPENDS+= @(PCI_SUPPORT||USB_SUPPORT) +kmod-rt2x00-lib
+  TITLE+= (rt2800 LIB)
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2800lib.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,27,rt2800lib)
 endef
 
 define KernelPackage/rt2400-pci
@@ -220,18 +229,18 @@ endef
 
 define KernelPackage/rt2800-pci
 $(call KernelPackage/rt2x00/Default)
-  DEPENDS+= +kmod-rt2x00-pci +kmod-crc-ccitt
+  DEPENDS+= +kmod-rt2x00-pci +kmod-rt2800-lib +kmod-crc-ccitt
   TITLE+= (RT2860 PCI)
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2800pci.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,27,rt2800pci)
+  AUTOLOAD:=$(call AutoLoad,28,rt2800pci)
 endef
 
 define KernelPackage/rt2800-usb
 $(call KernelPackage/rt2x00/Default)
-  DEPENDS+= +kmod-rt2x00-usb +kmod-crc-ccitt
+  DEPENDS+= +kmod-rt2x00-usb +kmod-rt2800-lib +kmod-crc-ccitt
   TITLE+= (RT2870 USB)
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2800usb.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,27,rt2800usb)
+  AUTOLOAD:=$(call AutoLoad,28,rt2800usb)
 endef
 
 define KernelPackage/rtl818x/Default
@@ -735,6 +744,7 @@ $(eval $(call KernelPackage,p54-usb))
 $(eval $(call KernelPackage,rt2x00-lib))
 $(eval $(call KernelPackage,rt2x00-pci))
 $(eval $(call KernelPackage,rt2x00-usb))
+$(eval $(call KernelPackage,rt2800-lib))
 $(eval $(call KernelPackage,rt2400-pci))
 $(eval $(call KernelPackage,rt2500-pci))
 $(eval $(call KernelPackage,rt2500-usb))
