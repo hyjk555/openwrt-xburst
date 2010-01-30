@@ -1,16 +1,17 @@
-From 07e50d40b5c79fbaa244ae7f8a60873d63bc4924 Mon Sep 17 00:00:00 2001
-From: Xiangfu Liu <xiangfu@qi-hardware.com>
-Date: Sat, 16 Jan 2010 12:56:31 +0800
-Subject: [PATCH 1/2] new files
+this patch include all the new files
+
+From: Xiangfu Liu <xiangfu@sharism.com>
+
 
 ---
- board/qi_lb60/Makefile            |   38 +
- board/qi_lb60/config.mk           |   31 +
- board/qi_lb60/flash.c             |   50 +
+
+ board/qi_lb60/Makefile            |   38 
+ board/qi_lb60/config.mk           |   31 
+ board/qi_lb60/flash.c             |   50 
  board/qi_lb60/qi_lb60.c           |  107 +
- board/qi_lb60/u-boot-nand.lds     |   63 +
- board/qi_lb60/u-boot.lds          |   63 +
- cpu/mips/jz4740.c                 |  574 +++++
+ board/qi_lb60/u-boot-nand.lds     |   63 
+ board/qi_lb60/u-boot.lds          |   63 
+ cpu/mips/jz4740.c                 |  574 ++++
  cpu/mips/jz4740_cpm_test.c        |   98 +
  cpu/mips/jz4740_nand.c            |  199 ++
  cpu/mips/jz_cs8900.c              |  397 +++
@@ -22,17 +23,17 @@ Subject: [PATCH 1/2] new files
  cpu/mips/jz_lcd.h                 | 1020 ++++++++
  cpu/mips/jz_mmc.c                 | 1404 +++++++++++
  cpu/mips/jz_mmc.h                 |  113 +
- cpu/mips/jz_serial.c              |  167 ++
- cpu/mips/mmc_protocol.h           |  273 +++
- cpu/mips/qi_lb60_gpm940b0.c       |  420 ++++
+ cpu/mips/jz_serial.c              |  167 +
+ cpu/mips/mmc_protocol.h           |  273 ++
+ cpu/mips/qi_lb60_gpm940b0.c       |  420 +++
  cpu/mips/qi_lb60_gpm940b0.h       |  212 ++
  cpu/mips/usb_boot.S               |  880 +++++++
  include/asm-mips/jz4740.h         | 4880 +++++++++++++++++++++++++++++++++++++
  include/configs/qi_lb60.h         |  213 ++
  nand_spl/board/qi_lb60/Makefile   |  104 +
- nand_spl/board/qi_lb60/config.mk  |   34 +
- nand_spl/board/qi_lb60/u-boot.lds |   63 +
- nand_spl/nand_boot_jz4740.c       |  456 ++++
+ nand_spl/board/qi_lb60/config.mk  |   34 
+ nand_spl/board/qi_lb60/u-boot.lds |   63 
+ nand_spl/nand_boot_jz4740.c       |  456 +++
  29 files changed, 13637 insertions(+), 0 deletions(-)
  create mode 100644 board/qi_lb60/Makefile
  create mode 100644 board/qi_lb60/config.mk
@@ -63,6 +64,7 @@ Subject: [PATCH 1/2] new files
  create mode 100644 nand_spl/board/qi_lb60/config.mk
  create mode 100644 nand_spl/board/qi_lb60/u-boot.lds
  create mode 100644 nand_spl/nand_boot_jz4740.c
+
 
 diff --git a/board/qi_lb60/Makefile b/board/qi_lb60/Makefile
 new file mode 100644
@@ -13875,6 +13877,3 @@ index 0000000..924a47a
 +	 */
 +	(*uboot)();
 +}
--- 
-1.6.3.3
-
