@@ -10,12 +10,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2010-01-25
-PKG_RELEASE:=2
+PKG_VERSION:=2010-02-02
+PKG_RELEASE:=1
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 #	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2010/11 \
 #	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=66a1d519e7ebcbadd4e47e6e56f705af
+PKG_MD5SUM:=32602171b840132cbaa62d4b67f32d2c
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -33,6 +33,7 @@ WMENU:=Wireless Drivers
 define KernelPackage/mac80211/Default
   SUBMENU:=$(WMENU)
   URL:=http://linuxwireless.org/
+  MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
   DEPENDS:=@LINUX_2_6 @!TARGET_avr32 @(!(TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
 endef
 
