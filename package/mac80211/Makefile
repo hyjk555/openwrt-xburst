@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2009 OpenWrt.org
+# Copyright (C) 2007-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -11,7 +11,7 @@ include $(INCLUDE_DIR)/kernel.mk
 PKG_NAME:=mac80211
 
 PKG_VERSION:=2010-02-02
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 #	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2010/11 \
 #	http://wireless.kernel.org/download/compat-wireless-2.6
@@ -40,7 +40,7 @@ endef
 define KernelPackage/mac80211
   $(call KernelPackage/mac80211/Default)
   TITLE:=Linux 802.11 Wireless Networking Stack
-  DEPENDS+= +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_21 @!LINUX_2_6_25
+  DEPENDS+= +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_25
   FILES:= \
 	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
 	$(PKG_BUILD_DIR)/compat/compat_firmware_class.$(LINUX_KMOD_SUFFIX) \
