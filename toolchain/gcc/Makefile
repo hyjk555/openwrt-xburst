@@ -2,7 +2,7 @@
 # Copyright (C) 2002-2003 Erik Andersen <andersen@uclibc.org>
 # Copyright (C) 2004 Manuel Novoa III <mjn3@uclibc.org>
 # Copyright (C) 2005-2006 Felix Fietkau <nbd@openwrt.org>
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -152,8 +152,15 @@ GCC_CONFIGURE_STAGE2:= \
 		--enable-languages=$(TARGET_LANGUAGES) \
 		--enable-shared \
 		--enable-threads \
-		--disable-tls \
 		--with-slibdir=$(TOOLCHAIN_DIR)/lib \
+
+ifneq ($(CONFIG_TLS_SUPPORT),)
+  GCC_CONFIGURE_STAGE2+= \
+		--enable-tls
+else
+  GCC_CONFIGURE_STAGE2+= \
+		--disable-tls
+endif
 
 ifdef CONFIG_powerpc
   TARGET_CFLAGS := $(patsubst -Os,-O2,$(TARGET_CFLAGS))
@@ -246,7 +253,7 @@ define SetupExtraArch
 endef
 
 define Stage2/Install
-	$(GCC_MAKE) -C $(HOST_BUILD_DIR2) install
+	$(_SINGLE)$(GCC_MAKE) -C $(HOST_BUILD_DIR2) install
 	# Set up the symlinks to enable lying about target name.
 	set -e; \
 	(cd $(TOOLCHAIN_DIR)/usr; \

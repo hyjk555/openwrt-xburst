@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -57,10 +57,11 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
   LIBCV:=$(call qstrip,$(CONFIG_LIBC_VERSION))
   REAL_GNU_TARGET_NAME=$(OPTIMIZE_FOR_CPU)-openwrt-linux$(if $(TARGET_SUFFIX),-$(TARGET_SUFFIX))
   GNU_TARGET_NAME=$(OPTIMIZE_FOR_CPU)-openwrt-linux
-  BUILD_DIR:=$(BUILD_DIR_BASE)/target-$(ARCH)_$(LIBC)-$(LIBCV)$(if $(BUILD_SUFFIX),_$(BUILD_SUFFIX))
-  STAGING_DIR:=$(TOPDIR)/staging_dir/target-$(ARCH)_$(LIBC)-$(LIBCV)
-  BUILD_DIR_TOOLCHAIN:=$(BUILD_DIR_BASE)/toolchain-$(ARCH)_gcc-$(GCCV)_$(LIBC)-$(LIBCV)
-  TOOLCHAIN_DIR:=$(TOPDIR)/staging_dir/toolchain-$(ARCH)_gcc-$(GCCV)_$(LIBC)-$(LIBCV)
+  DIR_SUFFIX:=_$(LIBC)-$(LIBCV)$(if $(CONFIG_EABI_SUPPORT),_eabi)
+  BUILD_DIR:=$(BUILD_DIR_BASE)/target-$(ARCH)$(DIR_SUFFIX)$(if $(BUILD_SUFFIX),_$(BUILD_SUFFIX))
+  STAGING_DIR:=$(TOPDIR)/staging_dir/target-$(ARCH)$(DIR_SUFFIX)
+  BUILD_DIR_TOOLCHAIN:=$(BUILD_DIR_BASE)/toolchain-$(ARCH)_gcc-$(GCCV)$(DIR_SUFFIX)
+  TOOLCHAIN_DIR:=$(TOPDIR)/staging_dir/toolchain-$(ARCH)_gcc-$(GCCV)$(DIR_SUFFIX)
   PACKAGE_DIR:=$(BIN_DIR)/packages
 else
   ifeq ($(CONFIG_NATIVE_TOOLCHAIN),)
@@ -141,6 +142,7 @@ TARGET_CXX:=$(if $(CONFIG_INSTALL_LIBSTDCPP),$(TARGET_CROSS)g++,no)
 PATCH:=$(SCRIPT_DIR)/patch-kernel.sh
 SED:=$(STAGING_DIR_HOST)/bin/sed -i -e
 CP:=cp -fpR
+LN:=ln -sf
 
 INSTALL_BIN:=install -m0755
 INSTALL_DIR:=install -d -m0755

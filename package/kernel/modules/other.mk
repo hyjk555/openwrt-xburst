@@ -345,7 +345,7 @@ define KernelPackage/mmc
   FILES:= \
 	$(LINUX_DIR)/drivers/mmc/core/mmc_core.$(LINUX_KMOD_SUFFIX) \
 	$(LINUX_DIR)/drivers/mmc/card/mmc_block.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,90,mmc_core mmc_block)
+  AUTOLOAD:=$(call AutoLoad,90,mmc_core mmc_block,1)
 endef
 
 define KernelPackage/mmc/description
@@ -361,7 +361,7 @@ define KernelPackage/mmc-at91
   DEPENDS:=@TARGET_at91 +kmod-mmc
   KCONFIG:=CONFIG_MMC_AT91
   FILES:=$(LINUX_DIR)/drivers/mmc/host/at91_mci.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,90,at91_mci)
+  AUTOLOAD:=$(call AutoLoad,90,at91_mci,1)
 endef
 
 define KernelPackage/mmc-at91/description
@@ -518,6 +518,22 @@ define KernelPackage/leds-wndr3700-usb/description
 endef
 
 $(eval $(call KernelPackage,leds-wndr3700-usb))
+
+
+define KernelPackage/leds-rb750
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=RouterBOARD 750 LED support
+  DEPENDS:=@TARGET_ar71xx
+  KCONFIG:=CONFIG_LEDS_RB750
+  FILES:=$(LINUX_DIR)/drivers/leds/leds-rb750.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,60,leds-rb750)
+endef
+
+define KernelPackage/leds-rb750/description
+ Kernel module for the LEDs on the MikroTik RouterBOARD 750.
+endef
+
+$(eval $(call KernelPackage,leds-rb750))
 
 
 define KernelPackage/ledtrig-netdev
@@ -774,7 +790,7 @@ define KernelPackage/mmc-atmelmci/description
  Kernel support for  Atmel Multimedia Card Interface.
 endef
 
-$(eval $(call KernelPackage,mmc-atmelmci))
+$(eval $(call KernelPackage,mmc-atmelmci,1))
 
 
 define KernelPackage/cs5535-gpio

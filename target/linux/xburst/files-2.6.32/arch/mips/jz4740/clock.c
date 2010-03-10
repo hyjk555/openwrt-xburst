@@ -55,8 +55,8 @@
 #define JZ_CLOCK_GATE_RTC	BIT(2)
 #define JZ_CLOCK_GATE_I2C	BIT(3)
 #define JZ_CLOCK_GATE_SPI	BIT(4)
-#define JZ_CLOCK_GATE_AIC_PCLK	BIT(5)
-#define JZ_CLOCK_GATE_AIC	BIT(6)
+#define JZ_CLOCK_GATE_AIC	BIT(5)
+#define JZ_CLOCK_GATE_I2S	BIT(6)
 #define JZ_CLOCK_GATE_MMC	BIT(7)
 #define JZ_CLOCK_GATE_ADC	BIT(8)
 #define JZ_CLOCK_GATE_CIM	BIT(9)
@@ -158,7 +158,7 @@ static int jz_clk_enable_gating(struct clk *clk)
 {
 	if (clk->gate_bit == JZ4740_CLK_NOT_GATED)
 		return -EINVAL;
-	
+
 	jz_clk_reg_clear_bits(JZ_REG_CLOCK_GATE, clk->gate_bit);
 	return 0;
 }
@@ -626,7 +626,7 @@ static struct divided_clk jz4740_clock_divided_clks[] = {
 		.clk = {
 			.name = "i2s",
 			.parent = &jz_clk_ext.clk,
-			.gate_bit = JZ_CLOCK_GATE_AIC,
+			.gate_bit = JZ_CLOCK_GATE_I2S,
 			.ops = &jz_clk_i2s_ops,
 		},
 		.reg = JZ_REG_CLOCK_I2S,
@@ -719,6 +719,12 @@ static struct clk jz4740_clock_simple_clks[] = {
 		.name = "i2c",
 		.parent = &jz_clk_ext.clk,
 		.gate_bit = JZ_CLOCK_GATE_I2C,
+		.ops = &jz_clk_simple_ops,
+	},
+	{
+		.name = "aic",
+		.parent = &jz_clk_ext.clk,
+		.gate_bit = JZ_CLOCK_GATE_AIC,
 		.ops = &jz_clk_simple_ops,
 	},
 };
@@ -873,7 +879,24 @@ void jz4740_clock_udc_enable_auto_suspend(void)
 }
 EXPORT_SYMBOL_GPL(jz4740_clock_udc_enable_auto_suspend);
 
-int jz_init_clocks(void)
+void jz4740_clock_suspend(void)
+{
+	jz_clk_reg_set_bits(JZ_REG_CLOCK_GATE,
+		JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0);
+
+	jz_clk_reg_clear_bits(JZ_REG_CLOCK_PLL, JZ_CLOCK_PLL_ENABLED);
+}
+
+void jz4740_clock_resume(void)
+{
+	jz_clk_reg_set_bits(JZ_REG_CLOCK_PLL, JZ_CLOCK_PLL_ENABLED);
+	while ((jz_clk_reg_read(JZ_REG_CLOCK_PLL) & JZ_CLOCK_PLL_STABLE) == 0);
+
+	jz_clk_reg_clear_bits(JZ_REG_CLOCK_GATE,
+		JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0);
+}
+
+int jz4740_clock_init(void)
 {
 	uint32_t val;
 
@@ -905,5 +928,3 @@ int jz_init_clocks(void)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(jz_init_clocks);
-

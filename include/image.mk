@@ -91,7 +91,8 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
 		$(CP) ./ubinize.cfg $(KDIR)
 		$(STAGING_DIR_HOST)/bin/mkfs.ubifs $(UBIFS_OPTS) -o $(KDIR)/root.ubifs -d $(TARGET_DIR)
 		(cd $(KDIR); \
-		$(STAGING_DIR_HOST)/bin/ubinize $(UBINIZE_OPTS) -o $(BIN_DIR)/openwrt-$(BOARD)-rootfs.ubi ubinize.cfg)
+		$(STAGING_DIR_HOST)/bin/ubinize $(UBINIZE_OPTS) -o $(KDIR)/root.ubi ubinize.cfg)
+		$(call Image/Build,ubi)
     endef
   endif
 else
@@ -103,7 +104,7 @@ endif
 
 define Image/Checksum
 	( cd ${BIN_DIR} ; \
-		$(FIND) -maxdepth 1 -type f \! -name 'md5sums'  -printf "%P\n" | xargs \
+		$(FIND) -maxdepth 1 -type f \! -name 'md5sums'  -printf "%P\n" | sort | xargs \
 		md5sum --binary > md5sums \
 	)
 endef

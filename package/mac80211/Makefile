@@ -10,12 +10,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2010-02-16
+PKG_VERSION:=2010-03-03
 PKG_RELEASE:=3
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 #	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2010/11 \
 #	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=190060a705c2b78e9b0bc873a8803b37
+PKG_MD5SUM:=af8da65ca4c25b1b69e3d2896d2bbb2f
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -23,6 +23,7 @@ PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_kmod-mac80211 \
 	CONFIG_PACKAGE_MAC80211_DEBUGFS \
+	CONFIG_PACKAGE_ATH9K_USE_MINSTREL \
 	CONFIG_PACKAGE_ATH_DEBUG \
 	CONFIG_ATH_USER_REGD \
 
@@ -34,19 +35,37 @@ define KernelPackage/mac80211/Default
   SUBMENU:=$(WMENU)
   URL:=http://linuxwireless.org/
   MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
-  DEPENDS:=@LINUX_2_6 @!TARGET_avr32 @(!(TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
+  DEPENDS:=@LINUX_2_6 @(!(TARGET_avr32||TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
+endef
+
+define KernelPackage/cfg80211
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=cfg80211 - wireless configuration API
+  DEPENDS+= +wireless-tools +iw @!LINUX_2_6_25
+ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.33)),1) 
+  FILES:= \
+	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
+	$(PKG_BUILD_DIR)/net/wireless/cfg80211.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,20,compat cfg80211)
+else 
+  FILES:= \
+	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
+	$(PKG_BUILD_DIR)/compat/compat_firmware_class.$(LINUX_KMOD_SUFFIX) \
+	$(PKG_BUILD_DIR)/net/wireless/cfg80211.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,20,compat compat_firmware_class cfg80211)
+endif
+endef
+
+define KernelPackage/cfg80211/description
+cfg80211 is the Linux wireless LAN (802.11) configuration API.
 endef
 
 define KernelPackage/mac80211
   $(call KernelPackage/mac80211/Default)
   TITLE:=Linux 802.11 Wireless Networking Stack
-  DEPENDS+= +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +wireless-tools +iw @!LINUX_2_6_25
-  FILES:= \
-	$(PKG_BUILD_DIR)/compat/compat.$(LINUX_KMOD_SUFFIX) \
-	$(PKG_BUILD_DIR)/compat/compat_firmware_class.$(LINUX_KMOD_SUFFIX) \
-	$(PKG_BUILD_DIR)/net/mac80211/mac80211.$(LINUX_KMOD_SUFFIX) \
-	$(PKG_BUILD_DIR)/net/wireless/cfg80211.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,20,compat compat_firmware_class cfg80211 mac80211)
+  DEPENDS+= +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +kmod-cfg80211
+  FILES:= $(PKG_BUILD_DIR)/net/mac80211/mac80211.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,21,mac80211)
 endef
 
 define KernelPackage/mac80211/config
@@ -54,7 +73,7 @@ define KernelPackage/mac80211/config
 endef
 
 define KernelPackage/mac80211/description
-Linux 802.11 Wireless Networking Stack
+Generic IEEE 802.11 Networking Stack (mac80211)
 endef
 
 # Prism54 drivers
@@ -394,6 +413,66 @@ define KernelPackage/mac80211-hwsim
   AUTOLOAD:=$(call AutoLoad,60,mac80211_hwsim)
 endef
 
+define KernelPackage/net-libipw
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=libipw for ipw2100 and ipw2200
+  DEPENDS:=@PCI_SUPPORT +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-aes +kmod-crypto-michael-mic +kmod-lib80211 +kmod-cfg80211
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ipw2x00/libipw.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,49,libipw)
+endef
+
+define KernelPackage/net-libipw/description
+ Hardware independent IEEE 802.11 networking stack for ipw2100 and ipw2200.
+endef
+
+IPW2100_NAME:=ipw2100-fw
+IPW2100_VERSION:=1.3
+
+define Download/net-ipw2100
+  URL:=http://bughost.org/firmware/
+  FILE:=$(IPW2100_NAME)-$(IPW2100_VERSION).tgz
+  MD5SUM=46aa75bcda1a00efa841f9707bbbd113
+endef
+$(eval $(call Download,net-ipw2100))
+
+define KernelPackage/net-ipw2100
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=Intel IPW2100 driver
+  DEPENDS:=@PCI_SUPPORT +kmod-net-libipw
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ipw2x00/ipw2100.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,ipw2100)
+endef
+
+define KernelPackage/net-ipw2100/description
+ Kernel support for Intel IPW2100
+ Includes:
+ - ipw2100
+endef
+
+IPW2200_NAME:=ipw2200-fw
+IPW2200_VERSION:=3.1
+
+define Download/net-ipw2200
+  URL:=http://bughost.org/firmware/
+  FILE:=$(IPW2200_NAME)-$(IPW2200_VERSION).tgz
+  MD5SUM=eaba788643c7cc7483dd67ace70f6e99
+endef
+$(eval $(call Download,net-ipw2200))
+
+define KernelPackage/net-ipw2200
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=Intel IPW2200 driver
+  DEPENDS:=@PCI_SUPPORT +kmod-net-libipw
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ipw2x00/ipw2200.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,ipw2200)
+endef
+
+define KernelPackage/net-ipw2200/description
+ Kernel support for Intel IPW2200
+ Includes:
+ - ipw2200
+endef
+
 #Broadcom firmware
 ifneq ($(CONFIG_B43_EXPERIMENTAL),)
   PKG_B43_FWV4_NAME:=broadcom-wl
@@ -519,7 +598,8 @@ BUILDFLAGS:= \
 	$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),-DCONFIG_MAC80211_DEBUGFS -DCONFIG_ATH9K_DEBUGFS) \
 	$(if $(CONFIG_PACKAGE_ATH_DEBUG),-DCONFIG_ATH_DEBUG) \
 	-D__CONFIG_MAC80211_RC_DEFAULT=minstrel \
-	$(if $(CONFIG_ATH_USER_REGD),-DATH_USER_REGD=1)
+	$(if $(CONFIG_ATH_USER_REGD),-DATH_USER_REGD=1) \
+	$(if $(CONFIG_PACKAGE_ATH9K_USE_MINSTREL),-DATH9K_USE_MINSTREL)
 
 MAKE_OPTS:= \
 	CROSS_COMPILE="$(KERNEL_CROSS)" \
@@ -554,6 +634,7 @@ MAKE_OPTS:= \
 	CONFIG_P54_USB=$(if $(CONFIG_PACKAGE_kmod-p54-usb),m) \
 	CONFIG_P54_SPI= \
 	CONFIG_RT2X00=$(if $(CONFIG_PACKAGE_kmod-rt2x00-lib),m) \
+	CONFIG_RT2X00_LIB=$(if $(CONFIG_PACKAGE_kmod-rt2x00-lib),m) \
 	CONFIG_RT2X00_LIB_PCI=$(if $(CONFIG_PACKAGE_kmod-rt2x00-pci),m) \
 	CONFIG_RT2X00_LIB_USB=$(if $(CONFIG_PACKAGE_kmod-rt2x00-usb),m) \
 	CONFIG_RT2400PCI=$(if $(CONFIG_PACKAGE_kmod-rt2400-pci),m) \
@@ -561,20 +642,21 @@ MAKE_OPTS:= \
 	CONFIG_RT2500USB=$(if $(CONFIG_PACKAGE_kmod-rt2500-usb),m) \
 	CONFIG_RT61PCI=$(if $(CONFIG_PACKAGE_kmod-rt61-pci),m) \
 	CONFIG_RT73USB=$(if $(CONFIG_PACKAGE_kmod-rt73-usb),m) \
+	CONFIG_RT2800_LIB=$(if $(CONFIG_PACKAGE_kmod-rt2800-lib),m) \
 	CONFIG_RT2800PCI=$(if $(CONFIG_PACKAGE_kmod-rt2800-pci),m) \
 	CONFIG_RT2800USB=$(if $(CONFIG_PACKAGE_kmod-rt2800-usb),m) \
 	CONFIG_RTL8180=$(if $(CONFIG_PACKAGE_kmod-rtl8180),m) \
 	CONFIG_RTL8187=$(if $(CONFIG_PACKAGE_kmod-rtl8187),m) \
 	CONFIG_MAC80211_HWSIM=$(if $(CONFIG_PACKAGE_kmod-mac80211-hwsim),m) \
 	CONFIG_PCMCIA= \
-	CONFIG_LIBIPW= \
+	CONFIG_LIBIPW=$(if $(CONFIG_PACKAGE_kmod-net-libipw),m) \
 	CONFIG_LIBERTAS=$(if $(CONFIG_PACKAGE_kmod-libertas),m) \
 	CONFIG_LIBERTAS_CS= \
 	CONFIG_LIBERTAS_SDIO= \
 	CONFIG_LIBERTAS_THINFIRM= \
 	CONFIG_LIBERTAS_USB=$(if $(CONFIG_PACKAGE_kmod-libertas),m) \
-	CONFIG_IPW2100= \
-	CONFIG_IPW2200= \
+	CONFIG_IPW2100=$(if $(CONFIG_PACKAGE_kmod-net-ipw2100),m) \
+	CONFIG_IPW2200=$(if $(CONFIG_PACKAGE_kmod-net-ipw2200),m) \
 	CONFIG_NL80211=y \
 	CONFIG_LIB80211= \
 	CONFIG_LIB80211_CRYPT_WEP= \
@@ -612,6 +694,8 @@ define Build/Prepare
 	unzip -jod $(PKG_BUILD_DIR) $(DL_DIR)/$(RT71FW)
 	-unzip -jod $(PKG_BUILD_DIR) $(DL_DIR)/$(RT2860FW)
 	-unzip -jod $(PKG_BUILD_DIR) $(DL_DIR)/$(RT2870FW)
+	$(TAR) -C $(PKG_BUILD_DIR) -xzf $(DL_DIR)/$(IPW2100_NAME)-$(IPW2100_VERSION).tgz
+	$(TAR) -C $(PKG_BUILD_DIR) -xzf $(DL_DIR)/$(IPW2200_NAME)-$(IPW2200_VERSION).tgz
 	$(TAR) -C $(PKG_BUILD_DIR) -xjf $(DL_DIR)/$(ZD1211FW_NAME)-$(ZD1211FW_VERSION).tar.bz2
 	rm -rf $(PKG_BUILD_DIR)/include/linux/ssb
 	rm -f $(PKG_BUILD_DIR)/include/net/ieee80211.h
@@ -689,6 +773,16 @@ define KernelPackage/ar9170/install
 	$(INSTALL_DATA) $(DL_DIR)/$(AR9170FW) $(1)/lib/firmware/
 endef
 
+define KernelPackage/net-ipw2100/install
+	$(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipw2100-$(IPW2100_VERSION)*.fw $(1)/lib/firmware
+endef
+
+define KernelPackage/net-ipw2200/install
+	$(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(IPW2200_NAME)-$(IPW2200_VERSION)/ipw2200*.fw $(1)/lib/firmware
+endef
+
 define Build/b43-common
 	tar xjf "$(DL_DIR)/$(PKG_B43_FWCUTTER_SOURCE)" -C "$(PKG_BUILD_DIR)"
 	$(MAKE) -C "$(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)" \
@@ -738,6 +832,7 @@ endef
 
 $(eval $(call KernelPackage,ath5k))
 $(eval $(call KernelPackage,libertas))
+$(eval $(call KernelPackage,cfg80211))
 $(eval $(call KernelPackage,mac80211))
 $(eval $(call KernelPackage,p54-common))
 $(eval $(call KernelPackage,p54-pci))
@@ -762,3 +857,6 @@ $(eval $(call KernelPackage,ath))
 $(eval $(call KernelPackage,ar9170))
 $(eval $(call KernelPackage,b43))
 $(eval $(call KernelPackage,b43legacy))
+$(eval $(call KernelPackage,net-libipw))
+$(eval $(call KernelPackage,net-ipw2100))
+$(eval $(call KernelPackage,net-ipw2200))
