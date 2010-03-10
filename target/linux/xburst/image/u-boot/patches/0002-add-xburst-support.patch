@@ -6,11 +6,10 @@ From: Xiangfu Liu <xiangfu@sharism.cc>
 ---
 
  Makefile                       |   10 +
- board/qi_lb60/qi_lb60.c        |   39 +++-
  common/env_common.c            |    2 
  common/lcd.c                   |   45 ++++
  common/main.c                  |    4 
- cpu/mips/Makefile              |    4 
+ cpu/mips/Makefile              |    5 
  cpu/mips/cache.S               |  280 ++++++++++----------------
  cpu/mips/config.mk             |    6 -
  cpu/mips/cpu.c                 |   75 +++++++
@@ -19,13 +18,11 @@ From: Xiangfu Liu <xiangfu@sharism.cc>
  examples/standalone/mips.lds   |    2 
  include/asm-mips/addrspace.h   |    2 
  include/asm-mips/global_data.h |   11 +
- include/configs/qi_lb60.h      |    2 
  include/lcd.h                  |   56 +++++
  lib_mips/board.c               |   18 +-
  lib_mips/bootm.c               |    7 +
  lib_mips/time.c                |    4 
- nand_spl/nand_boot_jz4740.c    |   46 +---
- 20 files changed, 800 insertions(+), 333 deletions(-)
+ 17 files changed, 757 insertions(+), 290 deletions(-)
 
 
 diff --git a/Makefile b/Makefile
@@ -49,89 +46,6 @@ index f06a97c..a318eb4 100644
  ## MIPS64 5Kc
  #########################################################################
  
-diff --git a/board/qi_lb60/qi_lb60.c b/board/qi_lb60/qi_lb60.c
-index 54625c3..aa7b85b 100644
---- a/board/qi_lb60/qi_lb60.c
-+++ b/board/qi_lb60/qi_lb60.c
-@@ -12,6 +12,8 @@
- #include <asm/mipsregs.h>
- #include <asm/jz4740.h>
- 
-+DECLARE_GLOBAL_DATA_PTR;
-+
- static void gpio_init(void)
- {
- 	/*
-@@ -25,11 +27,6 @@ static void gpio_init(void)
- 	__gpio_as_sdram_32bit();
- 
- 	/*
--	 * Initialize UART0 pins
--	 */
--	__gpio_as_uart0();
--
--	/*
- 	 * Initialize LCD pins
- 	 */
- 	__gpio_as_lcd_18bit();
-@@ -43,17 +40,31 @@ static void gpio_init(void)
- 	 * Initialize Other pins
- 	 */
- 	unsigned int i;
-+	for (i = 0; i < 7; i++){
-+		__gpio_as_input(GPIO_KEYIN_BASE + i);
-+		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
-+	}
-+
- 	for (i = 0; i < 8; i++) {
- 		__gpio_as_output(GPIO_KEYOUT_BASE + i);
--		__gpio_set_pin(GPIO_KEYOUT_BASE + i);
-+		__gpio_clear_pin(GPIO_KEYOUT_BASE + i);
- 	}
- 
--	for (i = 0; i < 7; i++){
--		__gpio_as_input(GPIO_KEYIN_BASE + i);
--		__gpio_enable_pull(GPIO_KEYIN_BASE + i);
-+	/*
-+	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
-+	 * same gpio, init the gpio as uart0 cause a keyboard bug. so for
-+	 * end user we disable the uart0
-+	 */
-+	if (__gpio_get_pin(GPIO_KEYIN_BASE + 2) == 0){
-+		/* if pressed [S] */
-+		printf("[S] pressed, enable UART0\n");
-+		gd->boot_option = 5;
-+		__gpio_as_uart0();
-+	} else {
-+		printf("[S] not pressed, disable UART0\n");
-+		__gpio_as_input(GPIO_KEYIN_8);
-+		__gpio_enable_pull(GPIO_KEYIN_8);
- 	}
--	/* __gpio_as_input( GPIO_KEYIN_8 ); */
--	/* __gpio_enable_pull( GPIO_KEYIN_8 ); */
- 
- 	__gpio_as_output(GPIO_AUDIO_POP);
- 	__gpio_set_pin(GPIO_AUDIO_POP);
-@@ -73,6 +84,11 @@ static void gpio_init(void)
- 
- 	__gpio_as_input(GPIO_USB_DETECT);
- 	__gpio_enable_pull(GPIO_USB_DETECT);
-+
-+	if (__gpio_get_pin(GPIO_KEYIN_BASE + 3) == 0) {
-+		printf("[M] pressed, boot from sd card\n");
-+		gd->boot_option = 1;
-+	}
- }
- 
- static void cpm_init(void)
-@@ -98,7 +114,6 @@ void board_early_init(void)
- 
- int checkboard (void)
- {
--	DECLARE_GLOBAL_DATA_PTR;
- 
- 	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC, Speed %d MHz)\n",
- 	       gd->cpu_clk/1000000);
 diff --git a/common/env_common.c b/common/env_common.c
 index 439a4a9..6cfe30b 100644
 --- a/common/env_common.c
@@ -267,15 +181,16 @@ index 10d8904..ff11ad7 100644
  
  # ifdef CONFIG_BOOT_RETRY_TIME
 diff --git a/cpu/mips/Makefile b/cpu/mips/Makefile
-index 28a1cbb..5207bc5 100644
+index 28a1cbb..33afb66 100644
 --- a/cpu/mips/Makefile
 +++ b/cpu/mips/Makefile
-@@ -33,6 +33,10 @@ SOBJS-$(CONFIG_INCA_IP)	+= incaip_wdt.o
+@@ -32,7 +32,10 @@ COBJS-y	= cpu.o interrupts.o
+ SOBJS-$(CONFIG_INCA_IP)	+= incaip_wdt.o
  COBJS-$(CONFIG_INCA_IP)	+= asc_serial.o incaip_clock.o
  COBJS-$(CONFIG_PURPLE)	+= asc_serial.o
- COBJS-$(CONFIG_SOC_AU1X00) += au1x00_eth.o au1x00_serial.o au1x00_usb_ohci.o
-+COBJS-$(CONFIG_JZSOC) += jz4740.o jz_serial.o jz_i2c.o jz_mmc.o jz4740_nand.o
-+COBJS-$(CONFIG_DRIVER_CS8900) += jz_cs8900.o
+-COBJS-$(CONFIG_SOC_AU1X00) += au1x00_eth.o au1x00_serial.o au1x00_usb_ohci.o
++COBJS-$(CONFIG_JZSOC) += jz_serial.o jz_i2c.o jz_mmc.o
++COBJS-$(CONFIG_JZ4740) += jz4740.o jz4740_nand.o
 +COBJS-$(CONFIG_QI_LB60) += qi_lb60_gpm940b0.o
 +
  
@@ -1514,19 +1429,6 @@ index b2c4891..23f597e 100644
  	unsigned long	baudrate;
  	unsigned long	have_console;	/* serial_init() was called */
  	phys_size_t	ram_size;	/* RAM size */
-diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
-index 02af607..c3bf9c7 100644
---- a/include/configs/qi_lb60.h
-+++ b/include/configs/qi_lb60.h
-@@ -45,6 +45,8 @@
- #define CONFIG_BOOTDELAY	0
- #define CONFIG_BOOTFILE		"uImage"	/* file to load */
- #define CONFIG_BOOTARGS		"mem=32M console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
-+#define CONFIG_EXTRA_ENV_SETTINGS	1
-+#define CONFIG_BOOTARGSFROMSD	"mem=32M console=ttyS0,57600n8 rootfstype=ext2 root=/dev/mmcblk0p1 rw rootwait"
- #define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
- 
- /*
 diff --git a/include/lcd.h b/include/lcd.h
 index 1f85daa..997e246 100644
 --- a/include/lcd.h
@@ -1745,83 +1647,3 @@ index 07e356d..4654bf4 100644
  }
 +
 +#endif /* !CONFIG_JzRISC */
-diff --git a/nand_spl/nand_boot_jz4740.c b/nand_spl/nand_boot_jz4740.c
-index 924a47a..146de19 100644
---- a/nand_spl/nand_boot_jz4740.c
-+++ b/nand_spl/nand_boot_jz4740.c
-@@ -24,10 +24,8 @@
- #include <asm/io.h>
- #include <asm/jz4740.h>
- 
--#define KEY_1_OUT       (32 * 3 + 21)
--#define KEY_1_IN        (32 * 3 + 19)
--#define KEY_2_OUT       (32 * 3 + 25)
--#define KEY_2_IN        (32 * 3 + 26)
-+#define KEY_U_OUT       (32 * 2 + 16)
-+#define KEY_U_IN        (32 * 3 + 19)
- 
- /*
-  * NAND flash definitions
-@@ -350,40 +348,25 @@ static void gpio_init(void)
- 
- static int is_usb_boot()
- {
--	int key2,keyh;
--
--	key2 = 0;
--	keyh = 0;
-+	int keyU = 0;
-     
--	__gpio_as_output(KEY_1_OUT);
--	__gpio_as_output(KEY_2_OUT);
--	__gpio_as_input(KEY_1_IN);
--	__gpio_as_input(KEY_2_IN);
--	__gpio_disable_pull(KEY_1_IN);
--	__gpio_disable_pull(KEY_2_IN);
-+	__gpio_as_input(KEY_U_IN);
-+	__gpio_enable_pull(KEY_U_IN);
-     
--	__gpio_clear_pin(KEY_1_OUT);
--	__gpio_clear_pin(KEY_2_OUT);
--
--	key2 = __gpio_get_pin(KEY_2_IN);
--	keyh = __gpio_get_pin(KEY_1_IN);
-+	__gpio_as_output(KEY_U_OUT);
-+	__gpio_clear_pin(KEY_U_OUT);
- 
--	if(key2)
--		serial_puts("key2");
--	else
--		serial_puts("key2--");
-+	keyU = __gpio_get_pin(KEY_U_IN);
- 
--	if(keyh)
--		serial_puts("keyh");
-+	if (keyU)
-+		serial_puts("[U] not pressed\n");
- 	else
--		serial_puts("keyh--");
-+		serial_puts("[U] pressed\n");
- 
--
--	if( ( key2 == 0 ) && ( keyh == 0 ) )
-+	if (keyU == 0)
- 		return 1;
- 	else
- 		return 0;
--    
- }
- 
- void nand_boot(void)
-@@ -402,9 +385,8 @@ void nand_boot(void)
- 	pll_init();
- 	sdram_init();
- 
--	int ret = 0;
--	ret = is_usb_boot();
--	if(ret) {
-+	if(is_usb_boot()) {
-+		serial_puts("enter USB BOOT mode\n");
- 		usb_boot();
- 	}
- 
