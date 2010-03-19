@@ -127,8 +127,8 @@ static struct jz_nand_platform_data qi_lb60_nand_pdata = {
 
 #define KEY_QI_QI	KEY_F13
 #define KEY_QI_UPRED	KEY_RIGHTALT
-#define KEY_QI_VOLUP	KEY_VOLUMEUP
-#define KEY_QI_VOLDOWN	KEY_VOLUMEDOWN
+#define KEY_QI_VOLUP	KEY_F11
+#define KEY_QI_VOLDOWN	KEY_F12
 #define KEY_QI_FN	KEY_LEFTCTRL
 
 static const uint32_t qi_lb60_keymap[] = {

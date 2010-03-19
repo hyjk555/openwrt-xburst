@@ -1,12 +1,16 @@
 From d76e6b85f28891eecded962793fb8a02cdf26f39 Mon Sep 17 00:00:00 2001
+
 From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Mon, 11 Jan 2010 04:29:51 +0100
+
 Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-modifier-keys.patch
-
 ---
- drivers/char/defkeymap.map |   74 +++++++++++++++++++++++++++++++-------------
- 1 files changed, 52 insertions(+), 22 deletions(-)
 
+ drivers/char/defkeymap.map |   80 ++++++++++++++++++++++++++++++--------------
+ 1 files changed, 54 insertions(+), 26 deletions(-)
+
+
+diff --git a/drivers/char/defkeymap.map b/drivers/char/defkeymap.map
+index 50b30ca..d395c16 100644
 --- a/drivers/char/defkeymap.map
 +++ b/drivers/char/defkeymap.map
 @@ -1,5 +1,5 @@
@@ -16,7 +20,7 @@ Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-mo
  # Change the above line into
  #	keymaps 0-2,4-6,8,12
  # in case you want the entries
-@@ -45,24 +45,38 @@ keycode  12 = minus            underscor
+@@ -45,24 +45,38 @@ keycode  12 = minus            underscore       backslash
  	control	keycode  12 = Control_underscore
  	shift	control	keycode  12 = Control_underscore
  	alt	keycode  12 = Meta_minus      
@@ -58,7 +62,7 @@ Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-mo
  keycode  26 = bracketleft      braceleft       
  	control keycode  26 = Escape          
  	alt     keycode  26 = Meta_bracketleft
-@@ -71,19 +85,28 @@ keycode  27 = bracketright     bracerigh
+@@ -71,19 +85,28 @@ keycode  27 = bracketright     braceright       asciitilde
  	alt     keycode  27 = Meta_bracketright
  keycode  28 = Return          
  	alt     keycode  28 = Meta_Control_m  
@@ -91,7 +95,7 @@ Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-mo
  keycode  39 = semicolon        colon           
  	alt     keycode  39 = Meta_semicolon  
  keycode  40 = apostrophe       quotedbl        
-@@ -97,58 +120,65 @@ keycode  43 = backslash        bar      
+@@ -97,58 +120,65 @@ keycode  43 = backslash        bar
  	control keycode  43 = Control_backslash
  	alt     keycode  43 = Meta_backslash  
  keycode  44 = z               
@@ -170,6 +174,20 @@ Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-mo
  	control keycode  66 = F8              
  	alt     keycode  66 = Console_8       
  	control alt     keycode  66 = Console_8       
+@@ -204,11 +234,11 @@ keycode  84 = Last_Console
+ keycode  85 =
+ keycode  86 = less             greater          bar             
+ 	alt     keycode  86 = Meta_less       
+-keycode  87 = F11              F11              Console_23      
++keycode  87 = F11              Scroll_Backward     Prior
+ 	control keycode  87 = F11             
+ 	alt     keycode  87 = Console_11      
+ 	control alt     keycode  87 = Console_11      
+-keycode  88 = F12              F12              Console_24      
++keycode  88 = F12              Scroll_Forward      Next
+ 	control keycode  88 = F12             
+ 	alt     keycode  88 = Console_12      
+ 	control alt     keycode  88 = Console_12      
 @@ -220,7 +250,7 @@ keycode  93 =
  keycode  94 =
  keycode  95 =
@@ -179,3 +197,12 @@ Subject: [PATCH] /opt/Projects/openwrt/target/linux/xburst/patches-2.6.31/500-mo
  keycode  98 = KP_Divide       
  keycode  99 = Control_backslash
  	control keycode  99 = Control_backslash
+@@ -269,8 +299,6 @@ string F7 = "\033[18~"
+ string F8 = "\033[19~"
+ string F9 = "\033[20~"
+ string F10 = "\033[21~"
+-string F11 = "\033[23~"
+-string F12 = "\033[24~"
+ string F13 = "\033[25~"
+ string F14 = "\033[26~"
+ string F15 = "\033[28~"
