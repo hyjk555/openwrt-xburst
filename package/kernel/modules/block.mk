@@ -10,7 +10,7 @@ BLOCK_MENU:=Block Devices
 define KernelPackage/ata-core
   SUBMENU:=$(BLOCK_MENU)
   TITLE:=Serial and Parallel ATA support
-  DEPENDS:=@PCI_SUPPORT @LINUX_2_6 +kmod-scsi-core @(!TARGET_ubicom32||!TARGET_etrax)
+  DEPENDS:=@PCI_SUPPORT @LINUX_2_6 +kmod-scsi-core @(!TARGET_ubicom32||!TARGET_etrax||!TARGET_x86)
   KCONFIG:=CONFIG_ATA
   FILES:=$(LINUX_DIR)/drivers/ata/libata.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,21,libata,1)
@@ -21,7 +21,7 @@ $(eval $(call KernelPackage,ata-core))
 
 define KernelPackage/ata/Depends
   SUBMENU:=$(BLOCK_MENU)
-  DEPENDS:=kmod-ata-core $(1)
+  DEPENDS:=!TARGET_x86:kmod-ata-core $(1)
 endef
 
 
@@ -223,8 +223,14 @@ endef
 
 ifneq ($(CONFIG_arm)$(CONFIG_powerpc),y)
   define KernelPackage/ide-core/2.6
-    FILES+=$(LINUX_DIR)/drivers/ide/ide-generic.$(LINUX_KMOD_SUFFIX)
-    AUTOLOAD+=$(call AutoLoad,30,ide-generic,1)
+	ifeq ($(CONFIG_PCI_SUPPORT),y)
+	  FILES+=$(LINUX_DIR)/drivers/ide/ide-generic.$(LINUX_KMOD_SUFFIX) \
+		$(LINUX_DIR)/drivers/ide/ide-pci-generic.$(LINUX_KMOD_SUFFIX)
+	  AUTOLOAD+=$(call AutoLoad,30,ide-generic ide-pci-generic,1)
+	else
+	  FILES+=$(LINUX_DIR)/drivers/ide/ide-generic.$(LINUX_KMOD_SUFFIX)
+	  AUTOLOAD+=$(call AutoLoad,30,ide-generic,1)
+	endif
   endef
 endif
 
@@ -302,6 +308,7 @@ $(eval $(call KernelPackage,ide-it821x))
 define KernelPackage/scsi-core
   SUBMENU:=$(BLOCK_MENU)
   TITLE:=SCSI device support
+  DEPENDS:=@!TARGET_x86
   KCONFIG:= \
 	CONFIG_SCSI \
 	CONFIG_BLK_DEV_SD
@@ -379,7 +386,7 @@ define KernelPackage/dm
        CONFIG_BLK_DEV_DM \
        CONFIG_DM_MIRROR
   FILES:=$(LINUX_DIR)/drivers/md/dm-*.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,30,dm-mod dm-region-hash dm-mirror dm-log)
+  AUTOLOAD:=$(call AutoLoad,30,dm-mod dm-log dm-region-hash dm-mirror)
 endef
 
 define KernelPackage/dm/description
@@ -451,7 +458,7 @@ $(eval $(call KernelPackage,axonram))
 define KernelPackage/libsas
   SUBMENU:=$(BLOCK_MENU)
   TITLE:=SAS Domain Transport Attributes
-  DEPENDS:=+kmod-scsi-core @TARGET_x86
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_SCSI_SAS_LIBSAS \
 	CONFIG_SCSI_SAS_ATTRS \
 	CONFIG_SCSI_SAS_ATA=y \
@@ -474,7 +481,11 @@ define KernelPackage/mvsas
   TITLE:=Marvell 88SE6440 SAS/SATA driver
   DEPENDS:=@TARGET_x86 +kmod-libsas
   KCONFIG:=CONFIG_SCSI_MVSAS
-  FILES:=$(LINUX_DIR)/drivers/scsi/mvsas.$(LINUX_KMOD_SUFFIX)
+  ifneq ($(CONFIG_LINUX_2_6_25)$(CONFIG_LINUX_2_6_30),)
+	FILES:=$(LINUX_DIR)/drivers/scsi/mvsas.$(LINUX_KMOD_SUFFIX)
+  else
+	FILES:=$(LINUX_DIR)/drivers/scsi/mvsas/mvsas.$(LINUX_KMOD_SUFFIX)
+  endif
   AUTOLOAD:=$(call AutoLoad,40,mvsas,1)
 endef
 
