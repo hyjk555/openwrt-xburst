@@ -125,11 +125,12 @@ static struct jz_nand_platform_data qi_lb60_nand_pdata = {
  * don't define this. the keyboard and keyboard both work
  */
 
-#define KEY_QI_QI	KEY_F13
-#define KEY_QI_UPRED	KEY_RIGHTALT
 #define KEY_QI_VOLUP	KEY_F11
 #define KEY_QI_VOLDOWN	KEY_F12
+#define KEY_QI_QI	KEY_F13
+#define KEY_QI_ACUTE	KEY_GRAVE
 #define KEY_QI_FN	KEY_LEFTCTRL
+#define KEY_QI_UPRED	KEY_RIGHTALT
 
 static const uint32_t qi_lb60_keymap[] = {
 	KEY(0, 0, KEY_F1),	/* S2 */
@@ -167,7 +168,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(4, 0, KEY_TAB),	/* S34 */
 	KEY(4, 1, KEY_CAPSLOCK),	/* S35 */
 	KEY(4, 2, KEY_BACKSLASH),	/* S36 */
-	KEY(4, 3, KEY_APOSTROPHE),	/* S37 */
+	KEY(4, 3, KEY_QI_ACUTE),	/* S37 */
 	KEY(4, 4, KEY_COMMA),	/* S38 */
 	KEY(4, 5, KEY_DOT),	/* S39 */
 	KEY(4, 6, KEY_SLASH),	/* S40 */
