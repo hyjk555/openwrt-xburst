@@ -32,6 +32,9 @@
 #include <asm/danube.h>
 #include <asm/reboot.h>
 #include <asm/io.h>
+#if defined(CONFIG_CMD_HTTPD)
+#include <httpd.h>
+#endif
 
 extern ulong ifx_get_ddr_hz(void);
 extern ulong ifx_get_cpuclk(void);
@@ -336,3 +339,56 @@ int board_eth_init(bd_t *bis)
 	return 0;
 }
 
+#if defined(CONFIG_CMD_HTTPD)
+int do_http_upgrade(const unsigned char *data, const ulong size)
+{
+	char buf[128];
+
+	if(getenv ("ram_addr") == NULL)
+		return -1;
+	if(getenv ("kernel_addr") == NULL)
+		return -1;
+	/* check the image */
+	if(run_command("imi ${ram_addr}", 0) < 0) {
+		return -1;
+	}
+	/* write the image to the flash */
+	puts("http ugrade ...\n");
+	sprintf(buf, "era ${kernel_addr} +0x%x; cp.b ${ram_addr} ${kernel_addr} 0x%x", size, size);
+	return run_command(buf, 0);
+}
+
+int do_http_progress(const int state)
+{
+	/* toggle LED's here */
+	switch(state) {
+		case HTTP_PROGRESS_START:
+		puts("http start\n");
+		break;
+		case HTTP_PROGRESS_TIMEOUT:
+		puts(".");
+		break;
+		case HTTP_PROGRESS_UPLOAD_READY:
+		puts("http upload ready\n");
+		break;
+		case HTTP_PROGRESS_UGRADE_READY:
+		puts("http ugrade ready\n");
+		break;
+		case HTTP_PROGRESS_UGRADE_FAILED:
+		puts("http ugrade failed\n");
+		break;
+	}
+	return 0;
+}
+
+unsigned long do_http_tmp_address(void)
+{
+	char *s = getenv ("ram_addr");
+	if (s) {
+		ulong tmp = simple_strtoul (s, NULL, 16);
+		return tmp;
+	}
+	return 0 /*0x80a00000*/;
+}
+
+#endif
