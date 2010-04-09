@@ -1,0 +1,11 @@
+--- busybox-1.15.3/init/init.c.orig	2010-04-09 02:01:51.000000000 +0200
++++ busybox-1.15.3/init/init.c	2010-04-09 02:05:39.000000000 +0200
+@@ -355,7 +355,7 @@
+ #ifdef CUSTOMIZED_BANNER
+ #include CUSTOMIZED_BANNER
+ #endif
+-			"\nPlease press Enter to activate this console. ";
++			"\nPlease wait while graphical environment is loading... ";
+ 		char c;
+ 		/*
+ 		 * Save memory by not exec-ing anything large (like a shell)
