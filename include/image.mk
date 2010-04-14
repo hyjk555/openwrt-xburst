@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -15,12 +15,33 @@ override MAKEFLAGS=
 override MAKE:=$(SUBMAKE)
 KDIR=$(KERNEL_BUILD_DIR)
 
+IMG_PREFIX:=openwrt-$(BOARD)$(if $(SUBTARGET),-$(SUBTARGET))
+
 ifneq ($(CONFIG_BIG_ENDIAN),y)
-JFFS2OPTS     :=  --pad --little-endian --squash
+JFFS2OPTS     :=  --pad --little-endian --squash -v
 SQUASHFS_OPTS :=  -le
 else
-JFFS2OPTS     :=  --pad --big-endian --squash
+JFFS2OPTS     :=  --pad --big-endian --squash -v
 SQUASHFS_OPTS :=  -be
+endif
+
+ifeq ($(CONFIG_JFFS2_RTIME),y)
+JFFS2OPTS+= -X rtime
+endif
+ifeq ($(CONFIG_JFFS2_ZLIB),y) 
+JFFS2OPTS+= -X zlib
+endif
+ifeq ($(CONFIG_JFFS2_LZMA),y)
+JFFS2OPTS+= -X lzma --compression-mode=size
+endif
+ifneq ($(CONFIG_JFFS2_RTIME),y)
+JFFS2OPTS+=  -x rtime
+endif
+ifneq ($(CONFIG_JFFS2_ZLIB),y)
+JFFS2OPTS+= -x zlib
+endif
+ifneq ($(CONFIG_JFFS2_LZMA),y)
+JFFS2OPTS+= -x lzma
 endif
 
 ifneq ($(CONFIG_LINUX_2_4)$(CONFIG_LINUX_2_6_25),)
@@ -57,7 +78,7 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
   ifeq ($(CONFIG_TARGET_ROOTFS_JFFS2),y)
     define Image/mkfs/jffs2/sub
 		# FIXME: removing this line will cause strange behaviour in the foreach loop below
-		$(STAGING_DIR_HOST)/bin/mkfs.jffs2 $(JFFS2OPTS) -e $(patsubst %k,%KiB,$(1)) -o $(KDIR)/root.jffs2-$(1) -d $(TARGET_DIR)
+		$(STAGING_DIR_HOST)/bin/mkfs.jffs2 $(JFFS2OPTS) -e $(patsubst %k,%KiB,$(1)) -o $(KDIR)/root.jffs2-$(1) -d $(TARGET_DIR) -v 2>&1 1>/dev/null | awk '/^.+$$$$/'
 		$(call add_jffs2_mark,$(KDIR)/root.jffs2-$(1))
 		$(call Image/Build,jffs2-$(1))
     endef
@@ -76,13 +97,13 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
 
   ifeq ($(CONFIG_TARGET_ROOTFS_TGZ),y)
     define Image/mkfs/tgz
-		$(TAR) -zcf $(BIN_DIR)/openwrt-$(BOARD)-rootfs.tgz --numeric-owner --owner=0 --group=0 -C $(TARGET_DIR)/ .
+		$(TAR) -zcf $(BIN_DIR)/$(IMG_PREFIX)-rootfs.tgz --numeric-owner --owner=0 --group=0 -C $(TARGET_DIR)/ .
     endef
   endif
 
   ifeq ($(CONFIG_TARGET_ROOTFS_CPIOGZ),y)
     define Image/mkfs/cpiogz
-		( cd $(TARGET_DIR); find . | cpio -o -H newc | gzip -9 >$(BIN_DIR)/openwrt-$(BOARD)-rootfs.cpio.gz )
+		( cd $(TARGET_DIR); find . | cpio -o -H newc | gzip -9 >$(BIN_DIR)/$(IMG_PREFIX)-rootfs.cpio.gz )
     endef
   endif
   ifeq ($(CONFIG_TARGET_ROOTFS_UBIFS),y)
@@ -96,7 +117,7 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
   endif
 else
   define Image/BuildKernel
-	cp $(KDIR)/vmlinux.elf $(BIN_DIR)/openwrt-$(BOARD)-vmlinux.elf
+	cp $(KDIR)/vmlinux.elf $(BIN_DIR)/$(IMG_PREFIX)-vmlinux.elf
 	$(call Image/Build/Initramfs)
   endef
 endif
