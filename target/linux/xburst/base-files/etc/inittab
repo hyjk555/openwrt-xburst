@@ -6,7 +6,3 @@ tty1::askfirst:/bin/ash --login
 tty2::askfirst:/bin/ash --login
 tty3::askfirst:/bin/ash --login
 tty4::askfirst:/bin/ash --login
-tty5::askfirst:/bin/ash --login
-tty6::askfirst:/bin/ash --login
-tty7::askfirst:/bin/ash --login
-tty8::askfirst:/bin/ash --login
