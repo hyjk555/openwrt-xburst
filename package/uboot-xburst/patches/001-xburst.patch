@@ -5,11 +5,11 @@ From: Xiangfu Liu <xiangfu@sharism.cc>
 
 ---
 
- Makefile                       |   10 +
- common/env_common.c            |    2 
+ Makefile                       |   16 +
+ common/env_common.c            |    7 -
  common/lcd.c                   |   45 ++++
- common/main.c                  |    4 
- cpu/mips/Makefile              |    4 
+ common/main.c                  |   11 +
+ cpu/mips/Makefile              |    3 
  cpu/mips/cache.S               |  280 ++++++++++----------------
  cpu/mips/config.mk             |    6 -
  cpu/mips/cpu.c                 |   75 +++++++
@@ -17,16 +17,16 @@ From: Xiangfu Liu <xiangfu@sharism.cc>
  drivers/mtd/nand/nand_base.c   |   88 ++++++++
  examples/standalone/mips.lds   |    2 
  include/asm-mips/addrspace.h   |    2 
- include/asm-mips/global_data.h |   11 +
+ include/asm-mips/global_data.h |   12 +
  include/lcd.h                  |   56 +++++
  lib_mips/board.c               |   18 +-
- lib_mips/bootm.c               |    7 +
+ lib_mips/bootm.c               |   12 +
  lib_mips/time.c                |    4 
- 20 files changed, 800 insertions(+), 333 deletions(-)
+ 17 files changed, 778 insertions(+), 291 deletions(-)
 
 
 diff --git a/Makefile b/Makefile
-index f06a97c..a318eb4 100644
+index f06a97c..3d87cd1 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -3439,6 +3439,22 @@ qemu_mips_config	: unconfig
@@ -53,10 +53,11 @@ index f06a97c..a318eb4 100644
  #########################################################################
  
 diff --git a/common/env_common.c b/common/env_common.c
-index 439a4a9..6cfe30b 100644
+index 439a4a9..905d16a 100644
 --- a/common/env_common.c
 +++ b/common/env_common.c
-@@ -134,7 +134,10 @@ uchar default_environment[] = {
+@@ -133,8 +133,11 @@ uchar default_environment[] = {
+ #if defined(CONFIG_PCI_BOOTDELAY) && (CONFIG_PCI_BOOTDELAY > 0)
  	"pcidelay="	MK_STR(CONFIG_PCI_BOOTDELAY)	"\0"
  #endif
 -#ifdef  CONFIG_EXTRA_ENV_SETTINGS
@@ -176,33 +177,36 @@ index 4e31618..ddd5aa8 100644
  	}
  
 diff --git a/common/main.c b/common/main.c
-index 10d8904..ff11ad7 100644
+index 10d8904..76641f3 100644
 --- a/common/main.c
 +++ b/common/main.c
-@@ -372,7 +372,9 @@ void main_loop (void)
+@@ -372,7 +372,11 @@ void main_loop (void)
  #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
  	s = getenv ("bootdelay");
  	bootdelay = s ? (int)simple_strtol(s, NULL, 10) : CONFIG_BOOTDELAY;
 -
++#if defined(CONFIG_NANONOTE)
 +	DECLARE_GLOBAL_DATA_PTR;
-+	if (gd->boot_option == 5)
-+		bootdelay = gd->boot_option;
++	if (gd->boot_option & BOOT_WITH_ENABLE_UART)
++		bootdelay = 3;
++# endif
  	debug ("### main_loop entered: bootdelay=%d\n\n", bootdelay);
  
  # ifdef CONFIG_BOOT_RETRY_TIME
-@@ -393,7 +395,9 @@ void main_loop (void)
+@@ -393,7 +397,10 @@ void main_loop (void)
  	}
  	else
  #endif /* CONFIG_BOOTCOUNT_LIMIT */
 -		s = getenv ("bootcmd");
-+		s = gd->boot_option == 1 ?
-+			getenv ("bootcmdfromsd"):
-+			getenv ("bootcmd") ;
++		if (gd->boot_option & BOOT_FROM_SDCARD)
++			s = getenv ("bootcmdfromsd");
++		else
++			s = getenv ("bootcmd");
  
  	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
  
 diff --git a/cpu/mips/Makefile b/cpu/mips/Makefile
-index 28a1cbb..5207bc5 100644
+index 28a1cbb..afeb909 100644
 --- a/cpu/mips/Makefile
 +++ b/cpu/mips/Makefile
 @@ -33,6 +33,9 @@ SOBJS-$(CONFIG_INCA_IP)	+= incaip_wdt.o
@@ -687,7 +691,7 @@ index d5a1604..48e1cea 100644
 +}
 +#endif	/* CONFIG_JzRISC */
 diff --git a/cpu/mips/start.S b/cpu/mips/start.S
-index 57db589..fa6e352 100644
+index 57db589..33c05b4 100644
 --- a/cpu/mips/start.S
 +++ b/cpu/mips/start.S
 @@ -23,32 +23,33 @@
@@ -1270,7 +1274,7 @@ index 57db589..fa6e352 100644
 +
 +#endif /* CONFIG_JZ4730 */
 diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 426bb95..6e5fbd3 100644
+index 426bb95..23a1856 100644
 --- a/drivers/mtd/nand/nand_base.c
 +++ b/drivers/mtd/nand/nand_base.c
 @@ -109,6 +109,22 @@ static struct nand_ecclayout nand_oob_16 = {
@@ -1427,10 +1431,10 @@ index 3a1e6d6..2ee6920 100644
     cannot access physical memory directly from core */
  #define UNCACHED_SDRAM(a) (((unsigned long)(a)) | 0x20000000)
 diff --git a/include/asm-mips/global_data.h b/include/asm-mips/global_data.h
-index b2c4891..23f597e 100644
+index b2c4891..9f93fb4 100644
 --- a/include/asm-mips/global_data.h
 +++ b/include/asm-mips/global_data.h
-@@ -39,6 +39,17 @@
+@@ -39,6 +39,18 @@
  typedef	struct	global_data {
  	bd_t		*bd;
  	unsigned long	flags;
@@ -1442,8 +1446,9 @@ index b2c4891..23f597e 100644
 +        unsigned long   mem_clk;        /* Memory bus clock */
 +        unsigned long   dev_clk;        /* Device clock */
 +        unsigned long   fb_base;        /* base address of framebuffer */
-+        unsigned long   boot_option;	/* 1: boot from sd
-+					 * 5: boot delay for 5 secs*/
++#endif
++#if defined(CONFIG_NANONOTE)
++        unsigned long   boot_option;
 +#endif
  	unsigned long	baudrate;
  	unsigned long	have_console;	/* serial_init() was called */
@@ -1623,25 +1628,33 @@ index b2d113e..87cb12d 100644
  	bd->bi_flashoffset = monitor_flash_len;	/* reserved area for U-Boot */
  #else
 diff --git a/lib_mips/bootm.c b/lib_mips/bootm.c
-index 54af24c..64bcad9 100644
+index 54af24c..b498ae8 100644
 --- a/lib_mips/bootm.c
 +++ b/lib_mips/bootm.c
-@@ -46,7 +46,9 @@ static void linux_env_set (char * env_name, char * env_val);
+@@ -46,10 +46,17 @@ static void linux_env_set (char * env_name, char * env_val);
  int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
  {
  	void	(*theKernel) (int, char **, char **, int *);
 -	char	*commandline = getenv ("bootargs");
-+	char	*commandline = gd->boot_option == 1 ? 
-+		getenv ("bootargsfromsd") :
-+		getenv ("bootargs");
++	char	*commandline;
  	char	env_buf[12];
  	char	*cp;
  
-@@ -98,6 +100,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
++#if defined(CONFIG_NANONOTE)
++	if (gd->boot_option & BOOT_FROM_SDCARD)
++		commandline = getenv ("bootargsfromsd");
++	else
++#endif
++		commandline = getenv ("bootargs");
++
+ 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
+ 		return 1;
+ 
+@@ -98,6 +105,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
  	}
  
  	/* we assume that the kernel is in place */
-+	if (gd->boot_option == 1)
++	if (gd->boot_option == BOOT_FROM_SDCARD)
 +		printf ("\n *** Booting from mircoSD ***\n");
 +
  	printf ("\nStarting kernel ...\n\n");
@@ -1666,4 +1679,3 @@ index 07e356d..4654bf4 100644
  }
 +
 +#endif /* !CONFIG_JzRISC */
-

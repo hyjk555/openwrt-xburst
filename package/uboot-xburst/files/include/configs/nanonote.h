@@ -24,7 +24,7 @@
 #define CONFIG_SYS_WHITE_ON_BLACK	1
 
 #define CONFIG_SYS_CPU_SPEED	336000000	/* CPU clock: 336 MHz */
-#define CONFIG_SYS_EXTAL		12000000	/* EXTAL freq: 12 MHz */
+#define CONFIG_SYS_EXTAL	12000000	/* EXTAL freq: 12 MHz */
 #define CONFIG_SYS_HZ		(CONFIG_SYS_EXTAL / 256) /* incrementer freq */
 #define CONFIG_SYS_MIPS_TIMER_FREQ	CONFIG_SYS_CPU_SPEED
 
@@ -73,7 +73,7 @@
  * Miscellaneous configurable options
  */
 #define	CONFIG_SYS_LONGHELP			/* undef to save memory */
-#define	CONFIG_SYS_PROMPT		"QI# "	/* Monitor Command Prompt */
+#define	CONFIG_SYS_PROMPT		"NanoNote# "	/* Monitor Command Prompt */
 #define	CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 #define	CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 /* Print Buffer Size */
@@ -112,11 +112,11 @@
 #define CONFIG_SYS_NAND_BADBLOCK_PAGE	127
 /* ECC offset position in oob area, default value is 6 if it isn't defined */
 #define CONFIG_SYS_NAND_ECC_POS	(6 * NANONOTE_NAND_SIZE)
-#define CONFIG_SYS_MAX_NAND_DEVICE     1
-#define NAND_MAX_CHIPS          1
-#define CONFIG_SYS_NAND_BASE           0xB8000000
-#define CONFIG_SYS_NAND_SELECT_DEVICE  1 /* nand driver supports mutipl.*/
-#define CONFIG_SYS_ONENAND_BASE	CONFIG_SYS_NAND_BASE
+#define CONFIG_SYS_MAX_NAND_DEVICE	1
+#define NAND_MAX_CHIPS			1
+#define CONFIG_SYS_NAND_BASE		0xB8000000
+#define CONFIG_SYS_NAND_SELECT_DEVICE	1 /* nand driver supports mutipl.*/
+#define CONFIG_SYS_ONENAND_BASE		CONFIG_SYS_NAND_BASE
 
 /*
  * IPL (Initial Program Loader, integrated inside CPU)
@@ -133,7 +133,7 @@
  * from RAM. Therefore it mustn't (re-)configure the SDRAM controller.
  *
  */
-#define CONFIG_SYS_NAND_U_BOOT_DST		0x80100000	/* Load NUB to this addr */
+#define CONFIG_SYS_NAND_U_BOOT_DST	0x80100000	/* Load NUB to this addr */
 #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_NAND_U_BOOT_DST 
 /* Start NUB from this addr*/
 

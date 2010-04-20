@@ -333,7 +333,6 @@ static void nand_load(int offs, int uboot_size, uchar *dst)
 }
 
 static void jz_nand_init(void) {
-
  	/* Optimize the timing of nand */
 	REG_EMC_SMCR1 = 0x094c4400;
 }
@@ -343,13 +342,7 @@ static void gpio_init(void)
 	/*
 	 * Initialize SDRAM pins
 	 */
-#if defined(CONFIG_JZ4720)
-	__gpio_as_sdram_16bit_4720();
-#elif defined(CONFIG_JZ4725)
-	__gpio_as_sdram_16bit_4725();
-#else
 	__gpio_as_sdram_32bit();
-#endif
 
 	/*
 	 * Initialize UART0 pins
@@ -359,22 +352,15 @@ static void gpio_init(void)
 
 static int is_usb_boot()
 {
- 	int keyU = 0;
+	__gpio_as_input(KEY_U_IN);
+	__gpio_enable_pull(KEY_U_IN);
+	__gpio_as_output(KEY_U_OUT);
+	__gpio_clear_pin(KEY_U_OUT);
 
- 	__gpio_as_input(KEY_U_IN);
- 	__gpio_enable_pull(KEY_U_IN);
+	if (__gpio_get_pin(KEY_U_IN) == 0)
+		return 1;
 
- 	__gpio_as_output(KEY_U_OUT);
- 	__gpio_clear_pin(KEY_U_OUT);
-
- 	keyU = __gpio_get_pin(KEY_U_IN);
-
- 	if (keyU)
- 		serial_puts("[U] not pressed\n");
- 	else
- 		serial_puts("[U] pressed\n");
-
-	return !keyU;
+	return 0;
 }
 
 void nand_boot(void)
@@ -384,22 +370,18 @@ void nand_boot(void)
 	/*
 	 * Init hardware
 	 */
-	jz_nand_init();
 	gpio_init();
-	serial_init();
-
-	serial_puts("\n\nNAND Secondary Program Loader\n\n");
-
 	pll_init();
+	serial_init();
 	sdram_init();
+	serial_puts("\n\nNAND Secondary Program Loader\n\n");
 
 #if defined(CONFIG_NANONOTE)
 	if(is_usb_boot()) {
-		serial_puts("enter USB BOOT mode\n");
+		serial_puts("[U] pressed, goto USBBOOT mode\n");
 		usb_boot();
 	}
 #endif
-
 	page_size = CONFIG_SYS_NAND_PAGE_SIZE;
 	block_size = CONFIG_SYS_NAND_BLOCK_SIZE;
 	page_per_block = CONFIG_SYS_NAND_BLOCK_SIZE / CONFIG_SYS_NAND_PAGE_SIZE;
@@ -417,13 +399,9 @@ void nand_boot(void)
 
 	serial_puts("Starting U-Boot ...\n");
 
-	/*
-	 * Flush caches
-	 */
+	/* Flush caches */
 	flush_cache_all();
 
-	/*
-	 * Jump to U-Boot image
-	 */
+	/* Jump to U-Boot image */
 	(*uboot)();
 }
