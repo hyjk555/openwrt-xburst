@@ -104,8 +104,8 @@ function log() {
 [ "$(whoami)" == "root" ] || abort "this script must be run as root"
 
 log "working dir:      ${WORKING_DIR}"
-log "chosed method:    ${PROTOCOL}"
-test ${VERSION} && log "chosed version:   ${VERSION}"
+log "chosen method:    ${PROTOCOL}"
+test ${VERSION} && log "chosen version:   ${VERSION}"
 log "==="
 
 if [ "$PROTOCOL" == "http" ]; then
