@@ -57,10 +57,9 @@ static void gpio_init(void)
 	 */
 	if (__gpio_get_pin(GPIO_KEYIN_BASE + 2) == 0){
 		/* if pressed [S] */
-		printf("[S] pressed, enable UART\n");
+		printf("[S] pressed, enable UART0\n");
 		gd->boot_option |= BOOT_WITH_ENABLE_UART;
 		__gpio_as_uart0();
-		__gpio_as_uart1();
 	} else {
 		__gpio_as_input(GPIO_KEYIN_8);
 		__gpio_enable_pull(GPIO_KEYIN_8);
@@ -86,7 +85,7 @@ static void gpio_init(void)
 	__gpio_enable_pull(GPIO_USB_DETECT);
 
 	if (__gpio_get_pin(GPIO_KEYIN_BASE + 3) == 0) {
-		printf("[M] pressed, boot from sd card %d\n");
+		printf("[M] pressed, boot from sd card\n");
 		gd->boot_option |= BOOT_FROM_SDCARD;
 	}
 }
@@ -97,8 +96,7 @@ static void cpm_init(void)
 	__cpm_stop_cim();
 	__cpm_stop_i2c();
 	__cpm_stop_ssi();
-	if (!(gd->boot_option & BOOT_WITH_ENABLE_UART))
-		__cpm_stop_uart1();
+	__cpm_stop_uart1();
 	__cpm_stop_sadc();
 	__cpm_stop_uhc();
 	__cpm_stop_udc();
@@ -116,7 +114,6 @@ void board_early_init(void)
 
 int checkboard (void)
 {
-
 	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC, Speed %d MHz)\n",
 	       gd->cpu_clk / 1000000);
 
