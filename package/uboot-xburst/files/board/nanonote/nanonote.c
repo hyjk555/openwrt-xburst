@@ -50,6 +50,9 @@ static void gpio_init(void)
 		__gpio_clear_pin(GPIO_KEYOUT_BASE + i);
 	}
 
+	/* enable the TP4, TP5 as UART0 */
+	REG_GPIO_PXSELS(2) = 0x80000000;
+
 	/*
 	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
 	 * same gpio, init the gpio as uart0 cause a keyboard bug. so for
