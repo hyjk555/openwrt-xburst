@@ -1628,7 +1628,7 @@ index b2d113e..87cb12d 100644
  	bd->bi_flashoffset = monitor_flash_len;	/* reserved area for U-Boot */
  #else
 diff --git a/lib_mips/bootm.c b/lib_mips/bootm.c
-index 54af24c..b498ae8 100644
+index 54af24c..e6a5732 100644
 --- a/lib_mips/bootm.c
 +++ b/lib_mips/bootm.c
 @@ -46,10 +46,17 @@ static void linux_env_set (char * env_name, char * env_val);
@@ -1654,7 +1654,7 @@ index 54af24c..b498ae8 100644
  	}
  
  	/* we assume that the kernel is in place */
-+	if (gd->boot_option == BOOT_FROM_SDCARD)
++	if (gd->boot_option & BOOT_FROM_SDCARD)
 +		printf ("\n *** Booting from mircoSD ***\n");
 +
  	printf ("\nStarting kernel ...\n\n");
