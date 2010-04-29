@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index a318eb4..7d14b8b 100644
+index 2f838c8..2834b7b 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -3448,6 +3448,13 @@ qi_lb60_config	: unconfig
+@@ -3467,6 +3467,13 @@ n516_nand_config	:	unconfig
  	@echo "TEXT_BASE = 0x80100000" > $(obj)board/n516/config.tmp
  	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
  
@@ -17,16 +17,15 @@ index a318eb4..7d14b8b 100644
  ## MIPS64 5Kc
  #########################################################################
 diff --git a/cpu/mips/Makefile b/cpu/mips/Makefile
-index 33afb66..a177653 100644
+index afeb909..25dd71b 100644
 --- a/cpu/mips/Makefile
 +++ b/cpu/mips/Makefile
 @@ -35,7 +35,7 @@ COBJS-$(CONFIG_PURPLE)	+= asc_serial.o
- COBJS-$(CONFIG_JZSOC) += jz_serial.o jz_i2c.o jz_mmc.o
- COBJS-$(CONFIG_JZ4740) += jz4740.o jz4740_nand.o
+ COBJS-$(CONFIG_SOC_AU1X00) += au1x00_eth.o au1x00_serial.o au1x00_usb_ohci.o
+ COBJS-$(CONFIG_JZSOC) += jz4740.o jz_serial.o jz_mmc.o jz4740_nand.o
  COBJS-$(CONFIG_NANONOTE) += nanonote_gpm940b0.o
 -
 +COBJS-$(CONFIG_SAKC) += nanonote_gpm940b0.o
  
  SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
  OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
-

@@ -1,11 +1,12 @@
 diff --git a/Makefile b/Makefile
-index ed848f5..04cd32e 100644
+index 3d87cd1..2f838c8 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -3448,6 +3448,18 @@ pavo_nand_config	:	unconfig
- 	@echo "TEXT_BASE = 0x80100000" > $(obj)board/qi_lb60/config.tmp
+@@ -3454,6 +3454,19 @@ avt2_config	: unconfig
+ 	@$(MKCONFIG) -a avt2 mips mips nanonote
+ 	@echo "TEXT_BASE = 0x80100000" > $(obj)board/nanonote/config.tmp
  	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
- 
++
 +n516_config		: 	unconfig
 +	@ >include/config.h
 +	@echo "#define CONFIG_N516 1" >>include/config.h
