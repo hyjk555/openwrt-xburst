@@ -24,7 +24,7 @@ static void gpio_init(void)
 	/*
 	 * Initialize SDRAM pins
 	 */
-	__gpio_as_sdram_32bit();
+	__gpio_as_sdram_16bit_4720();
 
 	/*
 	 * Initialize LCD pins
