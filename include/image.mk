@@ -18,30 +18,11 @@ KDIR=$(KERNEL_BUILD_DIR)
 IMG_PREFIX:=openwrt-$(BOARD)$(if $(SUBTARGET),-$(SUBTARGET))
 
 ifneq ($(CONFIG_BIG_ENDIAN),y)
-JFFS2OPTS     :=  --pad --little-endian --squash -v
+JFFS2OPTS     :=  --pad --little-endian --squash
 SQUASHFS_OPTS :=  -le
 else
-JFFS2OPTS     :=  --pad --big-endian --squash -v
+JFFS2OPTS     :=  --pad --big-endian --squash
 SQUASHFS_OPTS :=  -be
-endif
-
-ifeq ($(CONFIG_JFFS2_RTIME),y)
-JFFS2OPTS+= -X rtime
-endif
-ifeq ($(CONFIG_JFFS2_ZLIB),y) 
-JFFS2OPTS+= -X zlib
-endif
-ifeq ($(CONFIG_JFFS2_LZMA),y)
-JFFS2OPTS+= -X lzma --compression-mode=size
-endif
-ifneq ($(CONFIG_JFFS2_RTIME),y)
-JFFS2OPTS+=  -x rtime
-endif
-ifneq ($(CONFIG_JFFS2_ZLIB),y)
-JFFS2OPTS+= -x zlib
-endif
-ifneq ($(CONFIG_JFFS2_LZMA),y)
-JFFS2OPTS+= -x lzma
 endif
 
 ifneq ($(CONFIG_LINUX_2_4)$(CONFIG_LINUX_2_6_25),)
@@ -78,7 +59,7 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
   ifeq ($(CONFIG_TARGET_ROOTFS_JFFS2),y)
     define Image/mkfs/jffs2/sub
 		# FIXME: removing this line will cause strange behaviour in the foreach loop below
-		$(STAGING_DIR_HOST)/bin/mkfs.jffs2 $(JFFS2OPTS) -e $(patsubst %k,%KiB,$(1)) -o $(KDIR)/root.jffs2-$(1) -d $(TARGET_DIR) -v 2>&1 1>/dev/null | awk '/^.+$$$$/'
+		$(STAGING_DIR_HOST)/bin/mkfs.jffs2 $(JFFS2OPTS) -e $(patsubst %k,%KiB,$(1)) -o $(KDIR)/root.jffs2-$(1) -d $(TARGET_DIR)
 		$(call add_jffs2_mark,$(KDIR)/root.jffs2-$(1))
 		$(call Image/Build,jffs2-$(1))
     endef
