@@ -89,16 +89,16 @@ fi
 mkdir -p ${WORKING_DIR}
 date > "${LOG_FILE}" # purge logfile if exists
 
+function log() {
+    echo "$1"
+    echo "$1" >> "${LOG_FILE}"
+}
+
 function abort() {
     log "$1"
     log "==="
     log "fatal error occured - ABORT"
     exit 1
-}
-
-function log() {
-    echo "$1"
-    echo "$1" >> "${LOG_FILE}"
 }
 
 [ "$(whoami)" == "root" ] || abort "this script must be run as root"
