@@ -81,27 +81,40 @@ define Image/Build/WRT400N
 			-d $(KDIR)/vmlinux-$(2).bin.lzma $(KDIR)/vmlinux-$(2).uImage; \
 		( \
 			dd if=$(KDIR)/vmlinux-$(2).uImage bs=1280k conv=sync; \
-			dd if=$(KDIR)/root.$(1) bs=6336k conv=sync; \
-			echo -n $(4); \
-		) > $(call imgname,$(1),$(2)).bin; \
-		wrt400n $(KDIR)/vmlinux-$(2).uImage $(KDIR)/root.$(1) $(call imgname,$(1),$(2)).webui; \
+			dd if=$(KDIR)/root.$(1) \
+		) > $(call imgname,$(1),$(2))-sysupgrade.bin; \
+		wrt400n $(KDIR)/vmlinux-$(2).uImage $(KDIR)/root.$(1) $(call imgname,$(1),$(2))-factory.bin; \
 	fi; fi
 endef
 
 dir825b1_mtdlayout=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,1024k(kernel),5184k(rootfs),64k(caldata)ro,1600k(unknown)ro,6208k@0x50000(firmware)
 define Image/Build/DIR825B1
 	$(call PatchKernelLzma,$(2),$(3) $(dir825b1_mtdlayout))
-	$(call MkImageLzma,$(KDIR)/vmlinux-$(2).bin.lzma,$(call imgname,$(1),$(2)).bin)
-	if [ `stat -c%s "$(call imgname,$(1),$(2)).bin"` -gt 1048576 ]; then \
+	if [ `stat -c%s "$(KDIR)/vmlinux-$(2).bin.lzma"` -gt 1048576 ]; then \
 	        echo "Warning: $(KDIR)/vmlinux-$(2).bin.lzma is too big"; \
-		rm -f $(call imgname,$(1),$(2)).bin; \
 	else if [ `stat -c%s $(KDIR)/root.$(1)` -gt 5308416 ]; then \
 	        echo "Warning: $(KDIR)/root.$(1) is too big"; \
-		rm -f $(call imgname,$(1),$(2)).bin; \
 	else \
-		dd if=$(KDIR)/root.$(1) of=$(call imgname,$(1),$(2)).bin bs=1k seek=1024; \
-		cp $(call imgname,$(1),$(2)).bin $(call imgname,$(1),$(2))-backup-loader.bin; \
-		echo -n "01AP94-AR7161-RT-080619-00" >> $(call imgname,$(1),$(2))-backup-loader.bin; \
+		mkimage -A mips -O linux -T kernel -a 0x80060000 -C lzma -e \
+			0x80060000 \
+			-n 'MIPS OpenWrt Linux-$(LINUX_VERSION)' \
+			-d $(KDIR)/vmlinux-$(2).bin.lzma $(KDIR)/vmlinux-$(2).uImage; \
+		( \
+			dd if=$(KDIR)/vmlinux-$(2).uImage bs=1024k conv=sync; \
+			dd if=$(KDIR)/root.$(1) \
+		) > $(call imgname,$(1),$(2))-sysupgrade.bin; \
+		( \
+			dd if=$(call imgname,$(1),$(2))-sysupgrade.bin; \
+			echo -n "01AP94-AR7161-RT-080619-00"; \
+		) > $(call imgname,$(1),$(2))-backup-loader.bin; \
+		if [ `stat -c%s $(call imgname,$(1),$(2))-sysupgrade.bin` -gt 4194304 ]; then \
+			echo "Warning: $(call imgname,$(1),$(2))-sysupgrade.bin is too big"; \
+		else \
+			( \
+				dd if=$(call imgname,$(1),$(2))-sysupgrade.bin bs=4096k conv=sync; \
+				echo -n "00AP94-AR7161-RT-080619-00"; \
+			) > $(call imgname,$(1),$(2))-factory.bin; \
+		fi; \
 	fi; fi
 endef
 
@@ -127,7 +140,7 @@ define Image/Build/WZRHPG300NH
 	fi; fi
 endef
 
-cameo_mtdlayout=mtdparts=spi0.0:128k(u-boot)ro,64k(config)ro,896k(kernel),2880k(rootfs),64k(art)ro,3776k@0x30000(firmware)
+cameo_mtdlayout=mtdparts=spi0.0:128k(u-boot)ro,64k(config)ro,896k(kernel),2944k(rootfs),64k(art)ro,3840k@0x30000(firmware)
 define Image/Build/Cameo
 	$(call PatchKernelLzma,$(2),$(3) $(cameo_mtdlayout))
 	if [ `stat -c%s "$(KDIR)/vmlinux-$(2).bin.lzma"` -gt 917504 ]; then \
@@ -198,27 +211,6 @@ define Image/Build/AP83
 	fi; fi
 endef
 
-define Image/Build/PB92
-	$(call PatchKernelGzip,$(2),$(3))
-	if [ `stat -c%s $(KDIR)/root.$(1)` -gt 2818048 ]; then \
-		echo "Warning: $(KDIR)/root.$(1) is too big"; \
-	else \
-		mkimage -A mips -O linux -T kernel -a 0x80060000 -C gzip -e \
-			0x80060000 \
-			-n 'MIPS OpenWrt Linux-$(LINUX_VERSION)' \
-			-d $(KDIR)/vmlinux-$(2).bin.gz \
-			$(KDIR)/vmlinux-$(2).uImage; \
-		dd if=$(KDIR)/vmlinux-$(2).uImage \
-			of=$(call imgname,kernel,$(2)).bin bs=64k conv=sync; \
-		dd if=$(KDIR)/root.$(1) \
-			of=$(call imgname,$(1),$(2)-rootfs).bin bs=128k conv=sync; \
-		( \
-			dd if=$(KDIR)/vmlinux-$(2).uImage bs=896k conv=sync; \
-			dd if=$(KDIR)/root.$(1); \
-		) > $(call imgname,$(1),$(2))-sysupgrade.bin; \
-	fi
-endef
-
 define Image/Build/PB4X
 	$(call PatchKernelLzma,$(2),$(3))
 	dd if=$(KDIR)/vmlinux-$(2).bin.lzma \
@@ -281,13 +273,13 @@ define Image/Build/Planex
 			-d $(KDIR)/vmlinux-$(2).bin.gz $(KDIR)/vmlinux-$(2).uImage; \
 		( \
 			dd if=$(KDIR)/vmlinux-$(2).uImage bs=1408k conv=sync; \
-			dd if=$(KDIR)/root.$(1) bs=6208k conv=sync; \
-		) > $(call imgname,$(1),$(2)).bin; \
+			dd if=$(KDIR)/root.$(1); \
+		) > $(call imgname,$(1),$(2))-sysupgrade.bin; \
 		$(STAGING_DIR_HOST)/bin/mkplanexfw \
 			-B $(2) \
 			-v 2.00.00 \
-			-i $(call imgname,$(1),$(2)).bin \
-			-o $(call imgname,$(1),$(2)).webui; \
+			-i $(call imgname,$(1),$(2))-sysupgrade.bin \
+			-o $(call imgname,$(1),$(2))-factory.bin; \
 	fi; fi
 endef
 
@@ -320,7 +312,10 @@ define Image/Build/CyberTAN
 		-x 32 -a 0x10000 -x -32 -f $(KDIR)/root.$(1)
 	-$(STAGING_DIR_HOST)/bin/addpattern -B $(2) -v v$(4) \
 		-i $(KDIR)/image.tmp \
-		-o $(call imgname,$(1),$(2)).bin
+		-o $(call imgname,$(1),$(2))-sysupgrade.bin
+	-$(STAGING_DIR_HOST)/bin/addpattern -B $(2) -v v$(4) -g \
+		-i $(KDIR)/image.tmp \
+		-o $(call imgname,$(1),$(2))-factory.bin
 	rm $(KDIR)/image.tmp
 endef
 
@@ -419,10 +414,6 @@ define Image/Build/Profile/PB44
 	$(call Image/Build/Template/$(fs_64k)/$(1),PB4X,pb44,board=PB44)
 endef
 
-define Image/Build/Profile/PB92
-	$(call Image/Build/Template/$(fs_64k)/$(1),PB92,pb92,board=PB92)
-endef
-
 define Image/Build/Profile/WP543
 	$(call Image/Build/Template/$(fs_64k)/$(1),MyLoader,wp543,0x200000,2M)
 	$(call Image/Build/Template/$(fs_64k)/$(1),MyLoader,wp543,0x400000,4M)
@@ -515,6 +506,10 @@ define Image/Build/Profile/TLWR941NDV2
 	$(call Image/Build/Template/$(fs_squash)/$(1),TPLINK,tl-wr941nd-v2,board=TL-WR941ND,TL-WR941NDv2)
 endef
 
+define Image/Build/Profile/TLWR941NDV3
+	$(call Image/Build/Template/$(fs_squash)/$(1),TPLINK,tl-wr941nd-v3,board=TL-WR941ND,TL-WR941NDv2)
+endef
+
 define Image/Build/Profile/TLWR941NDV4
 	$(call Image/Build/Template/$(fs_4k)/$(1),TPLINK,tl-wr941nd-v4,board=TL-WR741ND,TL-WR941NDv4)
 endef
@@ -555,7 +550,6 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/MZKW300NH,$(1))
 	$(call Image/Build/Profile/PB42,$(1))
 	$(call Image/Build/Profile/PB44,$(1))
-	$(call Image/Build/Profile/PB92,$(1))
 	$(call Image/Build/Profile/TEW632BRP,$(1))
 	$(call Image/Build/Profile/TEW652BRP,$(1))
 	$(call Image/Build/Profile/TLWR741NDV1,$(1))
@@ -563,6 +557,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/TLWR841NDV3,$(1))
 	$(call Image/Build/Profile/TLWR841NDV5,$(1))
 	$(call Image/Build/Profile/TLWR941NDV2,$(1))
+	$(call Image/Build/Profile/TLWR941NDV3,$(1))
 	$(call Image/Build/Profile/TLWR941NDV4,$(1))
 	$(call Image/Build/Profile/TLWR1043NDV1,$(1))
 	$(call Image/Build/Profile/UBNT,$(1))
