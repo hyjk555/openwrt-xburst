@@ -150,7 +150,7 @@ if [ "$PROTOCOL" == "http" ]; then
 fi
 
 log "booting device..."
-usbboot -c "boot" > "${LOG_FILE}" || abort "can't boot device - xburst-tools setup correctly? device in boot-mode? device connected?"
+usbboot -c "boot" >> "${LOG_FILE}" || abort "can't boot device - xburst-tools setup correctly? device in boot-mode? device connected?"
 
 if [ "$B" == "TRUE" ]; then
 	log "flashing bootloader..."
