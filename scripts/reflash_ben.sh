@@ -154,16 +154,19 @@ usbboot -c "boot" > "${LOG_FILE}" || abort "can't boot device - xburst-tools set
 
 if [ "$B" == "TRUE" ]; then
 	log "flashing bootloader..."
-	usbboot -c "nprog 0 ${WORKING_DIR}/${LOADER} 0 0 -n" >> "${LOG_FILE}"
+	tmp=$(usbboot -c "nprog 0 ${WORKING_DIR}/${LOADER} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	test "${tmp}" && abort "error while flashing bootloader:\n${tmp}"
 fi
 if [ "$K" == "TRUE" ]; then
 	log "flashing kernel..."
-	usbboot -c "nprog 1024 ${WORKING_DIR}/${KERNEL} 0 0 -n" >> "${LOG_FILE}"
+	tmp=$(usbboot -c "nprog 1024 ${WORKING_DIR}/${KERNEL} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	test "${tmp}" && abort "error while flashing kernel:\n${tmp}"
 fi
 if [ "$R" == "TRUE" ]; then
 	log "erase nand rootfs partition..."
-	usbboot -c "boot;nerase 16 512 0 0" >> "${LOG_FILE}"
+	usbboot -c "boot;nerase 16 512 0 0" >> "${LOG_FILE}" 2>&1
 	log "flashing rootfs..."
-	usbboot -c "nprog 2048 ${WORKING_DIR}/${ROOTFS} 0 0 -n" >> "${LOG_FILE}"
+	tmp=$(usbboot -c "nprog 2048 ${WORKING_DIR}/${ROOTFS} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	test "${tmp}" && abort "error while flashing rootfs:\n${tmp}"
 fi
 log "done"
