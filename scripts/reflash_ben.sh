@@ -90,8 +90,8 @@ mkdir -p ${WORKING_DIR}
 date > "${LOG_FILE}" # purge logfile if exists
 
 function log() {
-    echo "$1"
-    echo "$1" >> "${LOG_FILE}"
+    echo -e "$1"
+    echo -e "$1" >> "${LOG_FILE}"
 }
 
 function abort() {
