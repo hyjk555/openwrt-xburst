@@ -95,9 +95,15 @@ function log() {
 }
 
 function abort() {
+    log "==="
+    log "fatal error occured - ABORTED"
+    log "==="
     log "$1"
     log "==="
-    log "fatal error occured - ABORT"
+    log "Before reporting this as a bug"
+    log "please ensure you're using the latest available version of"
+    log "  this reflash script"
+    log "  the xburst-tools"
     exit 1
 }
 
