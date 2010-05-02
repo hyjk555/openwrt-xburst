@@ -159,25 +159,6 @@ do {					\
 	__spi_write_reg1(0x05, 0x5e);	\
 } while (0)
 
-#define __lcd_display_pin_init() \
-do { \
-	__lcd_special_pin_init();\
-	__gpio_as_pwm();\
-	__lcd_set_backlight_level(8);\
-} while (0)
-
-#define __lcd_display_on() \
-do { \
-	__lcd_set_backlight_level(8); \
-	__lcd_special_on();\
-} while (0)
-
-#define __lcd_display_off() \
-do { \
-	__lcd_set_backlight_level(0); \
-	__lcd_special_off();\
-} while (0)
-
 #define __lcd_set_backlight_level(n)\
 do { \
 	__gpio_as_output(LCD_RET); \

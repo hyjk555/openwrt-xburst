@@ -96,6 +96,8 @@
 /*
  * NAND FLASH configuration
  */
+#define CONFIG_SYS_64BIT_VSPRINTF	/* needed for nand_util.c */
+
 /* NAND Boot config code */
 #define JZ4740_NANDBOOT_CFG	JZ4740_NANDBOOT_B8R3
 

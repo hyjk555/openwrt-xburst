@@ -167,7 +167,7 @@ static int nand_read_oob(int page_addr, uchar *buf, int size)
 	/* Send page address */
 	__nand_addr(page_addr & 0xff);
 	__nand_addr((page_addr >> 8) & 0xff);
-	#ifdef NAND_ROW_CYCLE == 3
+	#if defined NAND_ROW_CYCLE && NAND_ROW_CYCLE == 3
 		__nand_addr((page_addr >> 16) & 0xff);
 	#endif
 
@@ -210,7 +210,7 @@ static int nand_read_page(int page_addr, uchar *dst, uchar *oobbuf)
 	/* Send page address */
 	__nand_addr(page_addr & 0xff);
 	__nand_addr((page_addr >> 8) & 0xff);
-	#if NAND_ROW_CYCLE == 3
+	#if defined NAND_ROW_CYCLE && NAND_ROW_CYCLE == 3
 		__nand_addr((page_addr >> 16) & 0xff);
 	#endif
 
