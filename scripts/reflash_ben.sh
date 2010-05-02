@@ -128,21 +128,21 @@ if [ "$PROTOCOL" == "http" ]; then
 	if [ "$B" == "TRUE" ]; then
 		log "fetching bootloader..."
 		wget \
-		    -o "${LOG_FILE}" \
+		    -a "${LOG_FILE}" \
 		    -P "${WORKING_DIR}" \
 		    "${BASE_URL_HTTP}/${VERSION}/${LOADER}"
 	fi
 	if [ "$K" == "TRUE" ]; then
 		log "fetching kernel..."
 		wget \
-		    -o "${LOG_FILE}" \
+		    -a "${LOG_FILE}" \
 		    -P "${WORKING_DIR}" \
 		    "${BASE_URL_HTTP}/${VERSION}/${KERNEL}"
 	fi
 	if [ "$R" == "TRUE" ]; then
 		log "fetching rootfs..."
 		wget \
-		    -o "${LOG_FILE}" \
+		    -a "${LOG_FILE}" \
 		    -P "${WORKING_DIR}" \
 		    "${BASE_URL_HTTP}/${VERSION}/${ROOTFS}"
 	fi
