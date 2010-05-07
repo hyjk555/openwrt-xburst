@@ -16,7 +16,8 @@ BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/Ben_NanoNote_2GB
 
 # names of images
 LOADER="openwrt-xburst-u-boot.bin"
-KERNEL="openwrt-xburst-uImage.bin"
+#KERNEL="openwrt-xburst-uImage.bin"
+KERNEL="openwrt-xburst-qi_lb60-uImage.bin"
 #ROOTFS="openwrt-xburst-rootfs.ubi"
 ROOTFS="openwrt-xburst-qi_lb60-root.ubi"
 
