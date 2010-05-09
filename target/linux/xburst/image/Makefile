@@ -17,16 +17,6 @@ UBIFS_OPTS = -m 2048 -e 126KiB -c 4096
 UBINIZE_OPTS = -m 2048 -p 128KiB -s 512
 endif
 
-ifneq ($(CONFIG_XBURST_UBOOT),)
-  define Build/Clean
-	$(MAKE) -C u-boot clean
-  endef
-
-  define Build/Compile
-	$(MAKE) -C u-boot compile
-  endef
-endif
-
 define Image/BuildKernel
 	cp $(LINUX_DIR)/arch/mips/boot/uImage $(BIN_DIR)/$(IMG_PREFIX)-uImage.bin
 endef
