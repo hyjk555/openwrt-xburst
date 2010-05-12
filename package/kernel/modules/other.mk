@@ -62,6 +62,7 @@ $(eval $(call KernelPackage,crc7))
 define KernelPackage/crc16
   SUBMENU:=$(OTHER_MENU)
   TITLE:=CRC16 support
+  DEPENDS:=@!(LINUX_2_4||TARGET_xburst)
   KCONFIG:=CONFIG_CRC16
   FILES:=$(LINUX_DIR)/lib/crc16.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,20,crc16,1)
@@ -105,7 +106,21 @@ define KernelPackage/lp
   AUTOLOAD:=$(call AutoLoad,50,parport lp)
 endef
 
+define KernelPackage/lp/2.4
+  FILES:= \
+	$(LINUX_DIR)/drivers/parport/parport.$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/drivers/parport/parport_*.$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/drivers/char/lp.$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/drivers/char/ppdev.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50, \
+  	parport \
+  	parport_splink \
+  	lp \
+  )
+endef
+
 $(eval $(call KernelPackage,lp))
+
 
 define KernelPackage/pcspkr
   SUBMENU:=$(OTHER_MENU)
@@ -261,7 +276,7 @@ $(eval $(call KernelPackage,ssb))
 define KernelPackage/bluetooth
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Bluetooth support
-  DEPENDS:=@USB_SUPPORT +kmod-crc16 +kmod-usb-core +!TARGET_x86:kmod-hid \
+  DEPENDS:=@USB_SUPPORT +!(LINUX_2_4||TARGET_xburst):kmod-crc16 +kmod-usb-core +!TARGET_x86:kmod-hid \
 	+(TARGET_x86||TARGET_s3c24xx||TARGET_brcm47xx||TARGET_ar71xx):kmod-rfkill
   KCONFIG:= \
 	CONFIG_BLUEZ \
@@ -652,8 +667,16 @@ $(eval $(call KernelPackage,sc520-wdt))
 define KernelPackage/input-core
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Input device core
-  DEPENDS:=@LINUX_2_6 @!TARGET_x86
+  DEPENDS:=@!TARGET_x86
   KCONFIG:=CONFIG_INPUT
+endef
+
+define KernelPackage/input-core/2.4
+  FILES:=$(LINUX_DIR)/drivers/input/input.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,19,input)
+endef
+
+define KernelPackage/input-core/2.6
   FILES:=$(LINUX_DIR)/drivers/input/input-core.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,19,input-core)
 endef
