@@ -128,8 +128,6 @@
 /*#define CONFIG_MTD_PARTITIONS*/
 #define CONFIG_RBTREE
 
-#define CONFIG_BOOTP_MASK	( CONFIG_BOOTP_DEFAUL )
-
 /* this must be included AFTER the definition of CONFIG_COMMANDS (if any) */
 #if 0
 #define CONFIG_ZERO_BOOTDELAY_CHECK
