@@ -19,6 +19,9 @@
 #define CONFIG_JZ4740		1  /* Jz4740 SoC */
 #define CONFIG_NANONOTE		1
 
+#define BOOT_FROM_SDCARD	1
+#define BOOT_WITH_ENABLE_UART (1 << 1)	/* Vaule for global_data.h gd->boot_option */
+
 #define CONFIG_LCD		1  /* LCD support */
 #define LCD_BPP			LCD_COLOR32	/*5:18,24,32 bits per pixel */
 #define CONFIG_SYS_WHITE_ON_BLACK	1
