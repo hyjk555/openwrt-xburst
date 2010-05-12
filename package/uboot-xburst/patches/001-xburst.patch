@@ -193,15 +193,17 @@ index 10d8904..76641f3 100644
  	debug ("### main_loop entered: bootdelay=%d\n\n", bootdelay);
  
  # ifdef CONFIG_BOOT_RETRY_TIME
-@@ -393,7 +397,10 @@ void main_loop (void)
+@@ -393,7 +397,12 @@ void main_loop (void)
  	}
  	else
  #endif /* CONFIG_BOOTCOUNT_LIMIT */
 -		s = getenv ("bootcmd");
++#if defined(CONFIG_NANONOTE)
 +		if (gd->boot_option & BOOT_FROM_SDCARD)
 +			s = getenv ("bootcmdfromsd");
 +		else
 +			s = getenv ("bootcmd");
++#endif
  
  	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
  
@@ -1650,13 +1652,15 @@ index 54af24c..e6a5732 100644
  	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
  		return 1;
  
-@@ -98,6 +105,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+@@ -98,6 +105,11 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
  	}
  
  	/* we assume that the kernel is in place */
++#if defined(CONFIG_NANONOTE)
 +	if (gd->boot_option & BOOT_FROM_SDCARD)
 +		printf ("\n *** Booting from mircoSD ***\n");
 +
++#endif
  	printf ("\nStarting kernel ...\n\n");
  
  	theKernel (linux_argc, linux_argv, linux_env, 0);
