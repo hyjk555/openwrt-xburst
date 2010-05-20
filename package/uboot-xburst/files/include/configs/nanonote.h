@@ -45,7 +45,6 @@
 
 #define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
 #define CONFIG_BOOTDELAY	0
-#define CONFIG_BOOTFILE		"uImage"	/* file to load */
 /*
  * Command line configuration.
  */
@@ -65,6 +64,7 @@
 #define CONFIG_CMD_NAND
 #define CONFIG_CMD_MMC
 #define CONFIG_CMD_FAT
+#define CONFIG_CMD_EXT2
 
 /*
  * Serial download configuration
