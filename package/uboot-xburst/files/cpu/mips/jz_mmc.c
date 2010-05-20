@@ -24,10 +24,9 @@
 #include <config.h>
 #include <common.h>
 #include <part.h>
+#include <mmc.h>
 
-#if defined CONFIG_JZ4740
 #include <asm-mips/jz4740.h>
-
 #include "jz_mmc.h"
 
 #define CFG_MMC_BASE		0x80600000
@@ -93,7 +92,7 @@ block_dev_desc_t * mmc_get_dev(int dev)
  */
 static uchar mmc_buf[MMC_BLOCK_SIZE];
 static int mmc_ready = 0;
-static mmc_csd_t mmc_csd;
+static struct mmc_csd mmc_csd;
 static int use_4bit;                    /* Use 4-bit data bus */
 /*
  *  MMC Events
@@ -119,9 +118,8 @@ static inline int jz_mmc_stop_clock(void)
 
 	while (timeout && (REG_MSC_STAT & MSC_STAT_CLK_EN)) {
 		timeout--;
-		if (timeout == 0) {
+		if (timeout == 0)
 			return MMC_ERROR_TIMEOUT;
-		}
 		udelay(1);
 	}
         return MMC_NO_ERROR;
@@ -136,15 +134,14 @@ static inline int jz_mmc_start_clock(void)
 
 static inline u32 jz_mmc_calc_clkrt(int is_sd, u32 rate)
 {
-	u32 clkrt;
-	u32 clk_src = is_sd ? 24000000: 16000000;
+	u32 clkrt = 0;
+	u32 clk_src = is_sd ? 24000000 : 16000000;
 
-	clkrt = 0;
-  	while (rate < clk_src)
-    	{
+  	while (rate < clk_src) {
       		clkrt ++;
       		clk_src >>= 1;
     	}
+
 	return clkrt;
 }
 
@@ -186,7 +183,8 @@ static void jz_mmc_get_response(struct mmc_request *request)
 	u8 *buf;
 	u32 data;
 
-	DEBUG(3, "fetch response for request %d, cmd %d\n", request->rtype, request->cmd);
+	debug("fetch response for request %d, cmd %d\n", 
+	      request->rtype, request->cmd);
 
 	buf = request->response;
 	request->result = MMC_NO_ERROR;
@@ -204,7 +202,7 @@ static void jz_mmc_get_response(struct mmc_request *request)
 		data = REG_MSC_RES;
 		buf[4] = data & 0xff;
 
-		DEBUG(3, "request %d, response [%02x %02x %02x %02x %02x]\n",
+		debug("request %d, response [%02x %02x %02x %02x %02x]\n",
 		      request->rtype, buf[0], buf[1], buf[2], buf[3], buf[4]);
 		break;
 	}
@@ -215,7 +213,7 @@ static void jz_mmc_get_response(struct mmc_request *request)
 			buf[i] = (data >> 8) & 0xff;
 			buf[i+1] = data & 0xff;
 		}
-		DEBUG(3, "request %d, response [", request->rtype);
+		debug("request %d, response [", request->rtype);
 #if CONFIG_MMC_DEBUG_VERBOSE > 2
 		if (g_mmc_debug >= 3) {
 			int n;
@@ -227,11 +225,11 @@ static void jz_mmc_get_response(struct mmc_request *request)
 		break;
 	}
 	case RESPONSE_NONE:
-		DEBUG(3, "No response\n");
+		debug("No response\n");
 		break;
 
 	default:
-		DEBUG(3, "unhandled response type for request %d\n", request->rtype);
+		debug("unhandled response type for request %d\n", request->rtype);
 		break;
 	}
 }
@@ -357,8 +355,8 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 		/* On reset, stop MMC clock */
 		jz_mmc_stop_clock();
 	}
-	if (request->cmd == MMC_SEND_OP_COND) {
-		DEBUG(3, "Have an MMC card\n");
+	if (request->cmd == MMC_CMD_SEND_OP_COND) {
+		debug("Have an MMC card\n");
 		/* always use 1bit for MMC */
 		use_4bit = 0;
 	}
@@ -394,28 +392,28 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 		break;
 
 	/* bc - broadcast - no response */
-	case MMC_GO_IDLE_STATE:
-	case MMC_SET_DSR:
+	case MMC_CMD_GO_IDLE_STATE:
+	case MMC_CMD_SET_DSR:
 		break;
 
 	/* bcr - broadcast with response */
-	case MMC_SEND_OP_COND:
-	case MMC_ALL_SEND_CID:
+	case MMC_CMD_SEND_OP_COND:
+	case MMC_CMD_ALL_SEND_CID:
 	case MMC_GO_IRQ_STATE:
 		break;
 
 	/* adtc - addressed with data transfer */
 	case MMC_READ_DAT_UNTIL_STOP:
-	case MMC_READ_SINGLE_BLOCK:
-	case MMC_READ_MULTIPLE_BLOCK:
-	case SEND_SCR:
+	case MMC_CMD_READ_SINGLE_BLOCK:
+	case MMC_CMD_READ_MULTIPLE_BLOCK:
+	case SD_CMD_APP_SEND_SCR:
 		cmdat |= MSC_CMDAT_DATA_EN | MSC_CMDAT_READ;
 		events = MMC_EVENT_RX_DATA_DONE;
 		break;
 
 	case MMC_WRITE_DAT_UNTIL_STOP:
-	case MMC_WRITE_BLOCK:
-	case MMC_WRITE_MULTIPLE_BLOCK:
+	case MMC_CMD_WRITE_SINGLE_BLOCK:
+	case MMC_CMD_WRITE_MULTIPLE_BLOCK:
 	case MMC_PROGRAM_CID:
 	case MMC_PROGRAM_CSD:
 	case MMC_SEND_WRITE_PROT:
@@ -426,7 +424,7 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 
 		break;
 
-	case MMC_STOP_TRANSMISSION:
+	case MMC_CMD_STOP_TRANSMISSION:
 		events = MMC_EVENT_PROG_DONE;
 		break;
 
@@ -468,7 +466,7 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 
 	/* Set command index */
 	if (request->cmd == MMC_CIM_RESET) {
-		REG_MSC_CMD = MMC_GO_IDLE_STATE;
+		REG_MSC_CMD = MMC_CMD_GO_IDLE_STATE;
 	} else {
 		REG_MSC_CMD = request->cmd;
 	}
@@ -477,7 +475,7 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 	REG_MSC_ARG = request->arg;
 
 	/* Set block length and nob */
-	if (request->cmd == SEND_SCR) { /* get SCR from DataFIFO */
+	if (request->cmd == SD_CMD_APP_SEND_SCR) { /* get SCR from DataFIFO */
 		REG_MSC_BLKLEN = 8;
 		REG_MSC_NOB = 1;
 	} else {
@@ -488,7 +486,7 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 	/* Set command */
 	REG_MSC_CMDAT = cmdat;
 
-	DEBUG(1, "Send cmd %d cmdat: %x arg: %x resp %d\n", request->cmd,
+	debug("Send cmd %d cmdat: %x arg: %x resp %d\n", request->cmd,
 	      cmdat, request->arg, request->rtype);
 
         /* Start MMC/SD clock and send command to card */
@@ -520,7 +518,7 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 	/* Start data operation */
 	if (events & (MMC_EVENT_RX_DATA_DONE | MMC_EVENT_TX_DATA_DONE)) {
 		if (events & MMC_EVENT_RX_DATA_DONE) {
-			if (request->cmd == SEND_SCR) {
+			if (request->cmd == SD_CMD_APP_SEND_SCR) {
 				/* SD card returns SCR register as data.
 				   MMC core expect it in the response buffer,
 				   after normal response. */
@@ -561,13 +559,13 @@ int mmc_block_read(u8 *dst, ulong src, ulong len)
 	if (len == 0) {
 		return 0;
 	}
-	mmc_simple_cmd(&request, MMC_SEND_STATUS, mmcinfo.rca, RESPONSE_R1);
+	mmc_simple_cmd(&request, MMC_CMD_SEND_STATUS, mmcinfo.rca, RESPONSE_R1);
 	retval = mmc_unpack_r1(&request, &r1, 0);
 	if (retval && (retval != MMC_ERROR_STATE_MISMATCH)) {
 		return retval;
 	}
 
-	mmc_simple_cmd(&request, MMC_SET_BLOCKLEN, len, RESPONSE_R1);
+	mmc_simple_cmd(&request, MMC_CMD_SET_BLOCKLEN, len, RESPONSE_R1);
 	if ((retval = mmc_unpack_r1(&request, &r1, 0))) {
 		return retval;
 	}
@@ -575,7 +573,7 @@ int mmc_block_read(u8 *dst, ulong src, ulong len)
 	if (sd2_0)
 		src /= len;
 
-	mmc_send_cmd(&request, MMC_READ_SINGLE_BLOCK, src, 1,len, RESPONSE_R1, dst);
+	mmc_send_cmd(&request, MMC_CMD_READ_SINGLE_BLOCK, src, 1,len, RESPONSE_R1, dst);
 	if ((retval = mmc_unpack_r1(&request, &r1, 0))) {
 		return retval;
 	}
@@ -587,7 +585,7 @@ int mmc_block_write(ulong dst, uchar *src, int len)
 	return 0;
 }
 
-int mmc_read(ulong src, uchar *dst, int size)
+int xburst_mmc_read(u64 src, uchar *dst, int size)
 {
 	ulong end, part_start, part_end, part_len, aligned_start, aligned_end;
 	ulong mmc_block_size, mmc_block_address;
@@ -719,7 +717,7 @@ ulong mmc_bread(int dev_num, ulong blknr, ulong blkcnt, ulong *dst)
 	int mmc_block_size = MMC_BLOCK_SIZE;
 
 	src = blknr * mmc_block_size + CFG_MMC_BASE;
-	mmc_read(src, (uchar *)dst, blkcnt*mmc_block_size);
+	xburst_mmc_read(src, (uchar *)dst, blkcnt*mmc_block_size);
 	return blkcnt;
 }
 
@@ -729,14 +727,14 @@ int mmc_select_card(void)
 	struct mmc_response_r1 r1;
 	int retval;
 
-	mmc_simple_cmd(&request, MMC_SELECT_CARD, mmcinfo.rca, RESPONSE_R1B);
+	mmc_simple_cmd(&request, MMC_CMD_SELECT_CARD, mmcinfo.rca, RESPONSE_R1B);
 	retval = mmc_unpack_r1(&request, &r1, 0);
 	if (retval) {
 		return retval;
 	}
 
 	if (mmcinfo.sd) {
-		mmc_simple_cmd(&request, MMC_APP_CMD,  mmcinfo.rca, RESPONSE_R1);
+		mmc_simple_cmd(&request, MMC_CMD_APP_CMD,  mmcinfo.rca, RESPONSE_R1);
 		retval = mmc_unpack_r1(&request,&r1,0);
 		if (retval) {
 			return retval;
@@ -778,7 +776,8 @@ static void mmc_configure_card(void)
         if ((mmcinfo.sd) && (rate > SD_CLOCK_FAST))
 		rate = SD_CLOCK_FAST;
 
-	DEBUG(2,"mmc_configure_card: block_len=%d block_num=%d rate=%d\n", mmcinfo.block_len, mmcinfo.block_num, rate);
+	debug("%s: block_len=%d block_num=%d rate=%d\n", 
+	      __func__, mmcinfo.block_len, mmcinfo.block_num, rate);
 
 	jz_mmc_set_clock(mmcinfo.sd, rate);
 }
@@ -814,80 +813,77 @@ static int mmc_init_card_state(struct mmc_request *request)
 	int ocr = 0x40300000;
 	int limit_41 = 0;
 
-	DEBUG(2,"mmc_init_card_state\n");
-
 	switch (request->cmd) {
-	case MMC_GO_IDLE_STATE: /* No response to parse */
+	case MMC_CMD_GO_IDLE_STATE: /* No response to parse */
 		if (mmcinfo.sd)
 			mmc_simple_cmd(request, 8, 0x1aa, RESPONSE_R1);
 		else
-			mmc_simple_cmd(request, MMC_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
+			mmc_simple_cmd(request, MMC_CMD_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
 		break;
 
 	case 8:
         	retval = mmc_unpack_r1(request,&r1,mmcinfo.state);
-		mmc_simple_cmd(request, MMC_APP_CMD,  0, RESPONSE_R1);
+		mmc_simple_cmd(request, MMC_CMD_APP_CMD,  0, RESPONSE_R1);
 		break;
 
-        case MMC_APP_CMD:
+        case MMC_CMD_APP_CMD:
         	retval = mmc_unpack_r1(request,&r1,mmcinfo.state);
 		if (retval & (limit_41 < 100)) {
-			DEBUG(0, "mmc_init_card_state: unable to MMC_APP_CMD error=%d (%s)\n", 
-			      retval, mmc_result_to_string(retval));
+			debug("%s: unable to MMC_APP_CMD error=%d (%s)\n", 
+			      __func__, retval, mmc_result_to_string(retval));
 			limit_41++;
-			mmc_simple_cmd(request, SD_SEND_OP_COND, ocr, RESPONSE_R3);
+			mmc_simple_cmd(request, SD_CMD_APP_SEND_OP_COND, ocr, RESPONSE_R3);
 		} else if (limit_41 < 100) {
 			limit_41++;
-			mmc_simple_cmd(request, SD_SEND_OP_COND, ocr, RESPONSE_R3);
+			mmc_simple_cmd(request, SD_CMD_APP_SEND_OP_COND, ocr, RESPONSE_R3);
 		} else{
 			/* reset the card to idle*/
-			mmc_simple_cmd(request, MMC_GO_IDLE_STATE, 0, RESPONSE_NONE);
+			mmc_simple_cmd(request, MMC_CMD_GO_IDLE_STATE, 0, RESPONSE_NONE);
 			mmcinfo.sd = 0;
 		}
 		break;
 
-        case SD_SEND_OP_COND:
+        case SD_CMD_APP_SEND_OP_COND:
                 retval = mmc_unpack_r3(request, &r3);
                 if (retval) {
                   /* Try MMC card */
-                    mmc_simple_cmd(request, MMC_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
+                    mmc_simple_cmd(request, SD_CMD_APP_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
                     break;
 		}
 
-                DEBUG(2,"mmc_init_card_state: read ocr value = 0x%08x\n", r3.ocr);
+                debug("%s: read ocr value = 0x%08x\n", __func__, r3.ocr);
 
 		if(!(r3.ocr & MMC_CARD_BUSY || ocr == 0)){
 			udelay(10000);
-			mmc_simple_cmd(request, MMC_APP_CMD, 0, RESPONSE_R1);
+			mmc_simple_cmd(request, MMC_CMD_APP_CMD, 0, RESPONSE_R1);
 		}
 		else {
 		  /* Set the data bus width to 4 bits */
                   mmcinfo.sd = 1; /* SD Card ready */
                   mmcinfo.state = CARD_STATE_READY;
-		  mmc_simple_cmd(request, MMC_ALL_SEND_CID, 0, RESPONSE_R2_CID);
+		  mmc_simple_cmd(request, MMC_CMD_ALL_SEND_CID, 0, RESPONSE_R2_CID);
 		}
 		break;
 
-	case MMC_SEND_OP_COND:
+	case MMC_CMD_SEND_OP_COND:
 		retval = mmc_unpack_r3(request, &r3);
 		if (retval) {
-			DEBUG(0,"mmc_init_card_state: failed SEND_OP_COND error=%d (%s)\n", 
-			      retval, mmc_result_to_string(retval));
+			debug("%s: failed SEND_OP_COND error=%d (%s)\n", 
+			      __func__, retval, mmc_result_to_string(retval));
 			return MMC_INIT_FAILED;
 		}
 
-		DEBUG(2,"mmc_init_card_state: read ocr value = 0x%08x\n", r3.ocr);
+		debug("%s: read ocr value = 0x%08x\n", __func__, r3.ocr);
 		if (!(r3.ocr & MMC_CARD_BUSY)) {
-	                mmc_simple_cmd(request, MMC_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
-		}
-		else {
+	                mmc_simple_cmd(request, MMC_CMD_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
+		} else {
 		        mmcinfo.sd = 0; /* MMC Card ready */
 			mmcinfo.state = CARD_STATE_READY;
-			mmc_simple_cmd(request, MMC_ALL_SEND_CID, 0, RESPONSE_R2_CID);
+			mmc_simple_cmd(request, MMC_CMD_ALL_SEND_CID, 0, RESPONSE_R2_CID);
 		}
 		break;
 
-	case MMC_ALL_SEND_CID: 
+	case MMC_CMD_ALL_SEND_CID: 
 		retval = mmc_unpack_cid( request, &mmcinfo.cid );
 		mmc_dev.if_type = IF_TYPE_MMC;
 		mmc_dev.part_type = PART_TYPE_DOS;
@@ -901,40 +897,41 @@ static int mmc_init_card_state(struct mmc_request *request)
 
 		/*FIXME:ignore CRC error for CMD2/CMD9/CMD10 */
 		if ( retval && (retval != MMC_ERROR_CRC)) {
-			DEBUG(0,"mmc_init_card_state: unable to ALL_SEND_CID error=%d (%s)\n", 
+			debug("mmc_init_card_state: unable to ALL_SEND_CID error=%d (%s)\n", 
 			      retval, mmc_result_to_string(retval));
 			return MMC_INIT_FAILED;
 		}
 		mmcinfo.state = CARD_STATE_IDENT;
 		if(mmcinfo.sd)
-			mmc_simple_cmd(request, MMC_SET_RELATIVE_ADDR, 0, RESPONSE_R6);
+			mmc_simple_cmd(request, MMC_CMD_SET_RELATIVE_ADDR, 0, RESPONSE_R6);
                 else
-			mmc_simple_cmd(request, MMC_SET_RELATIVE_ADDR, ID_TO_RCA(mmcinfo.id) << 16, RESPONSE_R1);
+			mmc_simple_cmd(request, MMC_CMD_SET_RELATIVE_ADDR, ID_TO_RCA(mmcinfo.id) << 16, RESPONSE_R1);
 		break;
 
-        case MMC_SET_RELATIVE_ADDR:
+        case MMC_CMD_SET_RELATIVE_ADDR:
 	        if (mmcinfo.sd)	{
 			retval = mmc_unpack_r6(request, &r1, mmcinfo.state, &mmcinfo.rca);
 			mmcinfo.rca = mmcinfo.rca << 16; 
-			DEBUG(2, "mmc_init_card_state: Get RCA from SD: 0x%04x Status: %x\n", mmcinfo.rca, r1.status);
+			debug("%s: Get RCA from SD: 0x%04x Status: %x\n",
+			      __func__, mmcinfo.rca, r1.status);
                 } else {
 			retval = mmc_unpack_r1(request,&r1,mmcinfo.state);
 			mmcinfo.rca = ID_TO_RCA(mmcinfo.id) << 16;
 	        }
 		if (retval) {
-			DEBUG(0, "mmc_init_card_state: unable to SET_RELATIVE_ADDR error=%d (%s)\n", 
-			      retval, mmc_result_to_string(retval));
+			debug("%s: unable to SET_RELATIVE_ADDR error=%d (%s)\n", 
+			      __func__, retval, mmc_result_to_string(retval));
 			return MMC_INIT_FAILED;
 		}
 
 		mmcinfo.state = CARD_STATE_STBY;
-                mmc_simple_cmd(request, MMC_SEND_CSD, mmcinfo.rca, RESPONSE_R2_CSD);
+                mmc_simple_cmd(request, MMC_CMD_SEND_CSD, mmcinfo.rca, RESPONSE_R2_CSD);
 
 		break;
 
-	case MMC_SEND_CSD:
+	case MMC_CMD_SEND_CSD:
 		retval = mmc_unpack_csd(request, &mmcinfo.csd);
-			mmc_csd_t *csd = (mmc_csd_t *)retval;
+			struct mmc_csd *csd = (struct mmc_csd *)retval;
 			memcpy(&mmc_csd, csd, sizeof(csd));
 			mmc_ready = 1;
 
@@ -943,18 +940,18 @@ static int mmc_init_card_state(struct mmc_request *request)
 
 		/*FIXME:ignore CRC error for CMD2/CMD9/CMD10 */
 	        if (retval && (retval != MMC_ERROR_CRC)) {
-			DEBUG(0, "mmc_init_card_state: unable to SEND_CSD error=%d (%s)\n", 
-			      retval, mmc_result_to_string(retval));
+			debug("%s: unable to SEND_CSD error=%d (%s)\n", 
+			      __func__, retval, mmc_result_to_string(retval));
 			return MMC_INIT_FAILED;
 		}
 		if (mmcinfo.csd.dsr_imp) {
-			DEBUG(0, "mmc_init_card_state: driver doesn't support setting DSR\n");
+			debug("%s: driver doesn't support setting DSR\n", __func__);
 		}
 		mmc_configure_card();
 		return MMC_INIT_PASSED;
 
 	default:
-		DEBUG(0, "mmc_init_card_state: error!  Illegal last cmd %d\n", request->cmd);
+		debug("%s: error!  Illegal last cmd %d\n", __func__, request->cmd);
 		return MMC_INIT_FAILED;
 	}
 
@@ -967,7 +964,7 @@ int mmc_init_card(void)
 	int retval;
 
 	mmc_simple_cmd(&request, MMC_CIM_RESET, 0, RESPONSE_NONE); /* reset card */
-	mmc_simple_cmd(&request, MMC_GO_IDLE_STATE, 0, RESPONSE_NONE);
+	mmc_simple_cmd(&request, MMC_CMD_GO_IDLE_STATE, 0, RESPONSE_NONE);
 	mmcinfo.sd = 1;  /* assuming a SD card */
 
 	while ((retval = mmc_init_card_state(&request)) == MMC_INIT_DOING)
@@ -984,11 +981,8 @@ int mmc_legacy_init(int verbose)
 	if (!__msc_card_detected())
 		return 1;
 
-	printf("MMC card found\n");
-
 	/* Step-1: init GPIO */
 	__gpio_as_msc();
-
 	__msc_init_io();
 
 	/* Step-2: turn on power of card */
@@ -1022,9 +1016,9 @@ int mmc2info(ulong addr)
 {
 	/* FIXME hard codes to 32 MB device */
 	if (addr >= CFG_MMC_BASE && addr < CFG_MMC_BASE + 0x02000000) {
-	return 1;
+		return 1;
 	}
-	return 0;
+	return 0;;
 }
 /*
  * Debugging functions
@@ -1133,19 +1127,8 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->vdd_w_curr_min     = (buf[10] & 0xe0) >> 5;
 		csd->vdd_w_curr_max     = (buf[10] & 0x1c) >> 2;
 		csd->c_size_mult        = ((buf[10] & 0x03) << 1) | ((buf[11] & 0x80) >> 7);
-		switch (csd->csd_structure) {
-		case CSD_STRUCT_VER_1_0:
-		case CSD_STRUCT_VER_1_1:
-			csd->erase.v22.sector_size    = (buf[11] & 0x7c) >> 2;
-			csd->erase.v22.erase_grp_size = ((buf[11] & 0x03) << 3) | ((buf[12] & 0xe0) >> 5);
-
-			break;
-		case CSD_STRUCT_VER_1_2:
-		default:
-			csd->erase.v31.erase_grp_size = (buf[11] & 0x7c) >> 2;
-			csd->erase.v31.erase_grp_mult = ((buf[11] & 0x03) << 3) | ((buf[12] & 0xe0) >> 5);
-			break;
-		}
+		csd->sector_size    = (buf[11] & 0x7c) >> 2;
+		csd->erase_grp_size = ((buf[11] & 0x03) << 3) | ((buf[12] & 0xe0) >> 5);
 		csd->wp_grp_size        = buf[12] & 0x1f;
 		csd->wp_grp_enable      = (buf[13] & 0x80) ? 1 : 0;
 		csd->default_ecc        = (buf[13] & 0x60) >> 5;
@@ -1162,7 +1145,7 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->file_format        = (buf[15] & 0x0c) >> 2;
 		csd->ecc                = buf[15] & 0x03;
 
-		DEBUG(2,"  csd_structure=%d  spec_vers=%d  taac=%02x  nsac=%02x  tran_speed=%02x\n"
+		debug("  csd_structure=%d  spec_vers=%d  taac=%02x  nsac=%02x  tran_speed=%02x\n"
 		      "  ccc=%04x  read_bl_len=%d  read_bl_partial=%d  write_blk_misalign=%d\n"
 		      "  read_blk_misalign=%d  dsr_imp=%d  c_size=%d  vdd_r_curr_min=%d\n"
 		      "  vdd_r_curr_max=%d  vdd_w_curr_min=%d  vdd_w_curr_max=%d  c_size_mult=%d\n"
@@ -1183,21 +1166,6 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		      csd->file_format_grp, csd->copy, 
 		      csd->perm_write_protect, csd->tmp_write_protect,
 		      csd->file_format, csd->ecc);
-		switch (csd->csd_structure) {
-		case CSD_STRUCT_VER_1_0:
-		case CSD_STRUCT_VER_1_1:
-			DEBUG(2," V22 sector_size=%d erase_grp_size=%d\n", 
-			      csd->erase.v22.sector_size, 
-			      csd->erase.v22.erase_grp_size);
-			break;
-		case CSD_STRUCT_VER_1_2:
-		default:
-			DEBUG(2," V31 erase_grp_size=%d erase_grp_mult=%d\n", 
-			      csd->erase.v31.erase_grp_size,
-			      csd->erase.v31.erase_grp_mult);
-			break;
-
-		}
 		break;
 
 	case 1 :
@@ -1212,18 +1180,8 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->read_blk_misalign  = 0;
 		csd->dsr_imp            = (buf[7] & 0x10) ? 1 : 0;
 		csd->c_size             = ((((u16)buf[8]) & 0x3f) << 16) | (((u16)buf[9]) << 8) | ((u16)buf[10]) ;
-		switch (csd->csd_structure) {
-		case CSD_STRUCT_VER_1_0:
-		case CSD_STRUCT_VER_1_1:
-			csd->erase.v22.sector_size    = 0x7f;
-			csd->erase.v22.erase_grp_size = 0;
-			break;
-		case CSD_STRUCT_VER_1_2:
-		default:
-			csd->erase.v31.erase_grp_size = 0x7f;
-			csd->erase.v31.erase_grp_mult = 0;
-			break;
-		}
+		csd->sector_size	= 0x7f;
+		csd->erase_grp_size	= 0;
 		csd->wp_grp_size        = 0;
 		csd->wp_grp_enable      = 0;
 		csd->default_ecc        = (buf[13] & 0x60) >> 5;
@@ -1238,7 +1196,7 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->file_format        = 0;
 		csd->ecc                = buf[15] & 0x03;
 
-		DEBUG(2,"  csd_structure=%d  spec_vers=%d  taac=%02x  nsac=%02x  tran_speed=%02x\n"
+		debug("  csd_structure=%d  spec_vers=%d  taac=%02x  nsac=%02x  tran_speed=%02x\n"
 		      "  ccc=%04x  read_bl_len=%d  read_bl_partial=%d  write_blk_misalign=%d\n"
 		      "  read_blk_misalign=%d  dsr_imp=%d  c_size=%d  vdd_r_curr_min=%d\n"
 		      "  vdd_r_curr_max=%d  vdd_w_curr_min=%d  vdd_w_curr_max=%d  c_size_mult=%d\n"
@@ -1259,20 +1217,9 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		      csd->file_format_grp, csd->copy, 
 		      csd->perm_write_protect, csd->tmp_write_protect,
 		      csd->file_format, csd->ecc);
-		switch (csd->csd_structure) {
-		case CSD_STRUCT_VER_1_0:
-		case CSD_STRUCT_VER_1_1:
-			DEBUG(2," V22 sector_size=%d erase_grp_size=%d\n", 
-			      csd->erase.v22.sector_size, 
-			      csd->erase.v22.erase_grp_size);
-			break;
-		case CSD_STRUCT_VER_1_2:
-		default:
-			DEBUG(2," V31 erase_grp_size=%d erase_grp_mult=%d\n", 
-			      csd->erase.v31.erase_grp_size,
-			      csd->erase.v31.erase_grp_mult);
-			break;
-		}
+		debug(" V22 sector_size=%d erase_grp_size=%d\n", 
+		      csd->sector_size, 
+		      csd->erase_grp_size);
 	}
 
 	if (buf[0] != 0x3f)  return MMC_ERROR_HEADER_MISMATCH;
@@ -1284,12 +1231,13 @@ int mmc_unpack_r1(struct mmc_request *request, struct mmc_response_r1 *r1, enum 
 {
 	u8 *buf = request->response;
 
-	if (request->result)        return request->result;
+	if (request->result)
+		return request->result;
 
 	r1->cmd    = buf[0];
 	r1->status = PARSE_U32(buf,1);
 
-	DEBUG(2, "mmc_unpack_r1: cmd=%d status=%08x\n", r1->cmd, r1->status);
+	debug("mmc_unpack_r1: cmd=%d status=%08x\n", r1->cmd, r1->status);
 
 	if (R1_STATUS(r1->status)) {
 		if (r1->status & R1_OUT_OF_RANGE)       return MMC_ERROR_OUT_OF_RANGE;
@@ -1310,7 +1258,8 @@ int mmc_unpack_r1(struct mmc_request *request, struct mmc_response_r1 *r1, enum 
 		if (r1->status & R1_CID_CSD_OVERWRITE)  return MMC_ERROR_CID_CSD_OVERWRITE;
 	}
 
-	if (buf[0] != request->cmd) return MMC_ERROR_HEADER_MISMATCH;
+	if (buf[0] != request->cmd) 
+		return MMC_ERROR_HEADER_MISMATCH;
 
 	/* This should be last - it's the least dangerous error */
 
@@ -1320,7 +1269,8 @@ int mmc_unpack_r1(struct mmc_request *request, struct mmc_response_r1 *r1, enum 
 int mmc_unpack_scr(struct mmc_request *request, struct mmc_response_r1 *r1, enum card_state state, u32 *scr)
 {
         u8 *buf = request->response;
-	if (request->result)        return request->result;
+	if (request->result)
+		return request->result;
 
         *scr = PARSE_U32(buf, 5); /* Save SCR returned by the SD Card */
         return mmc_unpack_r1(request, r1, state);
@@ -1331,7 +1281,8 @@ int mmc_unpack_r6(struct mmc_request *request, struct mmc_response_r1 *r1, enum 
 {
 	u8 *buf = request->response;
 
-	if (request->result)        return request->result;
+	if (request->result)
+		return request->result;
 
         *rca = PARSE_U16(buf,1);  /* Save RCA returned by the SD Card */
 
@@ -1343,10 +1294,11 @@ int mmc_unpack_r6(struct mmc_request *request, struct mmc_response_r1 *r1, enum 
 
 int mmc_unpack_cid(struct mmc_request *request, struct mmc_cid *cid)
 {
-	u8 *buf = request->response;
 	int i;
+	u8 *buf = request->response;
 
-	if (request->result) return request->result;
+	if (request->result) 
+		return request->result;
 
 	cid->mid = buf[1];
 	cid->oid = PARSE_U16(buf,2);
@@ -1357,10 +1309,21 @@ int mmc_unpack_cid(struct mmc_request *request, struct mmc_cid *cid)
 	cid->psn = PARSE_U32(buf,11);
 	cid->mdt = buf[15];
 
-	DEBUG(2,"mmc_unpack_cid: mid=%d oid=%d pnm=%s prv=%d.%d psn=%08x mdt=%d/%d\n",
-	      cid->mid, cid->oid, cid->pnm, 
-	      (cid->prv>>4), (cid->prv&0xf), 
-	      cid->psn, (cid->mdt>>4), (cid->mdt&0xf)+1997);
+	printf("CID info:\n"
+	       "  mid=%d\n"
+	       "  oid=%d\n"
+	       "  pnm=%s\n"
+	       "  prv=%d.%d\n"
+	       "  psn=%08x\n"
+	       "  mdt=%d/%d\n",
+	       cid->mid,
+	       cid->oid,
+	       cid->pnm, 
+	       cid->prv >> 4,
+	       cid->prv & 0xf, 
+	       cid->psn,
+	       cid->mdt >> 4,
+	       (cid->mdt & 0xf) + 1997);
 
 	if (buf[0] != 0x3f)  return MMC_ERROR_HEADER_MISMATCH;
       	return 0;
@@ -1370,10 +1333,11 @@ int mmc_unpack_r3(struct mmc_request *request, struct mmc_response_r3 *r3)
 {
 	u8 *buf = request->response;
 
-	if (request->result) return request->result;
+	if (request->result)
+		return request->result;
 
 	r3->ocr = PARSE_U32(buf,1);
-	DEBUG(2,"mmc_unpack_r3: ocr=%08x\n", r3->ocr);
+	debug("mmc_unpack_r3: ocr=%08x\n", r3->ocr);
 
 	if (buf[0] != 0x3f)  return MMC_ERROR_HEADER_MISMATCH;
 	return 0;
@@ -1391,7 +1355,7 @@ u32 mmc_tran_speed(u8 ts)
 	u32 rate = ts_exp[(ts & 0x7)] * ts_mul[(ts & 0x78) >> 3];
 
 	if (rate <= 0) {
-		DEBUG(0, "mmc_tran_speed: error - unrecognized speed 0x%02x\n", ts);
+		debug("%s: error - unrecognized speed 0x%02x\n", __func__, ts);
 		return 1;
 	}
 
@@ -1413,4 +1377,3 @@ void mmc_send_cmd(struct mmc_request *request, int cmd, u32 arg,
 }
 
 #endif	/* CONFIG_MMC */
-#endif  /* CONFIG_JZ4740 */
