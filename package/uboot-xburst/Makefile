@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=u-boot
-PKG_VERSION:=2009.11
+PKG_VERSION:=2010.03
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
@@ -88,12 +88,13 @@ endef
 define Package/uboot/install/template
 define Package/uboot-xburst-$(1)/install
 	$(INSTALL_DIR) $$(1)
-	$(CP) $(PKG_BUILD_DIR)/u-boot-nand.bin $(BIN_DIR)/$(2)
+	$(CP) $(PKG_BUILD_DIR)/u-boot-nand.bin $(BIN_DIR)/$(2).bin
+	$(CP) $(PKG_BUILD_DIR)/u-boot.bin $(BIN_DIR)/$(2)-for-xbboot.bin
 endef
 endef
 
 $(foreach u,$(UBOOTS), \
-	$(eval $(call Package/uboot/install/template,$(u),openwrt-$(BOARD)-$(u)-u-boot.bin)) \
+	$(eval $(call Package/uboot/install/template,$(u),openwrt-$(BOARD)-$(u)-u-boot)) \
 )
 
 $(foreach u,$(UBOOTS), \

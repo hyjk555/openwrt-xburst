@@ -454,7 +454,7 @@ void set_timer(ulong t)
 	timestamp = t;
 }
 
-void udelay (unsigned long usec)
+void __udelay (unsigned long usec)
 {
 	ulong tmo,tmp;
 

@@ -33,6 +33,8 @@ $(LIB):	.depend $(OBJS) $(SOBJS)
 .depend:	Makefile $(SOBJS:.o=.S) $(OBJS:.o=.c)
 		$(CC) -M $(CFLAGS) $(SOBJS:.o=.S) $(OBJS:.o=.c) > $@
 
+include $(SRCTREE)/rules.mk
+
 sinclude .depend
 
 #########################################################################

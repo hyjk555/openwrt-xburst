@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index 2f838c8..2834b7b 100644
+index 9b88cab..40cf312 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -3467,6 +3467,13 @@ n516_nand_config	:	unconfig
+@@ -3483,6 +3483,13 @@ n516_nand_config	:	unconfig
  	@echo "TEXT_BASE = 0x80100000" > $(obj)board/n516/config.tmp
  	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
  

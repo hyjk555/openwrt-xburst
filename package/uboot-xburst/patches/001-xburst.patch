@@ -1,13 +1,12 @@
-this patch include the u-boot2009.11 change files
+
 
 From: Xiangfu Liu <xiangfu@sharism.cc>
 
 
 ---
-
  Makefile                       |   16 +
  common/env_common.c            |    7 -
- common/lcd.c                   |   45 ++++
+ common/lcd.c                   |   13 +
  common/main.c                  |   11 +
  cpu/mips/Makefile              |    3 
  cpu/mips/cache.S               |  280 ++++++++++----------------
@@ -22,14 +21,13 @@ From: Xiangfu Liu <xiangfu@sharism.cc>
  lib_mips/board.c               |   18 +-
  lib_mips/bootm.c               |   12 +
  lib_mips/time.c                |    4 
- 17 files changed, 778 insertions(+), 291 deletions(-)
-
+ 17 files changed, 753 insertions(+), 284 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index f06a97c..3d87cd1 100644
+index e141cb2..1703fad 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -3439,6 +3439,22 @@ qemu_mips_config	: unconfig
+@@ -3455,6 +3455,22 @@ qemu_mips_config	: unconfig
  	@$(MKCONFIG) -a qemu-mips mips mips qemu-mips
  
  #########################################################################
@@ -71,21 +69,10 @@ index 439a4a9..905d16a 100644
  	"\0"
  };
 diff --git a/common/lcd.c b/common/lcd.c
-index 4e31618..ddd5aa8 100644
+index 64fb1c6..23d848d 100644
 --- a/common/lcd.c
 +++ b/common/lcd.c
-@@ -64,7 +64,9 @@
- #ifdef CONFIG_LCD_LOGO
- # include <bmp_logo.h>		/* Get logo data, width and height	*/
- # if (CONSOLE_COLOR_WHITE >= BMP_LOGO_OFFSET)
--#  error Default Color Map overlaps with Logo Color Map
-+#  ifndef CONFIG_JzRISC		  /* JzRISC core */ 
-+#   error Default Color Map overlaps with Logo Color Map
-+#  endif
- # endif
- #endif
- 
-@@ -249,6 +251,14 @@ static void lcd_drawchars (ushort x, ushort y, uchar *str, int count)
+@@ -253,6 +253,14 @@ static void lcd_drawchars (ushort x, ushort y, uchar *str, int count)
  						lcd_color_fg : lcd_color_bg;
  				bits <<= 1;
  			}
@@ -100,7 +87,7 @@ index 4e31618..ddd5aa8 100644
  #endif
  		}
  #if LCD_BPP == LCD_MONOCHROME
-@@ -315,6 +325,9 @@ static void test_pattern (void)
+@@ -319,6 +327,9 @@ static void test_pattern (void)
  }
  #endif /* LCD_TEST_PATTERN */
  
@@ -110,7 +97,7 @@ index 4e31618..ddd5aa8 100644
  
  /************************************************************************/
  /* ** GENERIC Initialization Routines					*/
-@@ -381,6 +394,7 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+@@ -385,6 +396,7 @@ static int lcd_clear (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
  		COLOR_MASK(lcd_getbgcolor()),
  		lcd_line_length*panel_info.vl_row);
  #endif
@@ -118,25 +105,7 @@ index 4e31618..ddd5aa8 100644
  	/* Paint the logo and retrieve LCD base address */
  	debug ("[LCD] Drawing the logo...\n");
  	lcd_console_address = lcd_logo ();
-@@ -458,6 +472,8 @@ static void lcd_setfgcolor (int color)
- {
- #ifdef CONFIG_ATMEL_LCD
- 	lcd_color_fg = color;
-+#elif LCD_BPP == LCD_COLOR32
-+	lcd_color_fg = color & 0xFFFFFFFF;
- #else
- 	lcd_color_fg = color & 0x0F;
- #endif
-@@ -469,6 +485,8 @@ static void lcd_setbgcolor (int color)
- {
- #ifdef CONFIG_ATMEL_LCD
- 	lcd_color_bg = color;
-+#elif LCD_BPP == LCD_COLOR32
-+	lcd_color_bg = color & 0xFFFFFFFF;
- #else
- 	lcd_color_bg = color & 0x0F;
- #endif
-@@ -507,6 +525,7 @@ void bitmap_plot (int x, int y)
+@@ -503,6 +515,7 @@ void bitmap_plot (int x, int y)
  	uchar *bmap;
  	uchar *fb;
  	ushort *fb16;
@@ -144,40 +113,8 @@ index 4e31618..ddd5aa8 100644
  #if defined(CONFIG_PXA250)
  	struct pxafb_info *fbi = &panel_info.pxa;
  #elif defined(CONFIG_MPC823)
-@@ -567,13 +586,25 @@ void bitmap_plot (int x, int y)
- 		}
- 	}
- 	else { /* true color mode */
--		fb16 = (ushort *)(lcd_base + y * lcd_line_length + x);
--		for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
--			for (j=0; j<BMP_LOGO_WIDTH; j++) {
--				fb16[j] = bmp_logo_palette[(bmap[j])];
-+		if(NBITS(panel_info.vl_bpix) == 16){
-+			fb16 = (ushort *)(lcd_base + y * lcd_line_length + x);
-+			for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
-+				for (j=0; j<BMP_LOGO_WIDTH; j++) {
-+					fb16[j] = bmp_logo_palette[(bmap[j])];
- 				}
--			bmap += BMP_LOGO_WIDTH;
--			fb16 += panel_info.vl_col;
-+				bmap += BMP_LOGO_WIDTH;
-+				fb16 += panel_info.vl_col;
-+			}
-+		}
-+		else{
-+			fb32 = (uint *)(lcd_base + y * lcd_line_length + x);
-+			for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
-+				for (j=0; j<BMP_LOGO_WIDTH; j++) {
-+					fb32[j] = bmp_logo_palette[(bmap[j])];
-+				}
-+				bmap += BMP_LOGO_WIDTH;
-+				fb32 += panel_info.vl_col;
-+			}
- 		}
- 	}
- 
 diff --git a/common/main.c b/common/main.c
-index 10d8904..76641f3 100644
+index c860b0b..9f0bb62 100644
 --- a/common/main.c
 +++ b/common/main.c
 @@ -372,7 +372,11 @@ void main_loop (void)
@@ -193,17 +130,15 @@ index 10d8904..76641f3 100644
  	debug ("### main_loop entered: bootdelay=%d\n\n", bootdelay);
  
  # ifdef CONFIG_BOOT_RETRY_TIME
-@@ -393,7 +397,12 @@ void main_loop (void)
+@@ -393,7 +397,10 @@ void main_loop (void)
  	}
  	else
  #endif /* CONFIG_BOOTCOUNT_LIMIT */
 -		s = getenv ("bootcmd");
-+#if defined(CONFIG_NANONOTE)
 +		if (gd->boot_option & BOOT_FROM_SDCARD)
 +			s = getenv ("bootcmdfromsd");
 +		else
 +			s = getenv ("bootcmd");
-+#endif
  
  	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
  
@@ -1276,7 +1211,7 @@ index 57db589..33c05b4 100644
 +
 +#endif /* CONFIG_JZ4730 */
 diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 426bb95..23a1856 100644
+index 7171bdd..535cad8 100644
 --- a/drivers/mtd/nand/nand_base.c
 +++ b/drivers/mtd/nand/nand_base.c
 @@ -109,6 +109,22 @@ static struct nand_ecclayout nand_oob_16 = {
@@ -1310,7 +1245,7 @@ index 426bb95..23a1856 100644
  
  static struct nand_ecclayout nand_oob_128 = {
  	.eccbytes = 48,
-@@ -1116,6 +1133,60 @@ static int nand_read_page_hwecc_oob_first(struct mtd_info *mtd,
+@@ -1164,6 +1181,60 @@ static int nand_read_page_hwecc_oob_first(struct mtd_info *mtd,
  }
  
  /**
@@ -1371,7 +1306,7 @@ index 426bb95..23a1856 100644
   * nand_read_page_syndrome - [REPLACABLE] hardware ecc syndrom based page read
   * @mtd:	mtd info structure
   * @chip:	nand chip info structure
-@@ -1271,9 +1342,17 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
+@@ -1320,9 +1391,17 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
  						bufpoi, page);
  			else if (!aligned && NAND_SUBPAGE_READ(chip) && !oob)
  				ret = chip->ecc.read_subpage(mtd, chip, col, bytes, bufpoi);
@@ -1390,7 +1325,7 @@ index 426bb95..23a1856 100644
  			if (ret < 0)
  				break;
  
-@@ -2791,8 +2870,13 @@ int nand_scan_tail(struct mtd_info *mtd)
+@@ -2880,8 +2959,13 @@ int nand_scan_tail(struct mtd_info *mtd)
  
  	case NAND_ECC_HW:
  		/* Use standard hwecc read page function ? */
@@ -1404,7 +1339,7 @@ index 426bb95..23a1856 100644
 +		}
  		if (!chip->ecc.write_page)
  			chip->ecc.write_page = nand_write_page_hwecc;
- 		if (!chip->ecc.read_oob)
+ 		if (!chip->ecc.read_page_raw)
 diff --git a/examples/standalone/mips.lds b/examples/standalone/mips.lds
 index 717b201..d4a45f8 100644
 --- a/examples/standalone/mips.lds
@@ -1652,20 +1587,18 @@ index 54af24c..e6a5732 100644
  	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
  		return 1;
  
-@@ -98,6 +105,11 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+@@ -98,6 +105,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
  	}
  
  	/* we assume that the kernel is in place */
-+#if defined(CONFIG_NANONOTE)
 +	if (gd->boot_option & BOOT_FROM_SDCARD)
 +		printf ("\n *** Booting from mircoSD ***\n");
 +
-+#endif
  	printf ("\nStarting kernel ...\n\n");
  
  	theKernel (linux_argc, linux_argv, linux_env, 0);
 diff --git a/lib_mips/time.c b/lib_mips/time.c
-index 07e356d..4654bf4 100644
+index 0e66441..1c3ccf1 100644
 --- a/lib_mips/time.c
 +++ b/lib_mips/time.c
 @@ -24,6 +24,8 @@
