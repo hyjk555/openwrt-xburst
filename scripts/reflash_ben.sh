@@ -12,7 +12,8 @@ WORKING_DIR="${HOME}/.qi/nanonote/ben/${VERSION}"
 LOG_FILE="${WORKING_DIR}/log.txt"
 
 # URL to images ($URL/$VERSION/$[images])
-BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/Ben_NanoNote_2GB_NAND"
+#BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/Ben_NanoNote_2GB_NAND"
+BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/NanoNote/Ben"
 
 # names of images
 LOADER="openwrt-xburst-qi_lb60-u-boot.bin"
