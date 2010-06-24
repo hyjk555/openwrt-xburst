@@ -18,7 +18,7 @@ DEVICE_TYPE=other
 
 include $(INCLUDE_DIR)/target.mk
 
-KERNELNAME:=uImage zImage
+KERNELNAME:=uImage
 
 define Target/Description
 	Build firmware images for XBurst JZ47x0 based boards.
