@@ -18,6 +18,7 @@
 #define CONFIG_JZSOC		1  /* Jz SoC */
 #define CONFIG_JZ4740		1  /* Jz4740 SoC */
 #define CONFIG_NANONOTE		1
+#define CONFIG_NAND_JZ4740
 
 #define BOOT_FROM_SDCARD	1
 #define BOOT_WITH_ENABLE_UART (1 << 1)	/* Vaule for global_data.h gd->boot_option */
@@ -116,12 +117,15 @@
 /* nand bad block was marked at this page in a block, start from 0 */
 #define CONFIG_SYS_NAND_BADBLOCK_PAGE	127
 /* ECC offset position in oob area, default value is 6 if it isn't defined */
-#define CONFIG_SYS_NAND_ECC_POS	(6 * NANONOTE_NAND_SIZE)
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define NAND_MAX_CHIPS			1
+#define CONFIG_SYS_NAND_ECC_POS		(6 * NANONOTE_NAND_SIZE)
+#define CONFIG_SYS_NAND_ECCSIZE		512
+#define CONFIG_SYS_NAND_ECCBYTES	9
+
 #define CONFIG_SYS_NAND_BASE		0xB8000000
-#define CONFIG_SYS_NAND_SELECT_DEVICE	1 /* nand driver supports mutipl.*/
 #define CONFIG_SYS_ONENAND_BASE		CONFIG_SYS_NAND_BASE
+#define NAND_MAX_CHIPS			1
+#define CONFIG_SYS_MAX_NAND_DEVICE	1
+#define CONFIG_SYS_NAND_SELECT_DEVICE	1 /* nand driver supports mutipl.*/
 
 /*
  * IPL (Initial Program Loader, integrated inside CPU)
@@ -148,7 +152,7 @@
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	(256 << 10)	/* Offset to RAM U-Boot image */
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	(512 << 10)	/* Size of RAM U-Boot image */
 
-#define CONFIG_ENV_SIZE		CONFIG_SYS_NAND_BLOCK_SIZE
+#define CONFIG_ENV_SIZE		(4 << 10)
 #define CONFIG_ENV_OFFSET	(CONFIG_SYS_NAND_BLOCK_SIZE + CONFIG_SYS_NAND_U_BOOT_SIZE + CONFIG_SYS_NAND_BLOCK_SIZE)
 /* environment starts here  */
 #define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)

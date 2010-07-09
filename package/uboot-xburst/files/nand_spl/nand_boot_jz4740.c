@@ -372,6 +372,7 @@ void nand_boot(void)
 	 */
 	gpio_init();
 	pll_init();
+	REG_GPIO_PXSELS(2) = 0x80000000;
 	serial_init();
 	sdram_init();
 	serial_puts("\n\nNAND Secondary Program Loader\n\n");
