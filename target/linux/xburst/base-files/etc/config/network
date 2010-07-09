@@ -11,3 +11,5 @@ config interface lan
 	option proto	static
 	option ipaddr	192.168.254.101
 	option netmask	255.255.255.0
+	option gateway  192.168.254.100
+	option dns      208.67.222.222
