@@ -1,9 +1,6 @@
 #
-# (C) Copyright 2000-2006
-# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# See file CREDITS for list of people who contributed to this
-# project.
+# (C) Copyright 2006
+# Ingenic Semiconductor, <jlwei@ingenic.cn>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -23,24 +20,15 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(CPU).a
+LIB	= $(obj)lib$(BOARD).a
 
-START	= start.o
-SOBJS-y	= 
-COBJS-y = cpu.o interrupts.o jz4740.o jz_serial.o 
+COBJS	= $(BOARD).o flash.o
 
-COBJS-y += jz_mmc.o
-COBJS-$(CONFIG_NANONOTE) += nanonote_gpm940b0.o
-COBJS-$(CONFIG_SAKC)	+= nanonote_gpm940b0.o
+OBJS	= $(addprefix $(obj),$(COBJS))
+SOBJS	= 
 
-SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
-OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
-START	:= $(addprefix $(obj),$(START))
-
-all:	$(obj).depend $(START) $(LIB)
-
-$(LIB):	$(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
+	$(AR) crv $@ $(OBJS) $(SOBJS)
 
 #########################################################################
 
