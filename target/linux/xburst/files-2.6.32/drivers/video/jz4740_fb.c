@@ -221,6 +221,10 @@ static int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned
 	if (regno >= fb->cmap.len)
 		return -EINVAL;
 
+	red >>= 8;
+	green >>= 8;
+	blue >>= 8;
+
 	((uint32_t*)fb->pseudo_palette)[regno] = red << 16 | green << 8 | blue;
 
 	return 0;
