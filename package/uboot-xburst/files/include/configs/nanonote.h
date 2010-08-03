@@ -21,7 +21,7 @@
 #define CONFIG_NAND_JZ4740
 
 #define BOOT_FROM_SDCARD	1
-#define BOOT_WITH_ENABLE_UART (1 << 1)	/* Vaule for global_data.h gd->boot_option */
+#define BOOT_WITH_ENABLE_UART	(1 << 1)	/* Vaule for global_data.h gd->boot_option */
 
 #define CONFIG_LCD		1  /* LCD support */
 #define LCD_BPP			LCD_COLOR32	/*5:18,24,32 bits per pixel */
@@ -42,6 +42,7 @@
 #define CONFIG_SKIP_LOWLEVEL_INIT	1
 #define CONFIG_BOARD_EARLY_INIT_F	1
 #define CONFIG_SYS_NO_FLASH	1
+#define CONFIG_SYS_FLASH_BASE	0 /* init flash_base as 0 */
 #define CONFIG_ENV_OVERWRITE	1
 
 #define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
@@ -76,7 +77,7 @@
 /*
  * Miscellaneous configurable options
  */
-#define	CONFIG_SYS_LONGHELP			/* undef to save memory */
+#define	CONFIG_SYS_LONGHELP		/* undef to save memory */
 #define	CONFIG_SYS_PROMPT		"NanoNote# "	/* Monitor Command Prompt */
 #define	CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 #define	CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
@@ -153,9 +154,8 @@
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	(512 << 10)	/* Size of RAM U-Boot image */
 
 #define CONFIG_ENV_SIZE		(4 << 10)
-#define CONFIG_ENV_OFFSET	(CONFIG_SYS_NAND_BLOCK_SIZE + CONFIG_SYS_NAND_U_BOOT_SIZE + CONFIG_SYS_NAND_BLOCK_SIZE)
-/* environment starts here  */
-#define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+#define CONFIG_ENV_OFFSET	(CONFIG_SYS_NAND_BLOCK_SIZE + CONFIG_SYS_NAND_U_BOOT_SIZE)
+#define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET  + CONFIG_SYS_NAND_BLOCK_SIZE)
 
 /* in board/nanonote/config.mk TEXT_BAS = 0x88000000 */
 #define CONFIG_SYS_MONITOR_BASE	TEXT_BASE
