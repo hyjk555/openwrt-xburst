@@ -1,10 +1,10 @@
 diff --git a/Makefile b/Makefile
-index 64b7573..4ebdb74 100644
+index d7a6921..d57c6ee 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -2305,6 +2305,16 @@ qemu_mips_config	: unconfig
- 	@echo "#define CONFIG_QEMU_MIPS 1" >$(obj)include/config.h
- 	@$(MKCONFIG) -a qemu-mips mips mips qemu-mips
+@@ -2647,6 +2647,16 @@ ppmc7xx_config: unconfig
+ ZUMA_config:	unconfig
+ 	@$(MKCONFIG) $(@:_config=) powerpc 74xx_7xx evb64260
  
 +#########################################################################
 +## MIPS32 XBurst jz4740
@@ -17,7 +17,7 @@ index 64b7573..4ebdb74 100644
 +	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
 +
  #========================================================================
- # Nios
+ # ARM
  #========================================================================
 diff --git a/arch/mips/include/asm/global_data.h b/arch/mips/include/asm/global_data.h
 index b2c4891..9f93fb4 100644
@@ -127,10 +127,10 @@ index 0e66441..653be6c 100644
  }
 +#endif
 diff --git a/common/env_common.c b/common/env_common.c
-index 82e4936..f3241cb 100644
+index 439a4a9..7ac2b6b 100644
 --- a/common/env_common.c
 +++ b/common/env_common.c
-@@ -128,6 +128,12 @@ uchar default_environment[] = {
+@@ -133,6 +133,12 @@ uchar default_environment[] = {
  #if defined(CONFIG_PCI_BOOTDELAY) && (CONFIG_PCI_BOOTDELAY > 0)
  	"pcidelay="	MK_STR(CONFIG_PCI_BOOTDELAY)	"\0"
  #endif
@@ -189,24 +189,28 @@ index 64fb1c6..23d848d 100644
  	struct pxafb_info *fbi = &panel_info.pxa;
  #elif defined(CONFIG_MPC823)
 diff --git a/common/main.c b/common/main.c
-index 3760ba3..7433a62 100644
+index f7e7c1c..c64979f 100644
 --- a/common/main.c
 +++ b/common/main.c
-@@ -372,7 +372,6 @@ void main_loop (void)
+@@ -372,7 +372,11 @@ void main_loop (void)
  #if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
  	s = getenv ("bootdelay");
  	bootdelay = s ? (int)simple_strtol(s, NULL, 10) : CONFIG_BOOTDELAY;
 -
++#if defined(CONFIG_NANONOTE)
++	DECLARE_GLOBAL_DATA_PTR;
++	if (gd->boot_option & BOOT_WITH_ENABLE_UART)
++		bootdelay = 3;
++# endif
  	debug ("### main_loop entered: bootdelay=%d\n\n", bootdelay);
  
  # ifdef CONFIG_BOOT_RETRY_TIME
-@@ -393,7 +392,13 @@ void main_loop (void)
+@@ -393,7 +397,12 @@ void main_loop (void)
  	}
  	else
  #endif /* CONFIG_BOOTCOUNT_LIMIT */
 -		s = getenv ("bootcmd");
 +#if defined(CONFIG_NANONOTE)
-+		DECLARE_GLOBAL_DATA_PTR;
 +		if (gd->boot_option & BOOT_FROM_SDCARD)
 +			s = getenv ("bootcmdfromsd");
 +		else
