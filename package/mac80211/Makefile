@@ -10,12 +10,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2010-05-24
+PKG_VERSION:=2010-07-29
 PKG_RELEASE:=1
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 #	http://www.orbit-lab.org/kernel/compat-wireless-2.6/2010/11 \
 #	http://wireless.kernel.org/download/compat-wireless-2.6
-PKG_MD5SUM:=3d465dc6e0213964d0349f61c485817f
+PKG_MD5SUM:=fcfb757939c4718efbf9c87ca59c6932
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -35,7 +35,7 @@ define KernelPackage/mac80211/Default
   SUBMENU:=$(WMENU)
   URL:=http://linuxwireless.org/
   MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
-  DEPENDS:=@LINUX_2_6 @(!(TARGET_avr32||TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
+  DEPENDS:=@!LINUX_2_4 @(!(TARGET_avr32||TARGET_ep93xx||TARGET_ps3||TARGET_pxcab)||BROKEN)
 endef
 
 define KernelPackage/cfg80211
@@ -440,7 +440,26 @@ define Download/usb8388
 endef
 $(eval $(call Download,usb8388))
 
-define KernelPackage/libertas
+SD8686FW_NAME:=sd8686
+SD8686FW_VERSION:=9.70.7.p0
+
+define Download/sd8686
+  URL:=http://dev.laptop.org/pub/firmware/libertas/
+  FILE:=$(SD8686FW_NAME)-$(SD8686FW_VERSION).bin
+  MD5SUM=b4f8be61e19780a14836f146c538c5dd
+endef
+$(eval $(call Download,sd8686))
+
+SD8686HELPER_NAME:=sd8686_helper
+
+define Download/sd8686_helper
+  URL:=http://dev.laptop.org/pub/firmware/libertas/
+  FILE:=$(SD8686HELPER_NAME).bin
+  MD5SUM=2a4d8f4df198ce949c350df5674f4ac6
+endef
+$(eval $(call Download,sd8686_helper))
+
+define KernelPackage/libertas-usb
   $(call KernelPackage/mac80211/Default)
   DEPENDS+= @USB_SUPPORT +kmod-mac80211 +kmod-usb-core +kmod-lib80211
   TITLE:=Marvell 88W8015 Wireless Driver
@@ -450,6 +469,15 @@ define KernelPackage/libertas
   AUTOLOAD:=$(call AutoLoad,27,libertas usb8xxx)
 endef
 
+define KernelPackage/libertas-sd
+  $(call KernelPackage/mac80211/Default)
+  DEPENDS+= +kmod-mac80211 +kmod-lib80211
+  TITLE:=Marvell 88W8686 Wireless Driver
+  FILES:= \
+	$(PKG_BUILD_DIR)/drivers/net/wireless/libertas/libertas.$(LINUX_KMOD_SUFFIX) \
+	$(PKG_BUILD_DIR)/drivers/net/wireless/libertas/libertas_sdio.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,27,libertas libertas_sdio)
+endef
 
 define KernelPackage/ar9170
   $(call KernelPackage/mac80211/Default)
@@ -777,7 +805,7 @@ BUILDFLAGS:= \
 	$(if $(CONFIG_LEDS_TRIGGERS), -DCONFIG_MAC80211_LEDS -DCONFIG_LEDS_TRIGGERS -DCONFIG_B43_LEDS -DCONFIG_B43LEGACY_LEDS -DCONFIG_AR9170_LEDS) \
 	-DCONFIG_B43_HWRNG -DCONFIG_B43LEGACY_HWRNG \
 	$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),-DCONFIG_MAC80211_DEBUGFS -DCONFIG_ATH9K_DEBUGFS) \
-	$(if $(CONFIG_PACKAGE_ATH_DEBUG),-DCONFIG_ATH_DEBUG) \
+	$(if $(CONFIG_PACKAGE_ATH_DEBUG),-DCONFIG_ATH_DEBUG -DCONFIG_ATH9K_PKTLOG) \
 	-D__CONFIG_MAC80211_RC_DEFAULT=minstrel \
 	-DCONFIG_MAC80211_RC_MINSTREL_HT \
 	$(if $(CONFIG_ATH_USER_REGD),-DATH_USER_REGD=1) \
@@ -800,7 +828,6 @@ MAKE_OPTS:= \
 	EXTRA_CFLAGS="$(BUILDFLAGS)" \
 	$(foreach opt,$(CONFOPTS),CONFIG_$(opt)=m) \
 	CONFIG_MAC80211=$(if $(CONFIG_PACKAGE_kmod-mac80211),m) \
-	CONFIG_MAC80211_RC_PID=y \
 	CONFIG_MAC80211_RC_MINSTREL=y \
 	CONFIG_MAC80211_LEDS=$(CONFIG_LEDS_TRIGGERS) \
 	CONFIG_MAC80211_DEBUGFS=$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),y) \
@@ -815,6 +842,7 @@ MAKE_OPTS:= \
 	CONFIG_B43LEGACY=$(if $(CONFIG_PACKAGE_kmod-b43legacy),m) \
 	CONFIG_ATH_COMMON=$(if $(CONFIG_PACKAGE_kmod-ath),m) \
 	CONFIG_ATH_DEBUG=$(if $(CONFIG_PACKAGE_ATH_DEBUG),y) \
+	CONFIG_ATH9K_PKTLOG=$(if $(CONFIG_PACKAGE_ATH_DEBUG),y) \
 	CONFIG_ATH5K=$(if $(CONFIG_PACKAGE_kmod-ath5k),m) \
 	CONFIG_ATH9K=$(if $(CONFIG_PACKAGE_kmod-ath9k),m) \
 	CONFIG_ATH9K_DEBUGFS=$(if $(CONFIG_PACKAGE_MAC80211_DEBUGFS),y) \
@@ -848,11 +876,12 @@ MAKE_OPTS:= \
 	CONFIG_MAC80211_HWSIM=$(if $(CONFIG_PACKAGE_kmod-mac80211-hwsim),m) \
 	CONFIG_PCMCIA= \
 	CONFIG_LIBIPW=$(if $(CONFIG_PACKAGE_kmod-net-libipw),m) \
-	CONFIG_LIBERTAS=$(if $(CONFIG_PACKAGE_kmod-libertas),m) \
+	CONFIG_LIBERTAS=$(if $(CONFIG_PACKAGE_kmod-libertas-sd)$(CONFIG_PACKAGE_kmod-libertas-usb),m) \
 	CONFIG_LIBERTAS_CS= \
-	CONFIG_LIBERTAS_SDIO= \
+	CONFIG_LIBERTAS_SPI= \
+	CONFIG_LIBERTAS_SDIO=$(if $(CONFIG_PACKAGE_kmod-libertas-sd),m) \
 	CONFIG_LIBERTAS_THINFIRM= \
-	CONFIG_LIBERTAS_USB=$(if $(CONFIG_PACKAGE_kmod-libertas),m) \
+	CONFIG_LIBERTAS_USB=$(if $(CONFIG_PACKAGE_kmod-libertas-usb),m) \
 	CONFIG_IPW2100=$(if $(CONFIG_PACKAGE_kmod-net-ipw2100),m) \
 	CONFIG_IPW2200=$(if $(CONFIG_PACKAGE_kmod-net-ipw2200),m) \
 	CONFIG_NL80211=y \
@@ -924,9 +953,16 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/drivers/net/wireless/ath/*.h $(1)/usr/include/mac80211/ath/
 endef
 
-define KernelPackage/libertas/install
+define KernelPackage/libertas-usb/install
 	$(INSTALL_DIR) $(1)/lib/firmware
 	$(INSTALL_DATA) $(DL_DIR)/$(USB8388FW_NAME)-$(USB8388FW_VERSION).bin $(1)/lib/firmware/$(USB8388FW_NAME).bin
+endef
+
+define KernelPackage/libertas-sd/install
+	echo "Libertas install: $(CONFIG_PACKAGE_kmod-libertas-sd)"
+	$(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DATA) $(DL_DIR)/$(SD8686FW_NAME)-$(SD8686FW_VERSION).bin $(1)/lib/firmware/$(SD8686FW_NAME).bin
+	$(INSTALL_DATA) $(DL_DIR)/$(SD8686HELPER_NAME).bin $(1)/lib/firmware/$(SD8686HELPER_NAME).bin
 endef
 
 define KernelPackage/cfg80211/install
@@ -987,7 +1023,8 @@ endef
 define Build/b43-common
 	tar xjf "$(DL_DIR)/$(PKG_B43_FWCUTTER_SOURCE)" -C "$(PKG_BUILD_DIR)"
 	$(MAKE) -C "$(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)" \
-		CFLAGS="-I$(STAGING_DIR_HOST)/include -include endian.h"
+		CFLAGS="-I$(STAGING_DIR_HOST)/include -include endian.h" \
+		QUIET_SPARSE=:
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)/b43-fwcutter $(STAGING_DIR_HOST)/bin/
 ifeq ($(CONFIG_B43_OPENFIRMWARE),y)
 	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin/
@@ -1032,7 +1069,8 @@ endif
 endef
 
 $(eval $(call KernelPackage,ath5k))
-$(eval $(call KernelPackage,libertas))
+$(eval $(call KernelPackage,libertas-usb))
+$(eval $(call KernelPackage,libertas-sd))
 $(eval $(call KernelPackage,cfg80211))
 $(eval $(call KernelPackage,mac80211))
 $(eval $(call KernelPackage,p54-common))

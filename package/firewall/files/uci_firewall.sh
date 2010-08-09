@@ -353,8 +353,11 @@ fw_redirect() {
 	config_get dest_ip $1 dest_ip
 	config_get dest_port $1 dest_port
 	config_get proto $1 proto
-	[ -z "$src" -o -z "$dest_ip" ] && { \
-		echo "redirect needs src and dest_ip"; return ; }
+	[ -z "$src" -o -z "$dest_ip$dest_port" ] && { \
+		echo "redirect needs src and dest_ip or dest_port"; return ; }
+
+	find_item "$src" $CONNTRACK_ZONES || \
+		append CONNTRACK_ZONES "$src"
 
 	src_port_first=${src_port%-*}
 	src_port_last=${src_port#*-}
@@ -382,6 +385,7 @@ fw_redirect() {
 			${src_mac:+-m mac --mac-source $src_mac} \
 			-j DNAT --to-destination $dest_ip${dest_port:+:$dest_port}
 
+		[ -n "$dest_ip" ] && \
 		$IPTABLES -I zone_${src}_forward 1 \
 			${proto:+-p $proto} \
 			-d $dest_ip \
@@ -391,6 +395,7 @@ fw_redirect() {
 			${src_mac:+-m mac --mac-source $src_mac} \
 			-j ACCEPT
 	}
+
 	[ "$proto" == "tcpudp" -o -z "$proto" ] && {
 		proto=tcp
 		add_rule
