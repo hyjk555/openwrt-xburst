@@ -1,5 +1,7 @@
+
+
 #
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -9,13 +11,13 @@ include $(INCLUDE_DIR)/target.mk
 
 PKG_NAME:=uClibc
 PKG_VERSION:=$(call qstrip,$(CONFIG_UCLIBC_VERSION))
-ifeq ($(CONFIG_UCLIBC_VERSION_NPTL),y)
+ifeq ($(CONFIG_UCLIBC_VERSION_0_9_32),y)
   PKG_SOURCE_URL:=git://git.busybox.net/uClibc
   PKG_SOURCE_PROTO:=git
-  PKG_SOURCE_VERSION:=ef18cfe8ebab25f5ef92e81956f50e2dc57df602
+  PKG_SOURCE_VERSION:=ef487a35f428da6240003dca23b9d29908e2285e
   PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
   PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-  LIBC_SO_VERSION:=0.9.30-git
+  LIBC_SO_VERSION:=$(PKG_VERSION)-git
 else
   PKG_SOURCE_URL:=http://www.uclibc.org/downloads
   PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
@@ -27,6 +29,7 @@ CONFIG_DIR:=./config-$(PKG_VERSION)
 PKG_MD5SUM_0.9.30.1 = 1a4b84e5536ad8170563ffa88c34679c
 PKG_MD5SUM_0.9.30.2 = e759ec855500082ac3e671dd6cacfdb0
 PKG_MD5SUM_0.9.30.3 = 73a4bf4a0fa508b01a7a3143574e3d21
+PKG_MD5SUM_0.9.31   = 52fb8a494758630c8d3ddd7f1e0daafd
 PKG_MD5SUM=$(PKG_MD5SUM_$(PKG_VERSION))
 
 HOST_BUILD_DIR:=$(BUILD_DIR_TOOLCHAIN)/$(PKG_NAME)-$(PKG_VERSION)
