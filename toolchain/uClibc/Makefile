@@ -11,7 +11,7 @@ include $(INCLUDE_DIR)/target.mk
 
 PKG_NAME:=uClibc
 PKG_VERSION:=$(call qstrip,$(CONFIG_UCLIBC_VERSION))
-ifeq ($(CONFIG_UCLIBC_VERSION_0_9_32),y)
+ifeq ($(CONFIG_UCLIBC_VERSION),"0.9.32")
   PKG_SOURCE_URL:=git://git.busybox.net/uClibc
   PKG_SOURCE_PROTO:=git
   PKG_SOURCE_VERSION:=ef487a35f428da6240003dca23b9d29908e2285e
