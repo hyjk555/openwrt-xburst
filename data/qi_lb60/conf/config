@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# OpenWrt version: Backfire (r22556)
-# Tue Aug 10 11:05:40 2010
+# OpenWrt version: Backfire (r22581)
+# Tue Aug 10 17:14:48 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -1481,6 +1481,7 @@ CONFIG_PACKAGE_gtkmm=y
 # CONFIG_PACKAGE_libxfcegui4 is not set
 CONFIG_PACKAGE_qt4=y
 CONFIG_PACKAGE_qt4-dbus=y
+CONFIG_PACKAGE_qt4-declarative=y
 CONFIG_PACKAGE_qt4-demos=y
 CONFIG_PACKAGE_qt4-drivers-gfx-directfb=y
 CONFIG_PACKAGE_qt4-drivers-gfx-linuxfb=y
@@ -1494,8 +1495,11 @@ CONFIG_PACKAGE_qt4-mysql=y
 CONFIG_PACKAGE_qt4-network=y
 CONFIG_PACKAGE_qt4-phonon=y
 CONFIG_PACKAGE_qt4-qt3support=y
+CONFIG_PACKAGE_qt4-script=y
+CONFIG_PACKAGE_qt4-scripttools=y
 CONFIG_PACKAGE_qt4-sqlite=y
 CONFIG_PACKAGE_qt4-svg=y
+CONFIG_PACKAGE_qt4-webkit=y
 CONFIG_PACKAGE_qt4-xml=y
 
 #
