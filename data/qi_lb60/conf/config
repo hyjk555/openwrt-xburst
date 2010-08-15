@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22615)
-# Sun Aug 15 01:28:55 2010
+# Sun Aug 15 10:51:32 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -1755,10 +1755,10 @@ CONFIG_PACKAGE_lftp=y
 # CONFIG_PACKAGE_chrony is not set
 # CONFIG_PACKAGE_htpdate is not set
 # CONFIG_PACKAGE_ntp-utils is not set
-CONFIG_PACKAGE_ntpclient=y
+# CONFIG_PACKAGE_ntpclient is not set
 # CONFIG_PACKAGE_ntpd is not set
 # CONFIG_PACKAGE_ntpd-ssl is not set
-CONFIG_PACKAGE_ntpdate=y
+# CONFIG_PACKAGE_ntpdate is not set
 # CONFIG_PACKAGE_openntpd is not set
 
 #
