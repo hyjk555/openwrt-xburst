@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22615)
-# Fri Aug 13 12:03:28 2010
+# Sun Aug 15 00:28:01 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -2498,10 +2498,10 @@ CONFIG_PACKAGE_zlib=y
 #
 # bsd-games
 #
-# CONFIG_PACKAGE_backgammon is not set
-# CONFIG_PACKAGE_primes is not set
-# CONFIG_PACKAGE_tetris is not set
-# CONFIG_PACKAGE_worm is not set
+CONFIG_PACKAGE_backgammon=y
+CONFIG_PACKAGE_primes=y
+CONFIG_PACKAGE_tetris=y
+CONFIG_PACKAGE_worm=y
 # CONFIG_PACKAGE_freedroid is not set
 # CONFIG_PACKAGE_frotz is not set
 CONFIG_PACKAGE_gnuchess=y
@@ -2714,7 +2714,7 @@ CONFIG_PACKAGE_bc=y
 # CONFIG_PACKAGE_bluez-utils is not set
 # CONFIG_PACKAGE_btrfs-progs is not set
 CONFIG_PACKAGE_bzip2=y
-# CONFIG_PACKAGE_calcurse is not set
+CONFIG_PACKAGE_calcurse=y
 # CONFIG_PACKAGE_catdoc is not set
 # CONFIG_PACKAGE_ccrypt is not set
 # CONFIG_PACKAGE_cdparanoia is not set
@@ -2886,7 +2886,6 @@ CONFIG_PACKAGE_imgv=y
 # CONFIG_PACKAGE_lrzsz is not set
 CONFIG_PACKAGE_lsof=y
 # CONFIG_PACKAGE_macchanger is not set
-# CONFIG_PACKAGE_mandoc is not set
 CONFIG_PACKAGE_mathomatic=y
 # CONFIG_PACKAGE_mdadm is not set
 # CONFIG_PACKAGE_memtester is not set
