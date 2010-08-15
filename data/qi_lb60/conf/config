@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22615)
-# Sun Aug 15 10:51:32 2010
+# Sun Aug 15 11:48:11 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -2888,6 +2888,7 @@ CONFIG_PACKAGE_imgv=y
 # CONFIG_PACKAGE_lrzsz is not set
 CONFIG_PACKAGE_lsof=y
 # CONFIG_PACKAGE_macchanger is not set
+CONFIG_PACKAGE_mandoc=y
 CONFIG_PACKAGE_mathomatic=y
 # CONFIG_PACKAGE_mdadm is not set
 # CONFIG_PACKAGE_memtester is not set
