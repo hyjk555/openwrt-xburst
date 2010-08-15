@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22615)
-# Sun Aug 15 00:28:01 2010
+# Sun Aug 15 01:28:55 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -1118,6 +1118,7 @@ CONFIG_PACKAGE_wireless-tools=y
 # miredo: Teredo (IPv6 tunneling over UDP through NAT)
 #
 # CONFIG_PACKAGE_miredo-client is not set
+# CONFIG_PACKAGE_miredo-common is not set
 # CONFIG_PACKAGE_miredo-server is not set
 
 #
@@ -2206,6 +2207,7 @@ CONFIG_PACKAGE_tcpdump=y
 # CONFIG_PACKAGE_wdiag is not set
 # CONFIG_PACKAGE_wget is not set
 # CONFIG_PACKAGE_wget-nossl is not set
+# CONFIG_PACKAGE_wing is not set
 # CONFIG_PACKAGE_wiviz is not set
 # CONFIG_PACKAGE_wol is not set
 CONFIG_PACKAGE_wpa-supplicant=y
