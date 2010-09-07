@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22669)
-# Sun Sep  5 07:03:38 2010
+# Mon Sep  6 10:11:46 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -2944,6 +2944,7 @@ CONFIG_PACKAGE_kbd-console-fonts=y
 # CONFIG_PACKAGE_kmemtrace-user is not set
 # CONFIG_PACKAGE_ksymoops is not set
 # CONFIG_PACKAGE_lcd4linux is not set
+# CONFIG_PACKAGE_lcdproc is not set
 # CONFIG_PACKAGE_ldconfig is not set
 # CONFIG_PACKAGE_ldd is not set
 # CONFIG_PACKAGE_libnfc-examples is not set
