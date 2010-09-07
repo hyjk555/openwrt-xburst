@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22669)
-# Mon Sep  6 21:42:37 2010
+# Mon Sep  6 21:47:46 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -2972,6 +2972,7 @@ CONFIG_PACKAGE_odt2txt=y
 # CONFIG_PACKAGE_pciutils is not set
 # CONFIG_PACKAGE_pcscd is not set
 # CONFIG_PACKAGE_pipacs is not set
+CONFIG_PACKAGE_poke=y
 CONFIG_PACKAGE_powertop=y
 # CONFIG_PACKAGE_procps is not set
 # CONFIG_PACKAGE_psmisc is not set
@@ -3065,7 +3066,7 @@ CONFIG_PACKAGE_mpc=y
 # CONFIG_PACKAGE_mt-daapd is not set
 CONFIG_PACKAGE_ncmpc=y
 # CONFIG_PACKAGE_scmpc is not set
-# CONFIG_PACKAGE_sox is not set
+CONFIG_PACKAGE_sox=y
 
 #
 # Languages
