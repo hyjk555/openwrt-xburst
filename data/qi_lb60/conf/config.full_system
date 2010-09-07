@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # OpenWrt version: Backfire (r22669)
-# Mon Sep  6 21:49:41 2010
+# Mon Sep  6 22:06:04 2010
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -276,37 +276,14 @@ CONFIG_KERNEL_GIT_LOCAL_REPOSITORY=""
 CONFIG_TARGET_OPTIMIZATION="-Os -pipe -mips32 -mtune=mips32 -funit-at-a-time"
 CONFIG_SOFT_FLOAT=y
 # CONFIG_EXTRA_TARGET_ARCH is not set
-# CONFIG_BINUTILS_VERSION_2_18 is not set
-# CONFIG_BINUTILS_VERSION_2_19_1 is not set
-# CONFIG_BINUTILS_VERSION_2_20 is not set
-# CONFIG_BINUTILS_VERSION_2_20_1 is not set
-# CONFIG_BINUTILS_VERSION_CS is not set
 CONFIG_EXTRA_BINUTILS_CONFIG_OPTIONS=""
 CONFIG_BINUTILS_VERSION="2.19.1"
-# CONFIG_GCC_VERSION_3_4_6 is not set
-# CONFIG_GCC_VERSION_4_1_2 is not set
-# CONFIG_GCC_VERSION_4_2_4 is not set
-# CONFIG_GCC_VERSION_4_3_3 is not set
-# CONFIG_GCC_VERSION_4_3_4 is not set
-# CONFIG_GCC_VERSION_4_4_1 is not set
-# CONFIG_GCC_VERSION_4_4_2 is not set
-# CONFIG_GCC_VERSION_4_4_3 is not set
-# CONFIG_GCC_VERSION_LLVM is not set
 CONFIG_GCC_VERSION_4_3_3_CS=y
-# CONFIG_GCC_VERSION_4_4_1_CS is not set
-# CONFIG_GCC_VERSION_4_4_3_CS is not set
 CONFIG_EXTRA_GCC_CONFIG_OPTIONS=""
 # CONFIG_SSP_SUPPORT is not set
 CONFIG_INSTALL_LIBSTDCPP=y
 # CONFIG_INSTALL_LIBGCJ is not set
-# CONFIG_USE_EGLIBC is not set
-# CONFIG_USE_GLIBC is not set
 CONFIG_USE_UCLIBC=y
-# CONFIG_UCLIBC_VERSION_0_9_30_1 is not set
-# CONFIG_UCLIBC_VERSION_0_9_30_2 is not set
-# CONFIG_UCLIBC_VERSION_0_9_30_3 is not set
-# CONFIG_UCLIBC_VERSION_0_9_31 is not set
-# CONFIG_UCLIBC_VERSION_0_9_32 is not set
 # CONFIG_GDB is not set
 # CONFIG_INSIGHT is not set
 CONFIG_GCC_VERSION="4.3.3+cs"
@@ -1506,29 +1483,29 @@ CONFIG_PACKAGE_fontconfig=y
 CONFIG_PACKAGE_gtk2=y
 # CONFIG_PACKAGE_gtk2-cups is not set
 CONFIG_PACKAGE_gtkmm=y
-# CONFIG_PACKAGE_libexo is not set
+CONFIG_PACKAGE_libexo=y
 # CONFIG_PACKAGE_libxfce4menu is not set
-# CONFIG_PACKAGE_libxfce4util is not set
-# CONFIG_PACKAGE_libxfcegui4 is not set
+CONFIG_PACKAGE_libxfce4util=y
+CONFIG_PACKAGE_libxfcegui4=y
 CONFIG_PACKAGE_qt4=y
 CONFIG_QT4_WS_QWS=y
 # CONFIG_QT4_WS_X11 is not set
 CONFIG_PACKAGE_qt4-dbus=y
-# CONFIG_PACKAGE_qt4-demos is not set
-# CONFIG_PACKAGE_qt4-drivers-gfx-directfb is not set
-# CONFIG_PACKAGE_qt4-drivers-gfx-linuxfb is not set
-# CONFIG_PACKAGE_qt4-drivers-kbd-linuxinput is not set
-# CONFIG_PACKAGE_qt4-drivers-mouse-pcmousedriver is not set
-# CONFIG_PACKAGE_qt4-drivers-mouse-tpmousedriver is not set
+CONFIG_PACKAGE_qt4-demos=y
+CONFIG_PACKAGE_qt4-drivers-gfx-directfb=y
+CONFIG_PACKAGE_qt4-drivers-gfx-linuxfb=y
+CONFIG_PACKAGE_qt4-drivers-kbd-linuxinput=y
+CONFIG_PACKAGE_qt4-drivers-mouse-pcmousedriver=y
+CONFIG_PACKAGE_qt4-drivers-mouse-tpmousedriver=y
 CONFIG_PACKAGE_qt4-drivers-mouse-tslibmousedriver=y
-# CONFIG_PACKAGE_qt4-examples is not set
+CONFIG_PACKAGE_qt4-examples=y
 CONFIG_PACKAGE_qt4-gui=y
 CONFIG_PACKAGE_qt4-mysql=y
 CONFIG_PACKAGE_qt4-network=y
-# CONFIG_PACKAGE_qt4-phonon is not set
-# CONFIG_PACKAGE_qt4-qt3support is not set
+CONFIG_PACKAGE_qt4-phonon=y
+CONFIG_PACKAGE_qt4-qt3support=y
 CONFIG_PACKAGE_qt4-sqlite=y
-# CONFIG_PACKAGE_qt4-svg is not set
+CONFIG_PACKAGE_qt4-svg=y
 CONFIG_PACKAGE_qt4-xml=y
 
 #
@@ -1541,15 +1518,15 @@ CONFIG_PACKAGE_cairomm=y
 # CONFIG_PACKAGE_eina is not set
 # CONFIG_PACKAGE_embryo is not set
 # CONFIG_PACKAGE_hippo-canvas is not set
-# CONFIG_PACKAGE_libICE is not set
-# CONFIG_PACKAGE_libSM is not set
+CONFIG_PACKAGE_libICE=y
+CONFIG_PACKAGE_libSM=y
 # CONFIG_PACKAGE_libXau is not set
 # CONFIG_PACKAGE_libXdmcp is not set
 # CONFIG_PACKAGE_libXfont is not set
 # CONFIG_PACKAGE_libast is not set
 # CONFIG_PACKAGE_libdrm is not set
 # CONFIG_PACKAGE_libfontenc is not set
-# CONFIG_PACKAGE_libglade is not set
+CONFIG_PACKAGE_libglade=y
 # CONFIG_PACKAGE_libpciaccess is not set
 # CONFIG_PACKAGE_librsvg is not set
 # CONFIG_PACKAGE_libthunar-vfs is not set
@@ -1576,7 +1553,7 @@ CONFIG_PACKAGE_cairomm=y
 # CONFIG_PACKAGE_libxcb-xtest is not set
 # CONFIG_PACKAGE_libxcb-xv is not set
 # CONFIG_PACKAGE_libxcb-xvmc is not set
-# CONFIG_PACKAGE_libxfconf is not set
+CONFIG_PACKAGE_libxfconf=y
 CONFIG_PACKAGE_orbit2=y
 CONFIG_PACKAGE_pango=y
 CONFIG_PACKAGE_pangomm=y
@@ -2869,6 +2846,7 @@ CONFIG_PACKAGE_catdoc=y
 CONFIG_PACKAGE_cxxtools=y
 # CONFIG_PACKAGE_daemontools is not set
 CONFIG_PACKAGE_dbus=y
+CONFIG_PACKAGE_dbus-launch-x=y
 # CONFIG_PACKAGE_dbus-utils is not set
 # CONFIG_PACKAGE_dc is not set
 # CONFIG_PACKAGE_devmem2 is not set
