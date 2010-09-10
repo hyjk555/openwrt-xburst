@@ -1,14 +1,13 @@
-this "config.xbboot" if for build image that used by "xbboot"
+the "config.xbboot" is for build image that used by "xbboot"
+this "config.xbboot" will enable CONFIG_TARGET_ROOTFS_INITRAMFS, and
+only select basic pakcages.
 
 1. at the root of openwrt folder:
 	$ cp data/qi_lb60/conf/config.xbboot .config
 	$ make
 
-2. for now we need manully copy the "zImage" to bin/xburst
-	$ cp build_dir/linux-xburst_qi_lb60/linux-2.6.32.16/arch/mips/boot/compressed/zImage bin/xburst/openwrt-xburst-qi_lb60-zImage-xbboot.bin
+2. upload the image to Ben NanoNote
+	boot Ben NanoNote to USBBOOT mode.
+	$ sudo xbboot -u 0x80600000 bin/xburst/openwrt-xburst-qi_lb60-zImage.bin
 
-3. upload the image to Ben NanoNote
-	a. boot Ben NanoNote to USBBOOT mode.
-	b. sudo xbboot -u 0x80600000 bin/xburst/openwrt-xburst-qi_lb60-zImage-xbboot.bin
-
-   then the NanoNote will boot. setup a password for ssh or use telnet to login NanoNote.
+then the NanoNote will boot. setup a password for ssh or use telnet to login NanoNote.
