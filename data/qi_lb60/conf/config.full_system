@@ -2,6 +2,7 @@
 # This file must be copied to .config in the OpenWrt root folder,
 # then run: yes "" | make oldconfig > /dev/null
 #
+##i can has change
 
 CONFIG_TARGET_xburst=y
 CONFIG_TARGET_xburst_qi_lb60=y
