@@ -58,6 +58,9 @@ mv .config config
 mkdir xburst
 
 echo "updating git repo..."
+git diff > bak/modify_${DATE_TIME}.patch
+git checkout -f
+git checkout tracking_backfire
 git pull > /dev/null
 if [ "$?" != "0" ]; then
 	echo "ERROR: updating openwrt-xburst failed"
@@ -83,7 +86,7 @@ VERSIONS_FILE="xburst/VERSIONS"
 echo "# base :: 'openwrt' [scm-protocol] [revision] [source] [branch]" > ${VERSIONS_FILE}
 tmp=($(git show-ref | head -n 1))
 rev=${tmp[0]}
-echo "openwrt git ${rev} git://projects.qi-hardware.com/openwrt-xburst.git xburst" >> ${VERSIONS_FILE}
+echo "openwrt git ${rev} git://projects.qi-hardware.com/openwrt-xburst.git tracking_backfire" >> ${VERSIONS_FILE}
 echo "# feeds :: [feedname] [scm-protocol] [revision]" >> ${VERSIONS_FILE}
 IFS=$'\n'
 for feed in $feeds; do
