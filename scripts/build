@@ -110,7 +110,7 @@ echo ${DATE} > files/etc/VERSION
 
 mv config .config
 
-make oldconfig
+yes "" | make oldconfig
 
 echo "starting compiling - this may take several hours..."
 
