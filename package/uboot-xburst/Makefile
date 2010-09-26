@@ -87,8 +87,8 @@ endef
 
 define Package/uboot/install/template
 define Package/uboot-xburst-$(1)/install
-	$(INSTALL_DIR) $$(1)
 	$(CP) $(PKG_BUILD_DIR)/u-boot-nand.bin $(BIN_DIR)/$(2)
+	rmdir $$(1)
 endef
 endef
 
