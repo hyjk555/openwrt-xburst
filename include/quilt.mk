@@ -39,7 +39,7 @@ define PatchDir/Quilt
 endef
 
 define PatchDir/Default
-	@if [ -d "$(2)" -a "$$$$(ls $(2) | wc -l)" -gt 0 ]; then \
+	@if [ -d "$(2)" -a "$$$$(ls $(2) 2>/dev/null | wc -l)" -gt 0 ]; then \
 		if [ -s "$(2)/series" ]; then \
 			$(call filter_series,$(2)/series) | xargs -n1 \
 				$(PATCH) "$(1)" "$(2)"; \
