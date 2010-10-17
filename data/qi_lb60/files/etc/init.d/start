@@ -3,6 +3,5 @@
 
 START=99
 boot() {
-	source /etc/profile
-	/usr/bin/gmenu2x
+	SDL_NOMOUSE=1 start-stop-daemon -S -b -x /usr/bin/gmenu2x
 }
