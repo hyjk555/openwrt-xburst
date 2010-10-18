@@ -13,7 +13,6 @@
 #ifndef __MMC_JZMMC_H__
 #define __MMC_JZMMC_H__
 
-#define MMC_DEBUG_LEVEL		0		/* Enable Debug: 0 - no debug */
 #define ID_TO_RCA(x) ((x)+1)
 #define MMC_OCR_ARG		0x00ff8000	/* Argument of OCR */
 
@@ -173,7 +172,5 @@ static inline void mmc_simple_cmd(struct mmc_request *request, int cmd, u32 arg,
 {
 	mmc_send_cmd( request, cmd, arg, 0, 0, rtype, 0);
 }
-
-int mmc2info(ulong addr);
 
 #endif /* __MMC_JZMMC_H__ */
