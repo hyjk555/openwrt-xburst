@@ -24,10 +24,6 @@
 
 #include <asm/io.h>
 
-#define mdelay(n)	udelay((n)*1000)
-
-#define NR_PALETTE	256
-
 struct lcd_desc{
 	unsigned int next_desc; /* LCDDAx */
 	unsigned int databuf;   /* LCDSAx */

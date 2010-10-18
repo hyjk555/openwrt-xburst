@@ -348,6 +348,8 @@ static void gpio_init(void)
 	 * Initialize UART0 pins
 	 */
 	__gpio_as_uart0();
+
+	__gpio_jtag_to_uart0();
 }
 
 static int is_usb_boot()
@@ -372,10 +374,12 @@ void nand_boot(void)
 	 */
 	gpio_init();
 	pll_init();
-	REG_GPIO_PXSELS(2) = 0x80000000;
+
 	serial_init();
 	sdram_init();
-	serial_puts("\n\nNAND Secondary Program Loader\n\n");
+	jz_nand_init();
+
+	serial_puts("\nNAND Boot\n");
 
 #if defined(CONFIG_NANONOTE)
 	if(is_usb_boot()) {

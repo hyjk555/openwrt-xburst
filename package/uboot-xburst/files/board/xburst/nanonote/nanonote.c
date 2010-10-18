@@ -51,7 +51,7 @@ static void gpio_init(void)
 	}
 
 	/* enable the TP4, TP5 as UART0 */
-	REG_GPIO_PXSELS(2) = 0x80000000;
+	__gpio_jtag_to_uart0();
 
 	/*
 	 * Initialize UART0 pins, in Ben NanoNote uart0 and keyin8 use the
