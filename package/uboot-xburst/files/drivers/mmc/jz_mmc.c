@@ -29,6 +29,8 @@
 #include <asm/jz4740.h>
 #include "jz_mmc.h"
 
+#define debug(...) ;
+
 #define CFG_MMC_BASE		0x80600000
 static int sd2_0 = 0;
 
@@ -88,11 +90,10 @@ block_dev_desc_t * mmc_get_dev(int dev)
 
 /*
  * FIXME needs to read cid and csd info to determine block size
-v * and other parameters
+ * and other parameters
  */
-static uchar mmc_buf[MMC_BLOCK_SIZE];
+static uchar mmc_buf[1024];
 static int mmc_ready = 0;
-static struct mmc_csd mmc_csd;
 static int use_4bit;                    /* Use 4-bit data bus */
 /*
  *  MMC Events
@@ -364,9 +365,8 @@ int jz_mmc_exec_cmd(struct mmc_request *request)
 		if (request->arg == 0x2) {
 			printf("Use 4-bit bus width\n");
 			use_4bit = 1;
-		}
-		else {
-			printf("Use 1-bit bus width\n");			
+		} else {
+			printf("Use 1-bit bus width\n");
 			use_4bit = 0;
 		}
 	}
@@ -554,29 +554,28 @@ int mmc_block_read(u8 *dst, ulong src, ulong len)
 
 	struct mmc_request request;
 	struct mmc_response_r1 r1;
-	int retval;
+	int retval = 0;
 
-	if (len == 0) {
-		return 0;
-	}
+	if (len == 0)
+		goto exit;
+
 	mmc_simple_cmd(&request, MMC_CMD_SEND_STATUS, mmcinfo.rca, RESPONSE_R1);
 	retval = mmc_unpack_r1(&request, &r1, 0);
-	if (retval && (retval != MMC_ERROR_STATE_MISMATCH)) {
-		return retval;
-	}
+	if (retval && (retval != MMC_ERROR_STATE_MISMATCH))
+		goto exit;
 
 	mmc_simple_cmd(&request, MMC_CMD_SET_BLOCKLEN, len, RESPONSE_R1);
-	if ((retval = mmc_unpack_r1(&request, &r1, 0))) {
-		return retval;
-	}
+	if ((retval = mmc_unpack_r1(&request, &r1, 0)))
+		goto exit;
 
 	if (sd2_0)
 		src /= len;
 
 	mmc_send_cmd(&request, MMC_CMD_READ_SINGLE_BLOCK, src, 1,len, RESPONSE_R1, dst);
-	if ((retval = mmc_unpack_r1(&request, &r1, 0))) {
-		return retval;
-	}
+	if ((retval = mmc_unpack_r1(&request, &r1, 0)))
+		goto exit;
+
+exit:
 	return retval;
 }
 
@@ -595,14 +594,15 @@ int xburst_mmc_read(u64 src, uchar *dst, int size)
 	}
 
 	if (!mmc_ready) {
-		printf("MMC card is not ready\n");
+		printf("Please initial the MMC first\n");
 		return -1;
 	}
 
-	mmc_block_size = MMC_BLOCK_SIZE;
+	debug("---- start %s ---- \n", __func__);
+
+	mmc_block_size = mmcinfo.block_len;
 	mmc_block_address = ~(mmc_block_size - 1);
 
-	//src -= CFG_MMC_BASE;
 	end = src + size;
 	part_start = ~mmc_block_address & src;
 	part_end = ~mmc_block_address & end;
@@ -610,30 +610,35 @@ int xburst_mmc_read(u64 src, uchar *dst, int size)
 	aligned_end = mmc_block_address & end;
 	/* all block aligned accesses */
 	debug("src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
-	src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
+	      src, (ulong)dst, end, part_start, part_end, aligned_start, 
+	      aligned_end);
+
 	if (part_start) {
 		part_len = mmc_block_size - part_start;
 		debug("ps src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
-		src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
+		     src, (ulong) dst, end, part_start, part_end, aligned_start,
+		     aligned_end);
+
 		if ((mmc_block_read(mmc_buf, aligned_start, mmc_block_size)) < 0) {
+
 			return -1;
 		}
-		memcpy(dst, mmc_buf+part_start, part_len);
+		memcpy(dst, mmc_buf + part_start, part_len);
 		dst += part_len;
 		src += part_len;
 	}
-	debug("src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
-	src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
+
 	for (; src < aligned_end; src += mmc_block_size, dst += mmc_block_size) {
-		debug("al src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
+		debug("src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
 		src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
 
 		if ((mmc_block_read((uchar *)(dst), src, mmc_block_size)) < 0) {
 			return -1;
 		}
 	}
+
 	debug("src %lx dst %lx end %lx pstart %lx pend %lx astart %lx aend %lx\n",
-	src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
+	      src, (ulong)dst, end, part_start, part_end, aligned_start, aligned_end);
 
 	if (part_end && src < end) {
 		if ((mmc_block_read(mmc_buf, aligned_end, mmc_block_size)) < 0) {
@@ -641,8 +646,9 @@ int xburst_mmc_read(u64 src, uchar *dst, int size)
 		}
 		memcpy(dst, mmc_buf, part_end);
 	}
-	return 0;
 
+	debug("---- end %s ---- \n", __func__);
+	return 0;
 }
 
 int mmc_write(uchar *src, ulong dst, int size)
@@ -659,7 +665,7 @@ int mmc_write(uchar *src, ulong dst, int size)
 		return -1;
 	}
 
-	mmc_block_size = MMC_BLOCK_SIZE;
+	mmc_block_size = mmcinfo.block_len;
 	mmc_block_address = ~(mmc_block_size - 1);
 
 	dst -= CFG_MMC_BASE;
@@ -713,10 +719,9 @@ int mmc_write(uchar *src, ulong dst, int size)
 
 ulong mmc_bread(int dev_num, ulong blknr, ulong blkcnt, ulong *dst)
 {
-	ulong src;
-	int mmc_block_size = MMC_BLOCK_SIZE;
+	int mmc_block_size = mmcinfo.block_len;
+	ulong src = blknr * mmc_block_size ;//+ CFG_MMC_BASE;
 
-	src = blknr * mmc_block_size ;//+ CFG_MMC_BASE;
 	xburst_mmc_read(src, (uchar *)dst, blkcnt*mmc_block_size);
 	return blkcnt;
 }
@@ -766,6 +771,20 @@ static void mmc_configure_card(void)
 		mmcinfo.block_num = (mmcinfo.csd.c_size + 1) * (1 << (mmcinfo.csd.c_size_mult + 2));
 
 	mmcinfo.block_len = 1 << mmcinfo.csd.read_bl_len;
+
+	mmc_dev.if_type = IF_TYPE_SD;
+	mmc_dev.part_type = PART_TYPE_DOS;
+	mmc_dev.dev = 0;
+	mmc_dev.lun = 0;
+	mmc_dev.type = 0;
+	mmc_dev.blksz = mmcinfo.block_len;
+	mmc_dev.lba = mmcinfo.block_num;
+	mmc_dev.removable = 0;
+
+	printf("%s Detected: %lu blocks of %lu bytes\n",
+	       sd2_0 == 1 ? "SDHC" : "SD",
+	       mmc_dev.lba,
+	       mmc_dev.blksz);
 
 	/* Fix the clock rate */
 	rate = mmc_tran_speed(mmcinfo.csd.tran_speed);
@@ -846,22 +865,20 @@ static int mmc_init_card_state(struct mmc_request *request)
         case SD_CMD_APP_SEND_OP_COND:
                 retval = mmc_unpack_r3(request, &r3);
                 if (retval) {
-                  /* Try MMC card */
-                    mmc_simple_cmd(request, SD_CMD_APP_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
-                    break;
+			debug("%s: try MMC card\n", __func__);
+			mmc_simple_cmd(request, SD_CMD_APP_SEND_OP_COND, MMC_OCR_ARG, RESPONSE_R3);
+			break;
 		}
 
                 debug("%s: read ocr value = 0x%08x\n", __func__, r3.ocr);
 
 		if(!(r3.ocr & MMC_CARD_BUSY || ocr == 0)){
-			udelay(10000);
+			udelay(50000);
 			mmc_simple_cmd(request, MMC_CMD_APP_CMD, 0, RESPONSE_R1);
-		}
-		else {
-		  /* Set the data bus width to 4 bits */
-                  mmcinfo.sd = 1; /* SD Card ready */
-                  mmcinfo.state = CARD_STATE_READY;
-		  mmc_simple_cmd(request, MMC_CMD_ALL_SEND_CID, 0, RESPONSE_R2_CID);
+		} else {
+			mmcinfo.sd = 1; /* SD Card ready */
+			mmcinfo.state = CARD_STATE_READY;
+			mmc_simple_cmd(request, MMC_CMD_ALL_SEND_CID, 0, RESPONSE_R2_CID);
 		}
 		break;
 
@@ -921,13 +938,7 @@ static int mmc_init_card_state(struct mmc_request *request)
 
 	case MMC_CMD_SEND_CSD:
 		retval = mmc_unpack_csd(request, &mmcinfo.csd);
-			struct mmc_csd *csd = (struct mmc_csd *)retval;
-			memcpy(&mmc_csd, csd, sizeof(csd));
-			mmc_ready = 1;
-
-			printf("MMC card is ready\n");
-			/* FIXME add verbose printout for csd */
-
+		mmc_ready = 1;
 		/*FIXME:ignore CRC error for CMD2/CMD9/CMD10 */
 	        if (retval && (retval != MMC_ERROR_CRC)) {
 			debug("%s: unable to SEND_CSD error=%d (%s)\n", 
@@ -1082,14 +1093,18 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 	if (request->result)
 		return request->result;
 
-	csd->csd_structure      = (buf[1] & 0xc0) >> 6;
+	if (buf[0] != 0x3f)
+		return MMC_ERROR_HEADER_MISMATCH;
+
+	csd->csd_structure = (buf[1] & 0xc0) >> 6;
 	if (csd->csd_structure)
 		sd2_0 = 1;
 	else
 		sd2_0 = 0;
 
 	switch (csd->csd_structure) {
-	case 0 :
+	case 0 :/* Version 1.01-1.10
+		 * Version 2.00/Standard Capacity */
 		csd->taac               = buf[2];
 		csd->nsac               = buf[3];
 		csd->tran_speed         = buf[4];
@@ -1135,7 +1150,7 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->file_format        = (buf[15] & 0x0c) >> 2;
 		csd->ecc                = buf[15] & 0x03;
 		break;
-	case 1 :
+	case 1 :	/* Version 2.00/High Capacity */
 		csd->taac               = 0;
 		csd->nsac               = 0;
 		csd->tran_speed         = buf[4];
@@ -1163,23 +1178,6 @@ int mmc_unpack_csd(struct mmc_request *request, struct mmc_csd *csd)
 		csd->file_format        = 0;
 		csd->ecc                = buf[15] & 0x03;
 	}
-
-	mmc_dev.if_type = IF_TYPE_SD;
-	mmc_dev.part_type = PART_TYPE_DOS;
-	mmc_dev.dev = 0;
-	mmc_dev.lun = 0;
-	mmc_dev.type = 0;
-	mmc_dev.blksz = 512;
-	mmc_dev.lba = (1 + csd->c_size) << 10;
-	mmc_dev.removable = 0;
-
-	printf("SD%s Detected: %lu blocks of %lu bytes (%luMB)\n",
-	       sd2_0 == 1 ? "HC" : "  ",
-	       mmc_dev.lba,
-	       mmc_dev.blksz,
-	       mmc_dev.lba * mmc_dev.blksz / (1024 * 1024));
-
-	if (buf[0] != 0x3f)  return MMC_ERROR_HEADER_MISMATCH;
 
 	return 0;
 }
@@ -1259,30 +1257,26 @@ int mmc_unpack_cid(struct mmc_request *request, struct mmc_cid *cid)
 
 	cid->mid = buf[1];
 	cid->oid = PARSE_U16(buf,2);
-	for (i = 0 ; i < 6 ; i++)
+	for (i = 0 ; i < 5 ; i++)
 		cid->pnm[i] = buf[4+i];
 	cid->pnm[6] = 0;
 	cid->prv = buf[10];
-	cid->psn = PARSE_U32(buf,11);
+	cid->psn = PARSE_U32(buf,10);
 	cid->mdt = buf[15];
 
-	printf("CID info:\n"
-	       "  mid=%d\n"
-	       "  oid=%d\n"
-	       "  pnm=%s\n"
-	       "  prv=%d.%d\n"
-	       "  psn=%08x\n"
-	       "  mdt=%d/%d\n",
+	printf("Man %02x OEM 0x%04x \"%s\" %d.%d 0x%08x "
+	       "Date %02u/%04u\n",
 	       cid->mid,
 	       cid->oid,
 	       cid->pnm, 
 	       cid->prv >> 4,
 	       cid->prv & 0xf, 
 	       cid->psn,
-	       cid->mdt >> 4,
-	       (cid->mdt & 0xf) + 1997);
+	       cid->mdt & 0xf,
+	       (cid->mdt >> 4) + 2000);
 
-	if (buf[0] != 0x3f)  return MMC_ERROR_HEADER_MISMATCH;
+	if (buf[0] != 0x3f)
+		return MMC_ERROR_HEADER_MISMATCH;
       	return 0;
 }
 

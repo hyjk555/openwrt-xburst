@@ -17,15 +17,17 @@
 #define CONFIG_JzRISC		1  /* JzRISC core */
 #define CONFIG_JZSOC		1  /* Jz SoC */
 #define CONFIG_JZ4740		1  /* Jz4740 SoC */
-#define CONFIG_NANONOTE		1
 #define CONFIG_NAND_JZ4740
+#define CONFIG_JZ4740_MMC
+#define CONFIG_NANONOTE
 
 #define BOOT_FROM_SDCARD	1
 #define BOOT_WITH_ENABLE_UART	(1 << 1)	/* Vaule for global_data.h gd->boot_option */
 
 #define CONFIG_LCD		1  /* LCD support */
 #define LCD_BPP			LCD_COLOR32	/*5:18,24,32 bits per pixel */
-#define CONFIG_SYS_WHITE_ON_BLACK	1
+#define CONFIG_SYS_WHITE_ON_BLACK
+#define CONFIG_VIDEO_GPM940B0
 
 #define CONFIG_SYS_CPU_SPEED	336000000	/* CPU clock: 336 MHz */
 #define CONFIG_SYS_EXTAL	12000000	/* EXTAL freq: 12 MHz */

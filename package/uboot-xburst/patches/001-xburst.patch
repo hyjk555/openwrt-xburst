@@ -219,6 +219,18 @@ index f7e7c1c..c64979f 100644
  
  	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
  
+diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
+index 6fa04b8..b08a800 100644
+--- a/drivers/mmc/Makefile
++++ b/drivers/mmc/Makefile
+@@ -32,6 +32,7 @@ COBJS-$(CONFIG_OMAP3_MMC) += omap3_mmc.o
+ COBJS-$(CONFIG_FSL_ESDHC) += fsl_esdhc.o
+ COBJS-$(CONFIG_MXC_MMC) += mxcmmc.o
+ COBJS-$(CONFIG_PXA_MMC) += pxa_mmc.o
++COBJS-$(CONFIG_JZ4740_MMC) += jz_mmc.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS	:= $(COBJS:.o=.c)
 diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
 index 28f27da..427d963 100644
 --- a/drivers/mtd/nand/Makefile
@@ -231,6 +243,18 @@ index 28f27da..427d963 100644
  endif
  
  COBJS	:= $(COBJS-y)
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 7d84fc7..39f981d 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -38,6 +38,7 @@ COBJS-$(CONFIG_SED156X) += sed156x.o
+ COBJS-$(CONFIG_VIDEO_SM501) += sm501.o
+ COBJS-$(CONFIG_VIDEO_SMI_LYNXEM) += smiLynxEM.o videomodes.o
+ COBJS-$(CONFIG_VIDEO_VCXK) += bus_vcxk.o
++COBJS-$(CONFIG_VIDEO_GPM940B0) += nanonote_gpm940b0.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS	:= $(COBJS:.o=.c)
 diff --git a/examples/standalone/mips.lds b/examples/standalone/mips.lds
 index 717b201..d4a45f8 100644
 --- a/examples/standalone/mips.lds

@@ -29,10 +29,6 @@ START	= start.o
 SOBJS-y	= 
 COBJS-y = cpu.o interrupts.o jz4740.o jz_serial.o 
 
-COBJS-y += jz_mmc.o
-COBJS-$(CONFIG_NANONOTE) += nanonote_gpm940b0.o
-COBJS-$(CONFIG_SAKC)	+= nanonote_gpm940b0.o
-
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
 START	:= $(addprefix $(obj),$(START))
