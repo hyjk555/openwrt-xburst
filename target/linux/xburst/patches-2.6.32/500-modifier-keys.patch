@@ -28,7 +28,7 @@ Index: linux-2.6.32.10/drivers/char/defkeymap.map
 +	ctrll   keycode  13 = three
  keycode  14 = Delete           Delete          
 -	control keycode  14 = BackSpace
-+	altgr   keycode  14 = BackSpace
++	altgr   keycode  14 = Remove
  	alt     keycode  14 = Meta_Delete     
  keycode  15 = Tab              Tab             
  	alt     keycode  15 = Meta_Tab        
