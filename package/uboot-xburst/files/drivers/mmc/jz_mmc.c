@@ -29,9 +29,7 @@
 #include <asm/jz4740.h>
 #include "jz_mmc.h"
 
-#define CFG_MMC_BASE		0x80600000
 static int sd2_0 = 0;
-static uchar mmc_buf[1024];
 static int mmc_ready = 0;
 static int use_4bit;		/* Use 4-bit data bus */
 /*

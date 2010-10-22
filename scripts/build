@@ -32,8 +32,9 @@ if [ -f "config" ]; then
 fi
 
 echo "This script will move previous builds to bak/!"
-echo "This script will reset modifications you made"
-echo "  to files which are part of the repository!"
+echo "This script will compile base on last commit"
+echo "  your  modifications will backup by git stash"
+echo "  those modifications will apply again after compile"
 echo "This script comes without any kind of warranty!"
 echo " "
 echo "Are you brave, dude? [NO/yes]"
@@ -58,8 +59,7 @@ mv .config config
 mkdir xburst
 
 echo "updating git repo..."
-git diff > bak/modify_${DATE_TIME}.patch
-git checkout -f
+git stash
 git checkout tracking_backfire
 git pull > /dev/null
 if [ "$?" != "0" ]; then
@@ -121,6 +121,8 @@ if [ "$?" != "0" ]; then
 	echo "Please refer to the log file"
 	exit 1
 fi
+
+git stash pop
 
 cp .config xburst/config
 cp bin/xburst/* xburst/ 2>/dev/null
