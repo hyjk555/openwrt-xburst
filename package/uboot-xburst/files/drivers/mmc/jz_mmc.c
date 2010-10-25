@@ -558,8 +558,8 @@ int mmc_block_read(u8 *dst, ulong src, ulong len)
 	if (retval = mmc_unpack_r1(&request, &r1, 0))
 		goto exit;
 
-	if (sd2_0)
-		src /= len;
+	if (!sd2_0)
+		src *= mmcinfo.block_len;
 
 	mmc_send_cmd(&request, MMC_CMD_READ_SINGLE_BLOCK, src, 1, len, RESPONSE_R1, dst);
 	if (retval = mmc_unpack_r1(&request, &r1, 0))
@@ -571,24 +571,23 @@ exit:
 
 ulong mmc_bread(int dev_num, ulong blkstart, ulong blkcnt, ulong *dst)
 {
-       if (!mmc_ready) {
-               printf("Please initial the MMC first\n");
-               return -1;
-       }
+	if (!mmc_ready) {
+		printf("Please initial the MMC first\n");
+		return -1;
+	}
 
-       int i = 0;
-       ulong src = blkstart * mmcinfo.block_len;
-       ulong dst_tmp = dst;
+	int i = 0;
+	ulong dst_tmp = dst;
  
-       for (i = 0; i < blkcnt; i++) {
-               if ((mmc_block_read((uchar *)(dst_tmp), src, mmcinfo.block_len)) < 0)
+	for (i = 0; i < blkcnt; i++) {
+		if ((mmc_block_read((uchar *)(dst_tmp), blkstart, mmcinfo.block_len)) < 0)
 			return -1;
 
-               dst_tmp += mmcinfo.block_len;
-               src += mmcinfo.block_len;
+		dst_tmp += mmcinfo.block_len;
+		blkstart++;
 	}
  
-       return i;
+	return i;
 }
 
 int mmc_select_card(void)
@@ -1165,7 +1164,7 @@ u32 mmc_tran_speed(u8 ts)
 }
 
 void mmc_send_cmd(struct mmc_request *request, int cmd, u32 arg, 
-		   u16 nob, u16 block_len, enum mmc_rsp_t rtype, u8 *buffer)
+		  u16 nob, u16 block_len, enum mmc_rsp_t rtype, u8 *buffer)
 {
 	request->cmd       = cmd;
 	request->arg       = arg;
