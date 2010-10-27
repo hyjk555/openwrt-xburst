@@ -178,16 +178,13 @@
  * GPIO definition
  */
 #define GPIO_LCD_CS	(2 * 32 + 21)
-#define GPIO_DISP_OFF_N (3 * 32 + 21)
-#define GPIO_PWM	(3 * 32 + 27)
-
 #define GPIO_AMP_EN	(3 * 32 + 4)
 
 #define GPIO_SDPW_EN	(3 * 32 + 2)
 #define	GPIO_SD_DETECT	(3 * 32 + 0)
 
-#define	GPIO_USB_DETECT	(3 * 32 + 27)
-#define	GPIO_BUZZ_PWM	(3 * 32 + 28)
+#define	GPIO_BUZZ_PWM	(3 * 32 + 27)
+#define	GPIO_USB_DETECT	(3 * 32 + 28)
 
 #define	GPIO_AUDIO_POP	(1 * 32 + 29)
 #define GPIO_COB_TEST	(1 * 32 + 30)
@@ -199,4 +196,7 @@
 #define GPIO_SD_CD_N	GPIO_SD_DETECT		/* SD Card insert detect */
 #define GPIO_SD_VCC_EN_N	GPIO_SDPW_EN	/* SD Card Power Enable */
 
+#define SPEN	GPIO_LCD_CS	/* LCDCS :Serial command enable      */
+#define SPDA	(2 * 32 + 22)	/* LCDSCL:Serial command clock input */
+#define SPCK	(2 * 32 + 23)	/* LCDSDA:Serial command data input  */
 #endif	/* __CONFIG_NANONOTE_H */
