@@ -19,6 +19,9 @@ endif
 
 define Image/BuildKernel
 	cp $(LINUX_DIR)/arch/mips/boot/uImage $(BIN_DIR)/$(IMG_PREFIX)-uImage.bin
+ifeq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
+	cp $(LINUX_DIR)/arch/mips/boot/compressed/zImage $(BIN_DIR)/$(IMG_PREFIX)-zImage.bin
+endif
 endef
 
 define Image/Build/squashfs
