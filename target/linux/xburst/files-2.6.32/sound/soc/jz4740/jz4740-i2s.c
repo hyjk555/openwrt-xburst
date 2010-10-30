@@ -259,8 +259,8 @@ static int jz4740_i2s_set_fmt(struct snd_soc_dai *dai,
 }
 
 static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
-				 struct snd_pcm_hw_params *params,
-				 struct snd_soc_dai *dai)
+				struct snd_pcm_hw_params *params,
+				struct snd_soc_dai *dai)
 {
 	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
 	bool playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
@@ -272,11 +272,11 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S8:
-	    sample_size = 0;
+		sample_size = 0;
 		dma_width = JZ4740_DMA_WIDTH_8BIT;
-	    break;
+		break;
 	case SNDRV_PCM_FORMAT_S16:
-	    sample_size = 1;
+		sample_size = 1;
 		dma_width = JZ4740_DMA_WIDTH_16BIT;
 		break;
 	default:
@@ -285,22 +285,22 @@ static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	if (playback) {
 		ctrl &= ~JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK;
-	    ctrl |= sample_size << JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET;
+		ctrl |= sample_size << JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET;
 	} else {
 		ctrl &= ~JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK;
-	    ctrl |= sample_size << JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET;
+		ctrl |= sample_size << JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET;
 	}
 
 	switch (params_channels(params)) {
 	case 2:
-	    break;
+		break;
 	case 1:
-	    if (playback) {
-		    ctrl |= JZ_AIC_CTRL_MONO_TO_STEREO;
-		    break;
-	    }
+		if (playback) {
+			ctrl |= JZ_AIC_CTRL_MONO_TO_STEREO;
+			break;
+		}
 	default:
-	    return -EINVAL;
+		return -EINVAL;
 	}
 
 	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
@@ -410,7 +410,7 @@ static int jz4740_i2s_probe(struct platform_device *pdev, struct snd_soc_dai *da
 	conf = (7 << JZ_AIC_CONF_FIFO_RX_THRESHOLD_OFFSET) |
 	       (8 << JZ_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET) |
 	       JZ_AIC_CONF_OVERFLOW_PLAY_LAST |
-		   JZ_AIC_CONF_I2S |
+	       JZ_AIC_CONF_I2S |
 	       JZ_AIC_CONF_INTERNAL_CODEC;
 
 	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, JZ_AIC_CONF_RESET);
