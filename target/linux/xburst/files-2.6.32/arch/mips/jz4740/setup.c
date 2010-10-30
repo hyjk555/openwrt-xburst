@@ -39,7 +39,6 @@
 #include <asm/mach-jz4740/jz4740.h>
 #include <asm/mach-jz4740/regs.h>
 #include <asm/mach-jz4740/clock.h>
-#include <asm/mach-jz4740/serial.h>
 
 #include "clock.h"
 

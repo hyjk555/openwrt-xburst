@@ -1,0 +1,58 @@
+From 4939c63a61175f87d93ac0164c7adb40e8410a47 Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu@qi-hardware.com>
+Date: Sun, 17 Jan 2010 23:38:35 +0800
+Subject: [PATCH] ix upload zImage
+
+---
+ arch/mips/boot/compressed/head.S |    1 -
+ arch/mips/boot/compressed/misc.c |   22 ----------------------
+ 2 files changed, 0 insertions(+), 23 deletions(-)
+
+diff --git a/arch/mips/boot/compressed/head.S b/arch/mips/boot/compressed/head.S
+index d9700eb..6a4e685 100644
+--- a/arch/mips/boot/compressed/head.S
++++ b/arch/mips/boot/compressed/head.S
+@@ -5,7 +5,6 @@
+  */
+ 
+ #include <asm/asm.h>
+-#include <asm/cacheops.h>
+ #include <asm/cachectl.h>
+ #include <asm/regdef.h>
+ 
+diff --git a/arch/mips/boot/compressed/misc.c b/arch/mips/boot/compressed/misc.c
+index 2309fee..c0b041b 100644
+--- a/arch/mips/boot/compressed/misc.c
++++ b/arch/mips/boot/compressed/misc.c
+@@ -103,28 +103,6 @@ static unsigned long free_mem_end_ptr;
+ 
+ #include "../../../../lib/inflate.c"
+ 
+-static void *malloc(int size)
+-{
+-	void *p;
+-
+-	if (size <0) error("Malloc error\n");
+-	if (free_mem_ptr == 0) error("Memory error\n");
+-
+-	free_mem_ptr = (free_mem_ptr + 3) & ~3;	/* Align */
+-
+-	p = (void *)free_mem_ptr;
+-	free_mem_ptr += size;
+-
+-	if (free_mem_ptr >= free_mem_end_ptr)
+-		error("\nOut of memory\n");
+-
+-	return p;
+-}
+-
+-static void free(void *where)
+-{	/* Don't care */
+-}
+-
+ static void gzip_mark(void **ptr)
+ {
+ 	*ptr = (void *) free_mem_ptr;
+-- 
+1.6.3.3
+

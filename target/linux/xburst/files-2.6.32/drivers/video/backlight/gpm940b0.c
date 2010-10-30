@@ -176,6 +176,7 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 	gpm940b0->enabled = 1;
 	dev_set_drvdata(&spi->dev, gpm940b0);
 
+	gpm940b0_write_reg(spi, 0x07, 0x8d);
 	gpm940b0_write_reg(spi, 0x13, 0x01);
 	gpm940b0_write_reg(spi, 0x5, 0xc7);
 	return 0;
