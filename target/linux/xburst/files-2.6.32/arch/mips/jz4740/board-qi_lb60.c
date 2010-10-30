@@ -94,8 +94,12 @@ static struct mtd_partition qi_lb60_partitions_2gb[] = {
  	},
 	{ .name = "NAND ROOTFS partition",
 	  .offset = 8 * 0x100000,
-	  .size = (504 + 512 + 1024) * 0x100000,
+	  .size = 256 * 0x100000,
  	},
+	{ .name = "NAND DATA partition",
+	  .offset = 264 * 0x100000,
+	  .size = 1784 * 0x100000,
+	},
 };
 
 static void qi_lb60_nand_ident(struct platform_device *pdev,
@@ -120,16 +124,12 @@ static struct jz_nand_platform_data qi_lb60_nand_pdata = {
 };
 
 /* Keyboard*/
-
-/* #define KEEP_UART_ALIVE
- * don't define this. the keyboard and keyboard both work
- */
-
+#define KEY_QI_VOLUP	KEY_F11
+#define KEY_QI_VOLDOWN	KEY_F12
 #define KEY_QI_QI	KEY_F13
-#define KEY_QI_UPRED	KEY_RIGHTALT
-#define KEY_QI_VOLUP	KEY_VOLUMEUP
-#define KEY_QI_VOLDOWN	KEY_VOLUMEDOWN
+#define KEY_QI_ACUTE	KEY_GRAVE
 #define KEY_QI_FN	KEY_LEFTCTRL
+#define KEY_QI_UPRED	KEY_RIGHTALT
 
 static const uint32_t qi_lb60_keymap[] = {
 	KEY(0, 0, KEY_F1),	/* S2 */
@@ -167,7 +167,7 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(4, 0, KEY_TAB),	/* S34 */
 	KEY(4, 1, KEY_CAPSLOCK),	/* S35 */
 	KEY(4, 2, KEY_BACKSLASH),	/* S36 */
-	KEY(4, 3, KEY_APOSTROPHE),	/* S37 */
+	KEY(4, 3, KEY_QI_ACUTE),	/* S37 */
 	KEY(4, 4, KEY_COMMA),	/* S38 */
 	KEY(4, 5, KEY_DOT),	/* S39 */
 	KEY(4, 6, KEY_SLASH),	/* S40 */
@@ -188,12 +188,9 @@ static const uint32_t qi_lb60_keymap[] = {
 	KEY(6, 5, KEY_QI_VOLDOWN),	/* S55 */
 	KEY(6, 6, KEY_DOWN),	/* S56 */
 	KEY(6, 7, KEY_RIGHT),	/* S57 */
-
-#ifndef KEEP_UART_ALIVE
 	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
 	KEY(7, 1, KEY_LEFTALT),	/* S59 */
 	KEY(7, 2, KEY_QI_FN),	/* S60 */
-#endif
 };
 
 static const struct matrix_keymap_data qi_lb60_keymap_data = {
@@ -206,10 +203,7 @@ static const unsigned int qi_lb60_keypad_cols[] = {
 };
 
 static const unsigned int qi_lb60_keypad_rows[] = {
-	114, 115, 116, 117, 118, 119, 120,
-#ifndef KEEP_UART_ALIVE
-	122,
-#endif
+	114, 115, 116, 117, 118, 119, 120, 122,
 };
 
 static struct matrix_keypad_platform_data qi_lb60_pdata = {
