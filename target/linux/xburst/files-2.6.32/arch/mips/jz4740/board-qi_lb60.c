@@ -97,7 +97,7 @@ static struct mtd_partition qi_lb60_partitions_2gb[] = {
 	  .size = 512 * 0x100000,
  	},
 	{ .name = "NAND DATA partition",
-	  .offset = 264 * 0x100000,
+	  .offset = 520 * 0x100000,
 	  .size = 1528 * 0x100000,
 	},
 };
