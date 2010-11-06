@@ -166,7 +166,7 @@ if [ "$K" == "TRUE" ]; then
 fi
 if [ "$R" == "TRUE" ]; then
 	log "erase nand rootfs partition..."
-	usbboot -c "boot;nerase 16 512 0 0" >> "${LOG_FILE}" 2>&1
+	usbboot -c "boot;nerase 16 1024 0 0" >> "${LOG_FILE}" 2>&1
 	log "flashing rootfs..."
 	tmp=$(usbboot -c "nprog 2048 ${WORKING_DIR}/${ROOTFS} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
 	test "${tmp}" && abort "error while flashing rootfs:\n${tmp}"
