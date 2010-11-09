@@ -83,18 +83,19 @@ static int gpm940b0_set_mode(struct lcd_device *lcd, struct fb_videomode *mode)
 	return 0;
 }
 
-/*
+int gpm940b0_bl_get_brightness(struct backlight_device *bl)
+{
+	return bl->props.brightness;
+}
+
 int gpm940b0_bl_update_status(struct backlight_device *bl)
 {
 	struct gpm940b0 *gpm940b0 = bl_get_data(bl);
 
-	gpm940b0->reg5 &= ~0x38;
-	gpm940b0->reg5 |= ((bl->props.brightness << 3) & 0x38);
-
-	gpm940b0_write_reg(gpm940b0->spi, 0x5, gpm940b0->reg5);
+	gpm940b0_write_reg(gpm940b0->spi, 0x3, (bl->props.brightness));
 
 	return 0;
-}*/
+}
 
 static ssize_t reg_write(struct device *dev, struct device_attribute *attr,
 						const char *buf, size_t count)
@@ -119,12 +120,10 @@ static struct lcd_ops gpm940b0_lcd_ops = {
 	.set_mode = gpm940b0_set_mode,
 };
 
-#if 0
 static struct backlight_ops gpm940b0_bl_ops = {
-/*	.get_brightness	= gpm940b0_bl_get_brightness,*/
+	.get_brightness	= gpm940b0_bl_get_brightness,
 	.update_status	= gpm940b0_bl_update_status,
 };
-#endif
 
 static int __devinit gpm940b0_probe(struct spi_device *spi)
 {
@@ -154,7 +153,6 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 
 	gpm940b0->lcd->props.max_contrast = 255;
 
-#if 0
 	gpm940b0->bl = backlight_device_register("gpm940b0-bl", &spi->dev, gpm940b0,
 						 &gpm940b0_bl_ops);
 
@@ -163,11 +161,11 @@ static int __devinit gpm940b0_probe(struct spi_device *spi)
 		dev_err(&spi->dev, "Failed to register backlight device: %d\n", ret);
 		gpm940b0->bl = NULL;
 	} else {
-		gpm940b0->bl->props.max_brightness = 8;
-		gpm940b0->bl->props.brightness = 0;
+		gpm940b0->bl->props.max_brightness = 255;
+		gpm940b0->bl->props.brightness = 64;
 		gpm940b0->bl->props.power = FB_BLANK_UNBLANK;
 	}
-#endif
+	backlight_update_status(gpm940b0->bl);
 
 	ret = device_create_file(&spi->dev, &dev_attr_reg);
 	if (ret)
@@ -190,10 +188,8 @@ err_free_gpm940b0:
 static int __devexit gpm940b0_remove(struct spi_device *spi)
 {
 	struct gpm940b0 *gpm940b0 = spi_get_drvdata(spi);
-#if 0
 	if (gpm940b0->bl)
 		backlight_device_unregister(gpm940b0->bl);
-#endif
 
 	lcd_device_unregister(gpm940b0->lcd);
 
