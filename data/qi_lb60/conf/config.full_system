@@ -153,6 +153,7 @@ CONFIG_PACKAGE_libmikmod=y
 CONFIG_PACKAGE_libmpcdec=y
 CONFIG_PACKAGE_libmysqlclient=y
 CONFIG_PACKAGE_libncurses=y
+CONFIG_PACKAGE_libncursesw=y
 CONFIG_PACKAGE_libogg=y
 CONFIG_PACKAGE_libpcap=y
 CONFIG_PACKAGE_libpcre=y
