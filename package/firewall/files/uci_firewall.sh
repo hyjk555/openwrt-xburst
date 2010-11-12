@@ -15,6 +15,7 @@ config_load firewall
 
 config fw_zones
 ZONE_LIST=$CONFIG_SECTION
+ZONE_NAMES=
 
 CUSTOM_CHAINS=1
 DEF_INPUT=DROP
@@ -22,6 +23,25 @@ DEF_OUTPUT=DROP
 DEF_FORWARD=DROP
 CONNTRACK_ZONES=
 NOTRACK_DISABLED=
+
+add_state() {
+	local var="$1"
+	local item="$2"
+
+	local val="$(uci_get_state firewall core $var)"
+	uci_set_state firewall core $var "${val:+$val }$item"
+}
+
+del_state() {
+	local var="$1"
+	local item="$2"
+
+	local val=" $(uci_get_state firewall core $var) "
+	val="${val// $item / }"
+	val="${val# }"
+	val="${val% }"
+	uci_set_state firewall core $var "$val"
+}
 
 find_item() {
 	local item="$1"; shift
@@ -42,6 +62,16 @@ get_portrange() {
 	[ -n "$_min" ] && [ -n "$_max" ] && [ "$_min" != "$_max" ] && \
 		export -n -- "$_var=$_min$_delim$_max" || \
 		export -n -- "$_var=${_min:-$_max}"
+}
+
+get_negation() {
+	local _var="$1"
+	local _flag="$2"
+	local _ipaddr="$3"
+
+	[ "${_ipaddr#!}" != "$_ipaddr" ] && \
+		export -n -- "$_var=! $_flag ${_ipaddr#!}" || \
+		export -n -- "$_var=${_ipaddr:+$_flag $_ipaddr}"
 }
 
 load_policy() {
@@ -88,13 +118,15 @@ create_zone() {
 	if [ "$masq" == "1" ]; then
 		local msrc mdst
 		for msrc in ${masq_src:-0.0.0.0/0}; do
-			[ "${msrc#!}" != "$msrc" ] && msrc="! -s ${msrc#!}" || msrc="-s $msrc"
+			get_negation msrc '-s' "$msrc"
 			for mdst in ${masq_dest:-0.0.0.0/0}; do
-				[ "${mdst#!}" != "$mdst" ] && mdst="! -d ${mdst#!}" || mdst="-d $mdst"
+				get_negation mdst '-d' "$mdst"
 				$IPTABLES -A zone_${name}_nat -t nat $msrc $mdst -j MASQUERADE
 			done
 		done
 	fi
+
+	append ZONE_NAMES "$name"
 }
 
 
@@ -132,6 +164,8 @@ addif() {
 	uci_set_state firewall core "${network}_ifname" "$ifname"
 	uci_set_state firewall core "${network}_zone" "$zone"
 
+	add_state "${zone}_networks" "$network"
+
 	ACTION=add ZONE="$zone" INTERFACE="$network" DEVICE="$ifname" /sbin/hotplug-call firewall
 }
 
@@ -157,6 +191,8 @@ delif() {
 
 	uci_revert_state firewall core "${network}_ifname"
 	uci_revert_state firewall core "${network}_zone"
+
+	del_state "${zone}_networks" "$network"
 
 	ACTION=remove ZONE="$zone" INTERFACE="$network" DEVICE="$ifname" /sbin/hotplug-call firewall
 }
@@ -327,27 +363,41 @@ fw_rule() {
 	config_get target $1 target
 	config_get ruleset $1 ruleset
 
+	[ "$target" != "NOTRACK" ] || [ -n "$src" ] || {
+		echo "NOTRACK rule needs src"
+		return
+	}
+
+	local srcaddr destaddr
+	get_negation srcaddr '-s' "$src_ip"
+	get_negation destaddr '-d' "$dest_ip"
+
 	local srcports destports
 	get_portrange srcports "$src_port" ":"
 	get_portrange destports "$dest_port" ":"
 
 	ZONE=input
-	TARGET=$target
-	[ -z "$target" ] && target=DROP
-	[ -n "$src" -a -z "$dest" ] && ZONE=zone_$src
-	[ -n "$src" -a -n "$dest" ] && ZONE=zone_${src}_forward
-	[ -n "$dest" ] && TARGET=zone_${dest}_$target
+	TABLE=filter
+	TARGET="${target:-DROP}"
 
-	eval 'RULE_COUNT=$((++RULE_COUNT_'$ZONE'))'
+	if [ "$TARGET" = "NOTRACK" ]; then
+		TABLE=raw
+		ZONE="zone_${src}_notrack"
+	else
+		[ -n "$src" ] && ZONE="zone_${src}${dest:+_forward}"
+		[ -n "$dest" ] && TARGET="zone_${dest}_${TARGET}"
+	fi
+
+	local pos
+	eval 'pos=$((++FW__RULE_COUNT_'$ZONE'))'
 
 	add_rule() {
-		$IPTABLES -I $ZONE $RULE_COUNT \
+		$IPTABLES -t $TABLE -I $ZONE $pos \
+			$srcaddr $destaddr \
 			${proto:+-p $proto} \
 			${icmp_type:+--icmp-type $icmp_type} \
-			${src_ip:+-s $src_ip} \
 			${srcports:+--sport $srcports} \
 			${src_mac:+-m mac --mac-source $src_mac} \
-			${dest_ip:+-d $dest_ip} \
 			${destports:+--dport $destports} \
 			-j $TARGET
 	}
@@ -413,7 +463,7 @@ fw_redirect() {
 		nataddr="$dest_ip"
 		get_portrange natports "$dest_port" "-"
 
-		srcdaddr="$src_dip"
+		get_negation srcdaddr '-d' "$src_dip"
 		get_portrange srcdports "$src_dport" ":"
 
 		find_item "$src" $CONNTRACK_ZONES || \
@@ -432,7 +482,7 @@ fw_redirect() {
 		nataddr="$src_dip"
 		get_portrange natports "$src_dport" "-"
 
-		srcdaddr="$dest_ip"
+		get_negation srcdaddr '-d' "$dest_ip"
 		get_portrange srcdports "$dest_port" ":"
 
 		find_item "$dest" $CONNTRACK_ZONES || \
@@ -443,26 +493,31 @@ fw_redirect() {
 		return
 	fi
 
+	local srcaddr destaddr
+	get_negation srcaddr '-s' "$src_ip"
+	get_negation destaddr '-d' "$dest_ip"
+
 	local srcports destports
 	get_portrange srcports "$src_port" ":"
 	get_portrange destports "${dest_port-$src_dport}" ":"
 
 	add_rule() {
-		$IPTABLES -I $natchain 1 -t nat \
+		local pos
+		eval 'pos=$((++FW__REDIR_COUNT_'$natchain'))'
+
+		$IPTABLES -I $natchain $pos -t nat \
+			$srcaddr $srcdaddr \
 			${proto:+-p $proto} \
-			${src_ip:+-s $src_ip} \
 			${srcports:+--sport $srcports} \
-			${srcdaddr:+-d $srcdaddr} \
 			${srcdports:+--dport $srcdports} \
 			${src_mac:+-m mac --mac-source $src_mac} \
 			-j ${target:-DNAT} $natopt $nataddr${natports:+:$natports}
 
 		[ -n "$dest_ip" ] && \
 		$IPTABLES -I ${fwdchain:-forward} 1 \
+			$srcaddr $destaddr \
 			${proto:+-p $proto} \
-			${src_ip:+-s $src_ip} \
 			${srcports:+--sport $srcports} \
-			${dest_ip:+-d $dest_ip} \
 			${destports:+--dport $destports} \
 			${src_mac:+-m mac --mac-source $src_mac} \
 			-j ACCEPT
@@ -605,9 +660,22 @@ fw_init() {
 	for interface in $INTERFACES; do
 		fw_event ifup "$interface"
 	done
+
+	uci_set_state firewall core zones "$ZONE_NAMES"
 }
 
 fw_stop() {
+	local z n i
+	config_get z core zones
+	for z in $z; do
+		config_get n core "${z}_networks"
+		for n in $n; do
+			config_get i core "${n}_ifname"
+			[ -n "$i" ] && env -i ACTION=remove ZONE="$z" INTERFACE="$n" DEVICE="$i" \
+				/sbin/hotplug-call firewall
+		done
+	done
+
 	fw_clear
 	$IPTABLES -P INPUT ACCEPT
 	$IPTABLES -P OUTPUT ACCEPT

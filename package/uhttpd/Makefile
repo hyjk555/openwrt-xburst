@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=uhttpd
-PKG_RELEASE:=18
+PKG_RELEASE:=19
 
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
 PKG_BUILD_DEPENDS := libcyassl liblua
@@ -67,6 +67,8 @@ endef
 
 define Package/uhttpd/conffiles
 /etc/config/uhttpd
+/etc/uhttpd.crt
+/etc/uhttpd.key
 endef
 
 define Package/uhttpd/install

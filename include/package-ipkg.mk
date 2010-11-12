@@ -49,6 +49,7 @@ ifeq ($(DUMP),)
     IPKG_$(1):=$(PACKAGE_DIR)/$(1)_$(VERSION)_$(PKGARCH).ipk
     IDIR_$(1):=$(PKG_BUILD_DIR)/ipkg-$(PKGARCH)/$(1)
     INFO_$(1):=$(IPKG_STATE_DIR)/info/$(1).list
+    KEEP_$(1):=$(strip $(call Package/$(1)/conffiles))
 
     ifeq ($(if $(VARIANT),$(BUILD_VARIANT)),$(VARIANT))
     ifdef Package/$(1)/install
@@ -98,6 +99,8 @@ ifeq ($(DUMP),)
 		echo "Provides: $(PROVIDES)"; \
 		echo "Source: $(SOURCE)"; \
 		echo "Section: $(SECTION)"; \
+		echo "Status: unknown $(if $(filter hold,$(PKG_FLAGS)),hold,ok) not-installed"; \
+		echo "Essential: $(if $(filter essential,$(PKG_FLAGS)),yes,no)"; \
 		echo "Priority: $(PRIORITY)"; \
 		echo "Maintainer: $(MAINTAINER)"; \
 		echo "Architecture: $(PKGARCH)"; \
@@ -114,12 +117,27 @@ ifeq ($(DUMP),)
 	$(RSTRIP) $$(IDIR_$(1))
 	SIZE=`cd $$(IDIR_$(1)); du -bs --exclude=./CONTROL . 2>/dev/null | cut -f1`; \
 	$(SED) "s|^\(Installed-Size:\).*|\1 $$$$SIZE|g" $$(IDIR_$(1))/CONTROL/control
+
+    ifneq ($$(KEEP_$(1)),)
+		@( \
+			keepfiles=""; \
+			for x in $$(KEEP_$(1)); do \
+				[ -f "$$(IDIR_$(1))/$$$$x" ] || keepfiles="$$$${keepfiles:+$$$$keepfiles }$$$$x"; \
+			done; \
+			[ -z "$keepfiles" ] || { \
+				mkdir -p $$(IDIR_$(1))/lib/upgrade/keep.d; \
+				for x in $$$$keepfiles; do echo $$$$x >> $$(IDIR_$(1))/lib/upgrade/keep.d/$(1); done; \
+			}; \
+		)
+    endif
+
 	$(IPKG_BUILD) $$(IDIR_$(1)) $(PACKAGE_DIR)
 	@[ -f $$(IPKG_$(1)) ] || false 
 
     $$(INFO_$(1)): $$(IPKG_$(1))
 	@[ -d $(TARGET_DIR)/tmp ] || mkdir -p $(TARGET_DIR)/tmp
 	$(OPKG) install $$(IPKG_$(1))
+	$(if $(filter-out essential,$(PKG_FLAGS)),for flag in $(filter-out essential,$(PKG_FLAGS)); do $(OPKG) flag $$$$flag $(1); done)
 
     $(1)-clean:
 	rm -f $(PACKAGE_DIR)/$(1)_*
