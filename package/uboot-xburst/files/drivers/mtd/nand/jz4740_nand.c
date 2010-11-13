@@ -190,7 +190,6 @@ static int jz_nand_rs_correct_data(struct mtd_info *mtd, u_char *dat,
 	if (status & EMC_NFINTS_ERR) {
 		if (status & EMC_NFINTS_UNCOR) {
 			printk("uncorrectable ecc\n");
-			while(1);
 			return -1;
 		}
 
