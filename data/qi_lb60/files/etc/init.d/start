@@ -1,7 +1,0 @@
-#!/bin/sh /etc/rc.common
-# Copyright (C) 2006 OpenWrt.org
-
-START=99
-boot() {
-	SDL_NOMOUSE=1 start-stop-daemon -S -b -x /usr/bin/gmenu2x
-}
