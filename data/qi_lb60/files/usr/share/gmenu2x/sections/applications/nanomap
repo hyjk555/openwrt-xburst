@@ -2,4 +2,3 @@ title=NanoMap
 icon=skin:icons/nanomap.png
 exec=/usr/bin/NanoMap
 params=-qws
-wrapper=true
