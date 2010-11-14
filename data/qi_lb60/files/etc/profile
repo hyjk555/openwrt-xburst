@@ -17,4 +17,4 @@ export HISTFILE=$HOME/.ash_history
 [ -z "$KSH_VERSION" -o \! -s /etc/mkshrc ] || . /etc/mkshrc
 
 [ -x /sbin/arp ] || arp() { cat /proc/net/arp; }
-[ -z /bin/ldd ] || ldd() { LD_TRACE_LOADED_OBJECTS=1 $*; }
+[ -x /usr/bin/ldd ] || ldd() { LD_TRACE_LOADED_OBJECTS=1 $*; }
