@@ -1,3 +1,4 @@
 title=backgammon
 icon=skin:icons/utilities-terminal.png
-exec=/usr/bin/backgammon
+exec=/usr/sbin/setfont2
+params=/usr/share/setfont2/un-fuzzy-4x8-font.pnm && /usr/bin/backgammon
