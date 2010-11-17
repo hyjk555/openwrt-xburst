@@ -1,3 +1,4 @@
 title=abook
 icon=skin:icons/utilities-terminal.png
-exec=/usr/bin/abook
+exec=/usr/sbin/setfont2
+params=/usr/share/setfont2/un-fuzzy-6x10-font.pnm && /usr/bin/abook
