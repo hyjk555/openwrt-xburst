@@ -1,102 +1,79 @@
 #!/bin/bash
-VERSION="latest"
+# version of me
+__VERSION__="2011-11-20"
 
 # use 'http' to download and flash images, use 'file' to flash images present in the <WORKING_DIR>
 PROTOCOL="http"
 
+# NanoNote images Version
+VERSION="latest"
+
 # working directory
-#WORKING_DIR="/tmp/NanoNote/${VERSION}"
 WORKING_DIR="${HOME}/.qi/nanonote/ben/${VERSION}"
 
 # where the verbose output goes to
 LOG_FILE="${WORKING_DIR}/log.txt"
 
 # URL to images ($URL/$VERSION/$[images])
-#BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/Ben_NanoNote_2GB_NAND"
 BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/NanoNote/Ben"
 
 # names of images
 LOADER="openwrt-xburst-qi_lb60-u-boot.bin"
-#KERNEL="openwrt-xburst-uImage.bin"
 KERNEL="openwrt-xburst-qi_lb60-uImage.bin"
-#ROOTFS="openwrt-xburst-rootfs.ubi"
 ROOTFS="openwrt-xburst-qi_lb60-root.ubi"
 
-###############
-
-# version of script
-__VERSION__="2.1.1"
-
-
-# options for reflash bootloader, kernel or rootfs
+# options for reflash bootloader, kernel,  rootfs
 B="TRUE"
 K="TRUE"
 R="TRUE"
 
-while getopts d:l:bkr OPTIONS
+while getopts d:l:h OPTIONS
 do
     case $OPTIONS in
     d)     
         VERSION=$OPTARG # override version by first argument if passed
-        B="TRUE"
-        K="TRUE"
-        R="TRUE"
         ;;
     l)
         WORKING_DIR=$OPTARG
-        VERSION=
         PROTOCOL="file"
-        B="TRUE"
-        K="TRUE"
-        R="TRUE"
+        VERSION=
         ;;
     *)
         echo "\
-Usage: $0 [-d <version>] [-l <path to local images>] [-b] [-k] [-r] [-h] [-v]
 
-without any arguments, I will download and flash the latest official images
-(includes bootloader, kernel and rootfs)
-
-     -d <>  I will download and flash a specific version of official images
-            (includes bootloader, kernel and rootfs)
+Usage: $0 [-d <version>] [-l <path to local images>] [-h]
+     -d <>  I will download and flash a specific version of OpenWrt images
 
      -l <>  I will flash images present in <arg>
-            (includes bootloader, kernel and rootfs -
-             missing files will be skipped)
+            (missing files will be skipped)
 
      -h     you already found out
 
- 
-reflash script for qi-hardware Ben NanoNote
+without any arguments, I will download and flash the latest OpenWrt images
+(includes bootloader, kernel and rootfs)
 
+OpenWrt reflash script for qi-hardware Ben NanoNote
 written by: Mirko Vogt (mirko.vogt@sharism.cc)
             Xiangfu Liu (xiangfu@sharism.cc)
 
-version: ${__VERSION__}
-
+                                                     version: ${__VERSION__}
 Please report bugs to developer@lists.qi-hardware.com"
         exit 1
         ;;
     esac
 done
 
-# if no arguments were given
-if [ "$#" == "0" ]; then
-    B="TRUE"
-    K="TRUE"
-    R="TRUE"
-fi
-
 # create working directory
 mkdir -p ${WORKING_DIR}
-date > "${LOG_FILE}" # purge logfile if exists
+# purge logfile if exists
+date > "${LOG_FILE}"
 
-function log() {
+log() {
     echo -e "$1"
     echo -e "$1" >> "${LOG_FILE}"
 }
 
-function abort() {
+abort() {
     log "==="
     log "fatal error occured - ABORTED"
     log "==="
@@ -142,11 +119,20 @@ if [ "$PROTOCOL" == "http" ]; then
 		    "${BASE_URL_HTTP}/${VERSION}/${KERNEL}"
 	fi
 	if [ "$R" == "TRUE" ]; then
-		log "fetching rootfs..."
+		log "try fetching .ubi.bz2 rootfs..."
 		wget \
 		    -a "${LOG_FILE}" \
 		    -P "${WORKING_DIR}" \
-		    "${BASE_URL_HTTP}/${VERSION}/${ROOTFS}"
+		    "${BASE_URL_HTTP}/${VERSION}/${ROOTFS}.bz2" && \
+		    (cd ${WORKING_DIR}; tar xf ${ROOTFS}.bz2)
+
+		if [ "$?" == "8" ]; then
+		    log "fetching .ubi rootfs..."
+		    wget \
+			-a "${LOG_FILE}" \
+			-P "${WORKING_DIR}" \
+			"${BASE_URL_HTTP}/${VERSION}/${ROOTFS}"
+		fi
 	fi
     fi
 fi
