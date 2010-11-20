@@ -36,7 +36,7 @@ do
     l)
         WORKING_DIR=$OPTARG
         PROTOCOL="file"
-        VERSION=
+        VERSION="Local"
         ;;
     *)
         echo "\
@@ -80,9 +80,8 @@ abort() {
     log "$1"
     log "==="
     log "Before reporting this as a bug"
-    log "please ensure you're using the latest available version of"
-    log "  this reflash script"
-    log "  the xburst-tools"
+    log "Please ensure you're using the latest available version of this reflash script"
+    log "http://downloads.qi-hardware.com/software/images/NanoNote/Ben/reflash_ben.sh"
     exit 1
 }
 
@@ -124,7 +123,7 @@ if [ "$PROTOCOL" == "http" ]; then
 		    -a "${LOG_FILE}" \
 		    -P "${WORKING_DIR}" \
 		    "${BASE_URL_HTTP}/${VERSION}/${ROOTFS}.bz2" && \
-		    (cd ${WORKING_DIR}; tar xf ${ROOTFS}.bz2)
+		    (cd ${WORKING_DIR}; bzip2 -d ${ROOTFS}.bz2)
 
 		if [ "$?" == "8" ]; then
 		    log "fetching .ubi rootfs..."
