@@ -3,3 +3,4 @@ fb_input_glob:event*
 window_width:320
 window_height:240
 fb_depth:32
+fb_toolbar_layout:cblfsrut
