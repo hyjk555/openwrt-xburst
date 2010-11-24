@@ -11,9 +11,6 @@ VERSION="latest"
 # working directory
 WORKING_DIR="${HOME}/.qi/nanonote/ben/${VERSION}"
 
-# where the verbose output goes to
-LOG_FILE="${WORKING_DIR}/log.txt"
-
 # URL to images ($URL/$VERSION/$[images])
 BASE_URL_HTTP="http://downloads.qi-hardware.com/software/images/NanoNote/Ben"
 
@@ -62,6 +59,9 @@ Please report bugs to developer@lists.qi-hardware.com"
         ;;
     esac
 done
+
+# where the verbose output goes to
+LOG_FILE="${WORKING_DIR}/log.txt"
 
 # create working directory
 mkdir -p ${WORKING_DIR}
