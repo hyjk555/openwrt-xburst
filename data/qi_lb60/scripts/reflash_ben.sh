@@ -125,7 +125,7 @@ if [ "$PROTOCOL" == "http" ]; then
 		    "${BASE_URL_HTTP}/${VERSION}/${ROOTFS}.bz2" && \
 		    (cd ${WORKING_DIR}; bzip2 -d ${ROOTFS}.bz2)
 
-		if [ "$?" == "8" ]; then
+		if [ "$?" != "0" ]; then
 		    log "fetching .ubi rootfs..."
 		    wget \
 			-a "${LOG_FILE}" \
