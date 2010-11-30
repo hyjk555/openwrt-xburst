@@ -1,1 +1,11 @@
 no-deinit-check
+
+mode=320x240
+depth=16
+pixelformat=RGB24
+
+# log-file=/root/.directfb.log
+# no-cursor
+# debug
+
+
