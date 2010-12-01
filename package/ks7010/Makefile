@@ -37,4 +37,9 @@ define Build/Compile
 		modules
 endef
 
+define KernelPackage/ks7010/install
+	$(INSTALL_DIR) $(1)/lib/firmware/
+	$(CP) ./files/* $(1)/lib/firmware/
+endef
+
 $(eval $(call KernelPackage,ks7010))
