@@ -85,6 +85,45 @@ abort() {
     exit 1
 }
 
+progress_prepare () {
+    WIDTH=$(tput cols)
+    HEIGHT=$(tput lines)
+    i=1
+    DONE=0
+    FITFR=0
+    echo "Done:"
+    echo -n "["
+    tput cup $HEIGHT $WIDTH; echo -n "]"
+}
+
+progress_draw () {
+    ILINE="$1"
+    if [[ "$ILINE" =~ It\ will\ cause\ [[:digit:]]+\ times\ buffer\ transfer\.$ ]]; then
+        TOTAL=${ILINE#*cause\ }
+        TOTAL=${TOTAL%\ times*}
+        FIT=$(echo "($WIDTH-2)/$TOTAL" | bc -l)
+        tput cup $(( $HEIGHT-2 )) 7; echo -n 0/$TOTAL
+    fi
+    if [[ "$ILINE" =~ Checking\ [[:digit:]]+\ bytes\.\.\.\ Comparing\ [[:digit:]]+\ bytes\ -\ SUCCESS$ || "$ILINE" =~ Checking\ [[:digit:]]+\ bytes\.\.\.\ no\ check\!\ End\ at\ Page\:\ [[:digit:]]+ ]]; then
+        FITFR=$(echo $FITFR+$FIT | bc -l)
+        ((DONE++))
+        tput cup $(( $HEIGHT-2 )) 7; echo -n $DONE/$TOTAL
+        if [ $(echo "$FITFR >= 1" | bc) -eq 1 ]; then
+            tput cup $HEIGHT $i;
+            i=$(( $i+${FITFR%.*} ))
+            for j in $(seq 1 ${FITFR%.*}); do echo -n "#"; done
+            FITFR=0.${FITFR#*.}
+        fi
+    fi
+}
+
+progress_finish () {
+    tput cup $HEIGHT $WIDTH
+    echo
+    tmp=$(<"${LOG_FILE}.err")
+    cat "${LOG_FILE}.err" >> "${LOG_FILE}"
+}
+
 [ "$(whoami)" == "root" ] || abort "this script must be run as root"
 
 log "working dir:      ${WORKING_DIR}"
@@ -141,19 +180,31 @@ usbboot -c "boot" >> "${LOG_FILE}" || abort "can't boot device - xburst-tools se
 
 if [ "$B" == "TRUE" ]; then
 	log "flashing bootloader..."
-	tmp=$(usbboot -c "nprog 0 ${WORKING_DIR}/${LOADER} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	progress_prepare
+	while read ILINE
+		do progress_draw "$ILINE"
+	done< <(usbboot -c "nprog 0 ${WORKING_DIR}/${LOADER} 0 0 -n" 2>"${LOG_FILE}.err" | tee -a "${LOG_FILE}")
+	progress_finish
 	test "${tmp}" && abort "error while flashing bootloader:\n${tmp}"
 fi
 if [ "$K" == "TRUE" ]; then
 	log "flashing kernel..."
-	tmp=$(usbboot -c "nprog 1024 ${WORKING_DIR}/${KERNEL} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	progress_prepare
+	while read ILINE
+		do progress_draw "$ILINE"
+	done< <(usbboot -c "nprog 1024 ${WORKING_DIR}/${KERNEL} 0 0 -n" 2>"${LOG_FILE}.err" | tee -a "${LOG_FILE}")
+	progress_finish
 	test "${tmp}" && abort "error while flashing kernel:\n${tmp}"
 fi
 if [ "$R" == "TRUE" ]; then
 	log "erase nand rootfs partition..."
 	usbboot -c "boot;nerase 16 1024 0 0" >> "${LOG_FILE}" 2>&1
 	log "flashing rootfs..."
-	tmp=$(usbboot -c "nprog 2048 ${WORKING_DIR}/${ROOTFS} 0 0 -n" 3>> "${LOG_FILE}" 2>&1 >&3)
+	progress_prepare
+	while read ILINE
+		do progress_draw "$ILINE"
+	done< <(usbboot -c "nprog 2048 ${WORKING_DIR}/${ROOTFS} 0 0 -n" 2>"${LOG_FILE}.err" | tee -a "${LOG_FILE}")
+	progress_finish
 	test "${tmp}" && abort "error while flashing rootfs:\n${tmp}"
 fi
 log "done"
