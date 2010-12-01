@@ -1,0 +1,20 @@
+--- data/qi_lb60/conf/config.full_system
++++ data/qi_lb60/conf/config.full_system
+@@ -84,7 +84,7 @@
+ #
+ CONFIG_PACKAGE_centerim=y
+ CONFIG_PACKAGE_elinks=y
+-CONFIG_PACKAGE_lynx=y
++# CONFIG_PACKAGE_lynx is not set
+ CONFIG_PACKAGE_links=y
+ CONFIG_PACKAGE_mutt=y
+ CONFIG_PACKAGE_msmtp=y
+@@ -245,7 +245,7 @@
+ CONFIG_PACKAGE_blkid=y
+ CONFIG_PACKAGE_htop=y
+ CONFIG_PACKAGE_fbsize=y
+-CONFIG_PACKAGE_fbterm=y
++# CONFIG_PACKAGE_fbterm is not set
+ CONFIG_PACKAGE_jfbterm=y
+ CONFIG_PACKAGE_minicom=y
+ CONFIG_PACKAGE_unzip=y
