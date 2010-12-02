@@ -20,6 +20,8 @@ export QWS_DISPLAY=linuxfb
 export HISTFILE=$HOME/.ash_history
 export TERM=linux
 
+[ -e /dev/rtc0 ] && ! [ -e /dev/rtc ] && ln -s /dev/rtc0 /dev/rtc
+
 [ -x /bin/more ] || alias more=less
 [ -x /usr/bin/vim ] && alias vi=vim || alias vim=vi
 
