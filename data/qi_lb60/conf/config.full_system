@@ -225,6 +225,7 @@ CONFIG_PACKAGE_sdcv=y
 CONFIG_PACKAGE_macchanger=y
 CONFIG_PACKAGE_mandoc=y
 CONFIG_PACKAGE_mathomatic=y
+CONFIG_PACKAGE_moc=y
 CONFIG_PACKAGE_mpc=y
 CONFIG_PACKAGE_ncmpc=y
 CONFIG_PACKAGE_sox=y
@@ -322,6 +323,7 @@ CONFIG_PACKAGE_io=y
 CONFIG_PACKAGE_stardict=y
 CONFIG_PACKAGE_stardict-dic-en-en=y
 CONFIG_PACKAGE_stardict-dic-en-cn=y
+CONFIG_PACKAGE_qstardict=y
 #
 # programming languages
 #
