@@ -241,6 +241,7 @@ CONFIG_PACKAGE_tunec=y
 CONFIG_PACKAGE_ctronome=y
 CONFIG_PACKAGE_abook=y
 CONFIG_PACKAGE_snownews=y
+CONFIG_PACKAGE_wtime=y
 # 
 CONFIG_PACKAGE_badblocks=y
 CONFIG_PACKAGE_blkid=y
