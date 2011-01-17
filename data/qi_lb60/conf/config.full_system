@@ -95,6 +95,8 @@ CONFIG_PACKAGE_netsurf=y
 CONFIG_PACKAGE_w3m=y
 CONFIG_PACKAGE_fetchmail=y
 #
+# libs
+#
 CONFIG_PACKAGE_atk=y
 CONFIG_PACKAGE_cairo=y
 CONFIG_PACKAGE_cairomm=y
@@ -307,6 +309,7 @@ CONFIG_PACKAGE_sshfs=y
 CONFIG_PACKAGE_disktype=y
 CONFIG_PACKAGE_e2fsprogs=y
 CONFIG_PACKAGE_mkdosfs=y
+CONFIG_PACKAGE_sqlite3-cli=y
 #
 CONFIG_KEXEC_TOOLS_TARGET_NAME="mipsel"
 CONFIG_PACKAGE_lsof=y
@@ -376,7 +379,7 @@ CONFIG_PACKAGE_python=y
 CONFIG_PACKAGE_ruby=y
 CONFIG_PACKAGE_tcl=y
 #
-# programming languages
+# Math
 #
 CONFIG_PACKAGE_gnuplot-ggi=y
 CONFIG_PACKAGE_gnuplot-ggi-gih=y
