@@ -96,6 +96,7 @@ CONFIG_PACKAGE_msmtp=y
 CONFIG_PACKAGE_netsurf=y
 CONFIG_PACKAGE_w3m=y
 CONFIG_PACKAGE_fetchmail=y
+CONFIG_PACKAGE_offrss=y
 #
 # libs
 #
@@ -196,8 +197,10 @@ CONFIG_PACKAGE_gnuchess=y
 CONFIG_PACKAGE_libphysfs=y
 CONFIG_PACKAGE_nethack=y
 CONFIG_PACKAGE_nlove=y
+CONFIG_PACKAGE_pmars=y
 CONFIG_PACKAGE_primes=y
 CONFIG_PACKAGE_qball=y
+CONFIG_PACKAGE_robots=y
 CONFIG_PACKAGE_tetris=y
 CONFIG_PACKAGE_worm=y
 #
@@ -260,6 +263,9 @@ CONFIG_PACKAGE_snownews=y
 CONFIG_PACKAGE_wtime=y
 CONFIG_PACKAGE_mediatomb=y
 CONFIG_PACKAGE_flite=y
+CONFIG_PACKAGE_ikog=y
+CONFIG_PACKAGE_Tile=y
+CONFIG_PACKAGE_pyclock=y
 # 
 CONFIG_PACKAGE_badblocks=y
 CONFIG_PACKAGE_blkid=y
@@ -347,6 +353,7 @@ CONFIG_PACKAGE_qstardict=y
 #
 # programming languages
 #
+CONFIG_PACKAGE_bwbasic=y
 CONFIG_PACKAGE_erlang=y
 CONFIG_PACKAGE_gforth=y
 CONFIG_PACKAGE_guile=y
@@ -387,6 +394,8 @@ CONFIG_PACKAGE_gnuplot-ggi=y
 CONFIG_PACKAGE_gnuplot-ggi-gih=y
 CONFIG_PACKAGE_plplot=y
 CONFIG_PACKAGE_plplot-cxx=y
+CONFIG_PACKAGE_plplot-linuxvga=y
+CONFIG_PACKAGE_plplot-lua=y
 CONFIG_PACKAGE_plplot-octave=y
 CONFIG_PACKAGE_plplot-qt=y
 CONFIG_PACKAGE_plplot-tcl=y
