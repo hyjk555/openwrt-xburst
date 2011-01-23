@@ -2,6 +2,9 @@
 # This file must be copied to .config in the OpenWrt root folder,
 # then run: yes "" | make oldconfig > /dev/null
 #
+# To skip broken module packages, run make IGNORE_ERRORS=m
+# need to exclude patented packages
+#
 
 CONFIG_TARGET_xburst=y
 CONFIG_TARGET_xburst_qi_lb60=y
@@ -19,6 +22,8 @@ CONFIG_TOOLCHAINOPTS=y
 CONFIG_INSTALL_GFORTRAN=y
 
 CONFIG_SDK=y
+
+CONFIG_ALL=y
 
 CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY=y
 CONFIG_BUSYBOX_CONFIG_FEATURE_VOLUMEID_JFS=y
@@ -42,6 +47,16 @@ CONFIG_BUSYBOX_CONFIG_FEATURE_VI_8BIT=y
 CONFIG_BUSYBOX_CONFIG_STAT=y
 CONFIG_BUSYBOX_CONFIG_HOSTNAME=y
 CONFIG_BUSYBOX_CONFIG_STTY=y
+
+#
+# Disable all patented packages
+#
+# CONFIG_PACKAGE_asterisk14-format-mp3 is not set
+# CONFIG_FFMPEG_MUXER_mp3 is not set
+# CONFIG_FFMPEG_MUXER_mp4 is not set
+# CONFIG_FFMPEG_DEMUXER_mp3 is not set
+# CONFIG_FFMPEG_PARSER_mpeg4video is not set
+
 #
 # system
 #
