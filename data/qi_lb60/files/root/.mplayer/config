@@ -2,5 +2,4 @@ sub-fuzziness=1
 utf8=1
 volume=10
 vo=sdl
-ac=mad
-
+ac=tremor
