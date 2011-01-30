@@ -249,7 +249,7 @@ endef
 define Package/libgfortran
 $(call Package/gcc/Default)
   TITLE:=GFortran support library
-  DEPENDS+=@!(TARGET_avr32||TARGET_coldfire)
+  DEPENDS+=@!(TARGET_avr32||TARGET_coldfire) @INSTALL_GFORTRAN
 endef
 
 define Package/libgfortran/config
