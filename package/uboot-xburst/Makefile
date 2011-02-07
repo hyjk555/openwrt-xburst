@@ -70,9 +70,9 @@ UBOOT_IMAGE:=$(if $(IMAGE),$(IMAGE),openwrt-$(BOARD)-$(BUILD_BARIANT)-u-boot.bin
 endif
 
 define Build/Prepare
-	$(call Build/Prepare/Default)
 	$(CP) ./files/* $(PKG_BUILD_DIR)
 	find $(PKG_BUILD_DIR) -name .svn | $(XARGS) rm -rf
+	$(call Build/Prepare/Default)
 endef
 
 define Build/Configure
