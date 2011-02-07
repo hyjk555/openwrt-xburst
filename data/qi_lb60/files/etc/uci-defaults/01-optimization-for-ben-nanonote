@@ -1,5 +1,0 @@
-#!/bin/sh
-
-/etc/init.d/atd disable
-/etc/init.d/led disable
-/etc/init.d/telnet disable
