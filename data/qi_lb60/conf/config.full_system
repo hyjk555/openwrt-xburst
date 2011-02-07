@@ -429,4 +429,5 @@ CONFIG_PACKAGE_libgii=y
 CONFIG_PACKAGE_svgalib=y
 CONFIG_PACKAGE_svgalib-demo=y
 #
-CONFIG_PACKAGE_nanonote-example-files=y
+CONFIG_PACKAGE_nanonote-example-files=m
+CONFIG_PACKAGE_nanonote-script-files=y
