@@ -229,6 +229,7 @@ CONFIG_PACKAGE_gottet=y
 CONFIG_PACKAGE_robots=y
 CONFIG_PACKAGE_tetris=y
 CONFIG_PACKAGE_worm=y
+CONFIG_PACKAGE_supertux=y
 #
 # Emacs
 #
@@ -329,6 +330,7 @@ CONFIG_PACKAGE_picoc=y
 CONFIG_PACKAGE_jbig2dec=y
 CONFIG_PACKAGE_openjpeg=y
 CONFIG_PACKAGE_unifont=y
+CONFIG_PACKAGE_terminus-font=y
 CONFIG_PACKAGE_dosfsck=y
 CONFIG_PACKAGE_dosfslabel=y
 CONFIG_PACKAGE_resize2fs=y
