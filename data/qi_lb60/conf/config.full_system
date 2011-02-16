@@ -2,7 +2,6 @@
 # This file must be copied to .config in the OpenWrt root folder,
 # then run: yes "" | make oldconfig > /dev/null
 #
-# To skip broken module packages, run make IGNORE_ERRORS=m
 # need to exclude patented packages
 #
 
@@ -28,7 +27,10 @@ CONFIG_INSTALL_GFORTRAN=y
 
 CONFIG_SDK=y
 
-CONFIG_ALL=y
+# CONFIG_ALL is not set
+# Enable this option only you want build ALL PAKCAGE in feeds.conf
+# To skip broken module packages while compiling , run 
+# "make IGNORE_ERRORS=m"
 
 CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY=y
 CONFIG_BUSYBOX_CONFIG_FEATURE_VOLUMEID_JFS=y
@@ -212,6 +214,7 @@ CONFIG_PACKAGE_zlib=y
 # 
 # games
 #
+CONFIG_PACKAGE_Tile=y
 CONFIG_PACKAGE_backgammon=y
 CONFIG_PACKAGE_freedroid=y
 CONFIG_PACKAGE_frotz=y
@@ -222,6 +225,7 @@ CONFIG_PACKAGE_nlove=y
 CONFIG_PACKAGE_pmars=y
 CONFIG_PACKAGE_primes=y
 CONFIG_PACKAGE_qball=y
+CONFIG_PACKAGE_gottet=y
 CONFIG_PACKAGE_robots=y
 CONFIG_PACKAGE_tetris=y
 CONFIG_PACKAGE_worm=y
@@ -285,7 +289,6 @@ CONFIG_PACKAGE_wtime=y
 CONFIG_PACKAGE_mediatomb=y
 CONFIG_PACKAGE_flite=y
 CONFIG_PACKAGE_ikog=y
-CONFIG_PACKAGE_Tile=y
 CONFIG_PACKAGE_pyclock=y
 # 
 CONFIG_PACKAGE_badblocks=y
