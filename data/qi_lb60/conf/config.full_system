@@ -403,8 +403,8 @@ CONFIG_PACKAGE_tcl=y
 #
 # Math
 #
-CONFIG_PACKAGE_gnuplot-ggi=y
-CONFIG_PACKAGE_gnuplot-ggi-gih=y
+CONFIG_PACKAGE_gnuplot-gfx=y
+CONFIG_PACKAGE_gnuplot-gfx-gih=y
 CONFIG_PACKAGE_plplot=y
 CONFIG_PACKAGE_plplot-cxx=y
 CONFIG_PACKAGE_plplot-linuxvga=y
