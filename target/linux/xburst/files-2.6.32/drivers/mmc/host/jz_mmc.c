@@ -414,11 +414,8 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 	tmp &= ~(JZ_MMC_IRQ_TXFIFO_WR_REQ | JZ_MMC_IRQ_RXFIFO_RD_REQ |
 			JZ_MMC_IRQ_PRG_DONE | JZ_MMC_IRQ_DATA_TRAN_DONE);
 
-	if (tmp != irq_reg) {
-		dev_warn(&host->pdev->dev, "Sparse irq: %x\n", tmp & ~irq_reg);
+	if (tmp != irq_reg)
 		writew(tmp & ~irq_reg, host->base + JZ_REG_MMC_IREG);
-	}
-
 
 	if (irq_reg & JZ_MMC_IRQ_SDIO) {
 		writew(JZ_MMC_IRQ_SDIO, host->base + JZ_REG_MMC_IREG);
