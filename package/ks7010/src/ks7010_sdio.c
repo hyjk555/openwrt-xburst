@@ -570,7 +570,6 @@ static void ks_sdio_interrupt(struct sdio_func *func)
 	card = sdio_get_drvdata(func);
 	priv = card->priv;
 	DPRINTK(4, "\n");
-	printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
 
 	if(priv->dev_state >= DEVICE_STATE_BOOT){
 		retval = ks7010_sdio_read(priv, INT_PENDING, &status, sizeof(status));
@@ -636,7 +635,6 @@ static void ks_sdio_interrupt(struct sdio_func *func)
 						}
 					}
 					else{
-						printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
 						tx_device_task((void *)priv);
 					}
 //				}
@@ -644,11 +642,8 @@ static void ks_sdio_interrupt(struct sdio_func *func)
 		}while(rsize);
 	}
 
-	printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
-
 intr_out:
 	queue_delayed_work(priv->ks_wlan_hw.ks7010sdio_wq,&priv->ks_wlan_hw.rw_wq, 0);
-	printk("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
 	return;
 }
 
