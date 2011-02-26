@@ -1,0 +1,21 @@
+From 2b0db7309cf386899741b355efb12ab2742f178c Mon Sep 17 00:00:00 2001
+From: Lars-Peter Clausen <lars@metafoo.de>
+Date: Sat, 26 Feb 2011 15:19:11 +0100
+Subject: [PATCH 1/4] ubi: Read only the vid header instead of the whole page
+
+Improves ubi attach time by ~1/2
+---
+ drivers/mtd/ubi/io.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -979,7 +979,7 @@ int ubi_io_read_vid_hdr(struct ubi_devic
+ 
+ 	p = (char *)vid_hdr - ubi->vid_hdr_shift;
+ 	err = ubi_io_read(ubi, p, pnum, ubi->vid_hdr_aloffset,
+-			  ubi->vid_hdr_alsize);
++			  UBI_VID_HDR_SIZE + ubi->vid_hdr_shift);
+ 	if (err) {
+ 		if (err != UBI_IO_BITFLIPS && err != -EBADMSG)
+ 			return err;

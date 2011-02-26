@@ -1,0 +1,58 @@
+From 3eeeee7302a9b25de1eeabd901d3bb678d9983d9 Mon Sep 17 00:00:00 2001
+From: Lars-Peter Clausen <lars@metafoo.de>
+Date: Sat, 26 Feb 2011 15:32:30 +0100
+Subject: [PATCH 4/4] NAND: Optimize reading the eec data for the JZ4740 (evil hack)
+
+We know that the ecc data is continuous, this allows us to only read the ecc
+data instead of the whole oob section, which slightly improves performance.
+
+Note that this is an evil hack, which will break platforms where the ecc data is
+non-continuous.
+---
+ drivers/mtd/nand/nand_base.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
+
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -1011,8 +1011,8 @@ static int nand_read_page_hwecc_oob_firs
+ 	/* Read the OOB area first */
+ 	/* Read the OOB area first */
+ 	if (mtd->writesize > 512) {
+-		chip->cmdfunc(mtd, NAND_CMD_READ0, mtd->writesize, page);
+-		chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
++		chip->cmdfunc(mtd, NAND_CMD_READ0, mtd->writesize + eccpos[0], page);
++		chip->read_buf(mtd, ecc_code, chip->ecc.total);
+ 		chip->cmdfunc(mtd, NAND_CMD_RNDOUT, 0, -1);
+ 	} else {
+ 		chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
+@@ -1020,9 +1020,6 @@ static int nand_read_page_hwecc_oob_firs
+ 		chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
+ 	}
+ 
+-	for (i = 0; i < chip->ecc.total; i++)
+-		ecc_code[i] = chip->oob_poi[eccpos[i]];
+-
+ 	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
+ 		int stat;
+ 
+@@ -1077,8 +1074,8 @@ static int nand_read_subpage_hwecc_oob_f
+ 
+ 	/* Read the OOB area first */
+ 	if (mtd->writesize > 512) {
+-		chip->cmdfunc(mtd, NAND_CMD_READ0, mtd->writesize, page);
+-		chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
++		chip->cmdfunc(mtd, NAND_CMD_READ0, mtd->writesize + eccpos[0], page);
++		chip->read_buf(mtd, ecc_code, chip->ecc.total);
+ 		chip->cmdfunc(mtd, NAND_CMD_RNDOUT, data_col_addr, -1);
+ 	} else {
+ 		chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
+@@ -1086,9 +1083,6 @@ static int nand_read_subpage_hwecc_oob_f
+ 		chip->cmdfunc(mtd, NAND_CMD_READ0, data_col_addr, page);
+ 	}
+ 
+-	for (i = 0; i < chip->ecc.total; i++)
+-		ecc_code[i] = chip->oob_poi[eccpos[i]];
+-
+ 	p = bufpoi + data_col_addr;
+ 
+ 	for (i = eccbytes * start_step; num_steps; num_steps--, i += eccbytes, p += eccsize) {
