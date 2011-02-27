@@ -10,7 +10,7 @@ SOUND_MENU:=Sound Support
 define KernelPackage/sound-core
   SUBMENU:=$(SOUND_MENU)
   TITLE:=Sound support
-  DEPENDS:=@AUDIO_SUPPORT +!TARGET_x86:kmod-input-core
+  DEPENDS:=@AUDIO_SUPPORT +!TARGET_x86:kmod-input-core @!TARGET_xburst_qi_lb60
   KCONFIG:= \
 	CONFIG_SOUND \
 	CONFIG_SND \
