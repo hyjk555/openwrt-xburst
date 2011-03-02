@@ -1,6 +1,6 @@
 #!/bin/bash
 # version of me
-__VERSION__="2011-11-20"
+__VERSION__="2011-03-02"
 
 # use 'http' to download and flash images, use 'file' to flash images present in the <WORKING_DIR>
 PROTOCOL="http"
@@ -20,11 +20,12 @@ KERNEL="openwrt-xburst-qi_lb60-uImage.bin"
 ROOTFS="openwrt-xburst-qi_lb60-root.ubi"
 
 # options for reflash bootloader, kernel,  rootfs
-B="TRUE"
-K="TRUE"
-R="TRUE"
+B="FALSE"
+K="FALSE"
+R="FALSE"
+ALL="TRUE"
 
-while getopts d:l:h OPTIONS
+while getopts d:l:hbkr OPTIONS
 do
     case $OPTIONS in
     d)     
@@ -34,6 +35,18 @@ do
         WORKING_DIR=$OPTARG
         PROTOCOL="file"
         VERSION="Local"
+        ;;
+    b)
+	ALL="FALSE"
+        B="TRUE"
+        ;;
+    k)
+	ALL="FALSE"
+        K="TRUE"
+        ;;
+    r)
+	ALL="FALSE"
+        R="TRUE"
         ;;
     *)
         echo "\
@@ -59,6 +72,12 @@ Please report bugs to developer@lists.qi-hardware.com"
         ;;
     esac
 done
+
+if [ "$ALL" == "TRUE" ]; then
+	B="TRUE"
+	K="TRUE"
+	R="TRUE"
+fi
 
 # where the verbose output goes to
 LOG_FILE="${WORKING_DIR}/log.txt"
@@ -198,7 +217,7 @@ if [ "$K" == "TRUE" ]; then
 fi
 if [ "$R" == "TRUE" ]; then
 	log "erase nand rootfs partition..."
-	usbboot -c "boot;nerase 16 1024 0 0" >> "${LOG_FILE}" 2>&1
+	usbboot -c "nerase 16 1024 0 0" >> "${LOG_FILE}" 2>&1
 	log "flashing rootfs..."
 	progress_prepare
 	while read ILINE
@@ -207,4 +226,10 @@ if [ "$R" == "TRUE" ]; then
 	progress_finish
 	test "${tmp}" && abort "error while flashing rootfs:\n${tmp}"
 fi
+
+if [ "$ALL" == "TRUE" ]; then
+	log "reboot device..."
+	usbboot -c "reset" >> "${LOG_FILE}" 2>&1
+fi
+
 log "done"
