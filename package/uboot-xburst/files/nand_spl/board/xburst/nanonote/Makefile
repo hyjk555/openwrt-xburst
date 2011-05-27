@@ -43,11 +43,12 @@ ALL	= $(nandobj)u-boot-spl $(nandobj)u-boot-spl.bin $(nandobj)u-boot-spl-16k.bin
 all:	$(obj).depend $(ALL)
 
 $(nandobj)u-boot-spl-16k.bin: $(nandobj)u-boot-spl.bin
-	dd bs=1024 count=8 if=/dev/zero of=$(nandobj)junk1
+	tr '\0' '\377' < /dev/zero | dd bs=1024 count=8 of=$(nandobj)junk1
 	cat $< $(nandobj)junk1 > $(nandobj)junk2
 	dd bs=1024 count=8 if=$(nandobj)junk2 of=$(nandobj)junk3
 	cat $(nandobj)junk3 $(nandobj)junk3 > $(nandobj)junk4
-	dd bs=1024 count=256 if=/dev/zero of=$(nandobj)junk5
+
+	tr '\0' '\377' < /dev/zero | dd bs=1024 count=256 of=$(nandobj)junk5
 	cat $(nandobj)junk4 $(nandobj)junk5 > $(nandobj)junk6
 	dd bs=1024 count=256 if=$(nandobj)junk6 of=$@
 	rm -f $(nandobj)junk*
