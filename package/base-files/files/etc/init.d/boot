@@ -34,13 +34,14 @@ system_config() {
 				${log_ip:+-L -R ${log_ip}:${log_port}} \
 				${conloglevel:+-l $conloglevel} -S
 		else
-			syslogd -C${log_size} \
-				${log_ip:+-L -R ${log_ip}:${log_port}} \
-				${conloglevel:+-l $conloglevel}
+			#syslogd -C${log_size} \
+			#	${log_ip:+-L -R ${log_ip}:${log_port}} \
+			#	${conloglevel:+-l $conloglevel}
+			true		
 		fi
 	fi
 	config_get klogconloglevel "$cfg" klogconloglevel
-	[ -x /sbin/klogd ] && klogd ${klogconloglevel:+-c $klogconloglevel}
+	#[ -x /sbin/klogd ] && klogd ${klogconloglevel:+-c $klogconloglevel}
 }
 
 apply_uci_config() {
