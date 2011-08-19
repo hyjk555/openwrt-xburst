@@ -91,6 +91,14 @@ config BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY
 	help
 	  Enable history saving in shells.
 
+config BUSYBOX_CONFIG_FEATURE_REVERSE_SEARCH
+	bool "Reverse history search"
+	default n
+	depends on BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY
+	help
+	  Enable readline-like Ctrl-R combination for reverse history search.
+	  Increases code by about 0.5k.
+
 config BUSYBOX_CONFIG_FEATURE_TAB_COMPLETION
 	bool "Tab completion"
 	default y
