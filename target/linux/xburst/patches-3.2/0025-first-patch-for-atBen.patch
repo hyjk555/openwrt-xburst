@@ -1,4 +1,4 @@
-From 236d01dd323d1158f2744d37766baea85575b290 Mon Sep 17 00:00:00 2001
+From bccd0d495b5c88a7f2cc184e2babe47669eb6a65 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@sharism.cc>
 Date: Tue, 6 Mar 2012 11:40:52 +0800
 Subject: [PATCH 25/28] first-patch-for-atBen
@@ -40,20 +40,20 @@ Subject: [PATCH 25/28] first-patch-for-atBen
  net/mac802154/beacon_hash.h     |   41 ++
  net/mac802154/mac802154.h       |  126 +++++
  net/mac802154/mac_cmd.c         |  362 ++++++++++++++
- net/mac802154/main.c            |  282 +++++++++++
+ net/mac802154/main.c            |  283 +++++++++++
  net/mac802154/mib.c             |  249 ++++++++++
  net/mac802154/mib.h             |   35 ++
- net/mac802154/monitor.c         |  116 +++++
+ net/mac802154/monitor.c         |  117 +++++
  net/mac802154/rx.c              |  117 +++++
  net/mac802154/scan.c            |  203 ++++++++
- net/mac802154/smac.c            |  127 +++++
+ net/mac802154/smac.c            |  128 +++++
  net/mac802154/tx.c              |  106 ++++
- net/mac802154/wpan.c            |  630 +++++++++++++++++++++++
+ net/mac802154/wpan.c            |  631 +++++++++++++++++++++++
  net/zigbee/Kconfig              |    7 +
  net/zigbee/Makefile             |    5 +
  net/zigbee/af_zigbee.c          |  285 +++++++++++
  net/zigbee/dgram.c              |  401 +++++++++++++++
- 49 files changed, 9356 insertions(+), 18 deletions(-)
+ 49 files changed, 9360 insertions(+), 18 deletions(-)
  create mode 100644 drivers/ieee802154/adf7242.c
  create mode 100644 drivers/ieee802154/at86rf230.c
  create mode 100644 drivers/ieee802154/at86rf230.h
@@ -7288,10 +7288,10 @@ index 0000000..c763585
 +};
 diff --git a/net/mac802154/main.c b/net/mac802154/main.c
 new file mode 100644
-index 0000000..b108df0
+index 0000000..f2acbcb
 --- /dev/null
 +++ b/net/mac802154/main.c
-@@ -0,0 +1,282 @@
+@@ -0,0 +1,283 @@
 +/*
 + * Copyright (C) 2007, 2008, 2009 Siemens AG
 + *
@@ -7314,6 +7314,7 @@ index 0000000..b108df0
 +#include <linux/netdevice.h>
 +#include <linux/if_arp.h>
 +#include <linux/nl802154.h>
++#include <linux/module.h>
 +#include <net/route.h>
 +
 +#include <net/mac802154.h>
@@ -7872,10 +7873,10 @@ index 0000000..228f6d0
 +#endif
 diff --git a/net/mac802154/monitor.c b/net/mac802154/monitor.c
 new file mode 100644
-index 0000000..3a24599
+index 0000000..8b9e19a
 --- /dev/null
 +++ b/net/mac802154/monitor.c
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,117 @@
 +/*
 + * Copyright 2007, 2008, 2009 Siemens AG
 + *
@@ -7906,6 +7907,7 @@ index 0000000..3a24599
 +
 +#include <net/mac802154.h>
 +#include <net/wpan-phy.h>
++#include <linux/hardirq.h>
 +
 +#include "mac802154.h"
 +
@@ -8326,10 +8328,10 @@ index 0000000..7c6f313
 +
 diff --git a/net/mac802154/smac.c b/net/mac802154/smac.c
 new file mode 100644
-index 0000000..b11f0ec
+index 0000000..89afaee
 --- /dev/null
 +++ b/net/mac802154/smac.c
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,128 @@
 +/*
 + * Copyright 2010 Siemens AG
 + *
@@ -8354,6 +8356,7 @@ index 0000000..b11f0ec
 +#include <linux/skbuff.h>
 +#include <linux/if_arp.h>
 +#include <linux/nl802154.h>
++#include <linux/hardirq.h>
 +
 +#include <net/mac802154.h>
 +#include <net/wpan-phy.h>
@@ -8571,10 +8574,10 @@ index 0000000..0703195
 +}
 diff --git a/net/mac802154/wpan.c b/net/mac802154/wpan.c
 new file mode 100644
-index 0000000..6393888
+index 0000000..b1eabff
 --- /dev/null
 +++ b/net/mac802154/wpan.c
-@@ -0,0 +1,630 @@
+@@ -0,0 +1,631 @@
 +/*
 + * Copyright 2007, 2008, 2009 Siemens AG
 + *
@@ -8605,6 +8608,7 @@ index 0000000..6393888
 +#include <linux/random.h>
 +#include <linux/crc-ccitt.h>
 +#include <linux/nl802154.h>
++#include <linux/hardirq.h>
 +
 +#include <net/rtnetlink.h>
 +#include <net/af_ieee802154.h>

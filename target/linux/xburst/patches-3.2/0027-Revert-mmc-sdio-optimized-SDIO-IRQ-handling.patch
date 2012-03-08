@@ -1,4 +1,4 @@
-From 657c83bd702402b1a80bcfab22c92d4cb8ee4336 Mon Sep 17 00:00:00 2001
+From 16c351c85d9a992f4dba97dbaa036a2151c22223 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@sharism.cc>
 Date: Tue, 6 Mar 2012 11:42:29 +0800
 Subject: [PATCH 27/28] Revert-mmc-sdio-optimized-SDIO-IRQ-handling
