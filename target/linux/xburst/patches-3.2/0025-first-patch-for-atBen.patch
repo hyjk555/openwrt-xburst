@@ -1,4 +1,4 @@
-From bccd0d495b5c88a7f2cc184e2babe47669eb6a65 Mon Sep 17 00:00:00 2001
+From b4e4f47e778bba5c86a3725cd447e0bfda545ae0 Mon Sep 17 00:00:00 2001
 From: Xiangfu Liu <xiangfu@sharism.cc>
 Date: Tue, 6 Mar 2012 11:40:52 +0800
 Subject: [PATCH 25/28] first-patch-for-atBen
@@ -5003,7 +5003,7 @@ index 0000000..431bfe0
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/ieee802154/spi_atusb.c b/drivers/ieee802154/spi_atusb.c
 new file mode 100644
-index 0000000..04d9fb3
+index 0000000..44a9d03
 --- /dev/null
 +++ b/drivers/ieee802154/spi_atusb.c
 @@ -0,0 +1,750 @@
@@ -5628,8 +5628,8 @@ index 0000000..04d9fb3
 +		goto err_free;
 +	}
 +
-+	set_irq_chip_data(atusb->slave_irq, atusb);
-+	set_irq_chip_and_handler(atusb->slave_irq, &atusb_irq_chip,
++	irq_set_chip_data(atusb->slave_irq, atusb);
++	irq_set_chip_and_handler(atusb->slave_irq, &atusb_irq_chip,
 +	    handle_level_irq);
 +
 +	/* FIXME prepare USB IRQ */
@@ -5681,8 +5681,8 @@ index 0000000..04d9fb3
 +		usb_kill_urb(atusb->irq_urb);
 +	spi_master_put(atusb->master);
 +err_slave_irq:
-+	set_irq_chained_handler(atusb->slave_irq, NULL);
-+	set_irq_chip_data(atusb->slave_irq, NULL);
++	irq_set_chained_handler(atusb->slave_irq, NULL);
++	irq_set_chip_data(atusb->slave_irq, NULL);
 +	irq_free_desc(atusb->slave_irq);
 +err_free:
 +	return retval;
@@ -5707,8 +5707,8 @@ index 0000000..04d9fb3
 +
 +	spi_unregister_master(master);
 +
-+	set_irq_chained_handler(atusb->slave_irq, NULL);
-+	set_irq_chip_data(atusb->slave_irq, NULL);
++	irq_set_chained_handler(atusb->slave_irq, NULL);
++	irq_set_chip_data(atusb->slave_irq, NULL);
 +	irq_free_desc(atusb->slave_irq);
 +
 +	spi_master_put(master);
