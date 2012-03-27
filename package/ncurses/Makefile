@@ -26,7 +26,7 @@ define Package/libncurses
   CATEGORY:=Libraries
   TITLE:=Terminal handling library
   URL:=http://www.gnu.org/software/ncurses/
-  DEPENDS:= +terminfo
+  DEPENDS:=+terminfo
   VARIANT:=libncurses
 endef
 
@@ -43,7 +43,7 @@ define Package/libncursesw
   CATEGORY:=Libraries
   TITLE:=Terminal handling library (Unicode)
   URL:=http://www.gnu.org/software/ncurses/
-  DEPENDS:=libncurses
+  DEPENDS:=+libncurses
   VARIANT:=libncursesw
 endef
 
