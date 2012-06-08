@@ -1,0 +1,473 @@
+From ca7f714fc8c9981eda5d85594333f955f75510f7 Mon Sep 17 00:00:00 2001
+From: Xiangfu <xiangfu@openmobilefree.net>
+Date: Tue, 5 Jun 2012 11:32:43 +0800
+Subject: [PATCH 1/3] 002
+
+---
+ drivers/ieee802154/Kconfig      |   55 +++++++++++++++++++++++++++++++++++++-
+ drivers/ieee802154/Makefile     |   11 ++++++++
+ drivers/ieee802154/fakehard.c   |   12 ++++++++-
+ include/linux/if.h              |    2 +
+ include/linux/if_arp.h          |    2 +
+ include/linux/nl802154.h        |   10 +++++-
+ include/net/ieee802154_netdev.h |   17 ++++++++++--
+ include/net/wpan-phy.h          |    8 +++--
+ net/Kconfig                     |    2 +
+ net/Makefile                    |    1 +
+ net/ieee802154/Kconfig          |    8 +++++
+ net/ieee802154/Makefile         |    3 ++
+ net/ieee802154/dgram.c          |    3 +-
+ net/ieee802154/ieee802154.h     |    4 +++
+ net/ieee802154/nl-mac.c         |    2 +-
+ net/ieee802154/nl-phy.c         |   20 ++++++++++++--
+ net/ieee802154/nl_policy.c      |    1 +
+ net/ieee802154/wpan-class.c     |    2 +-
+ 18 files changed, 145 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/ieee802154/Kconfig b/drivers/ieee802154/Kconfig
+index 9b9f43a..5345e40 100644
+--- a/drivers/ieee802154/Kconfig
++++ b/drivers/ieee802154/Kconfig
+@@ -10,13 +10,64 @@ menuconfig IEEE802154_DRIVERS
+ 	  If you say N, all options in this submenu will be skipped and
+ 	  disabled.
+ 
++config IEEE802154_DRIVER_DEBUG
++	bool "Driver debugging messages"
++	depends on IEEE802154_DRIVERS
++	default y
++	help
++	  Say Y here to make the IEEE 802.15.4 drivers generate extensive
++	  debugging messages.
++
+ config IEEE802154_FAKEHARD
+ 	tristate "Fake LR-WPAN driver with several interconnected devices"
+ 	depends on  IEEE802154_DRIVERS
+ 	---help---
+ 	  Say Y here to enable the fake driver that serves as an example
+-          of HardMAC device driver.
++	  of HardMAC device driver.
+ 
+-          This driver can also be built as a module. To do so say M here.
++	  This driver can also be built as a module. To do so say M here.
+ 	  The module will be called 'fakehard'.
+ 
++
++config IEEE802154_FAKELB
++	depends on IEEE802154_DRIVERS && MAC802154
++	tristate "Fake LR-WPAN driver with several interconnected devices"
++	---help---
++	  Say Y here to enable the fake driver that can emulate a net
++	  of several interconnected radio devices.
++
++	  This driver can also be built as a module. To do so say M here.
++	  The module will be called 'fakelb'.
++
++config IEEE802154_SERIAL
++	depends on IEEE802154_DRIVERS && MAC802154
++	tristate "Simple LR-WPAN UART driver"
++
++config IEEE802154_AT86RF230
++	depends on IEEE802154_DRIVERS && MAC802154
++	tristate "AT86RF230 transceiver driver"
++	depends on SPI
++
++config SPI_ATBEN
++	tristate "ATBEN 8:10 SPI interface"
++	depends on JZ4740_QI_LB60 && IEEE802154_AT86RF230
++	help
++	  Bit-banging SPI driver for the 8:10 interface of the Ben NanoNote
++	  when equipped with an ATBEN board.
++
++config SPI_ATUSB
++       tristate "ATUSB SPI interface"
++       depends on USB && IEEE802154_AT86RF230
++        help
++          SPI-over-USB driver for the ATUSB IEEE 802.15.4 board.
++
++config IEEE802154_CC2420
++       tristate "CC2420 driver"
++       depends on SPI
++       depends on  IEEE802154_DRIVERS
++
++config IEEE802154_ADF7242
++       tristate "ADF7242 transceiver driver"
++       depends on IEEE802154_DRIVERS && MAC802154
++       depends on SPI
++
+diff --git a/drivers/ieee802154/Makefile b/drivers/ieee802154/Makefile
+index 800a389..4f669bc 100644
+--- a/drivers/ieee802154/Makefile
++++ b/drivers/ieee802154/Makefile
+@@ -1 +1,12 @@
+ obj-$(CONFIG_IEEE802154_FAKEHARD) += fakehard.o
++obj-$(CONFIG_IEEE802154_FAKELB) += fakelb.o
++obj-$(CONFIG_IEEE802154_SERIAL) += serial.o
++obj-$(CONFIG_IEEE802154_AT86RF230) += at86rf230.o
++obj-$(CONFIG_IEEE802154_CC2420) += cc2420.o
++obj-$(CONFIG_IEEE802154_ADF7242) += adf7242.o
++obj-$(CONFIG_SPI_ATBEN) += spi_atben.o
++obj-$(CONFIG_SPI_ATUSB) += spi_atusb.o
++
++ccflags-y := -DDEBUG -DCONFIG_FFD
++ccflags-$(CONFIG_IEEE802154_DRIVER_DEBUG) += -DDEBUG
++ccflags-y += -DCONFIG_FFD
+diff --git a/drivers/ieee802154/fakehard.c b/drivers/ieee802154/fakehard.c
+index 73d4531..996e1db 100644
+--- a/drivers/ieee802154/fakehard.c
++++ b/drivers/ieee802154/fakehard.c
+@@ -259,7 +259,7 @@ static struct ieee802154_mlme_ops fake_mlme = {
+ 	.start_req = fake_start_req,
+ 	.scan_req = fake_scan_req,
+ 
+-	.get_phy = fake_get_phy,
++	.wpan_ops.get_phy = fake_get_phy,
+ 
+ 	.get_pan_id = fake_get_pan_id,
+ 	.get_short_addr = fake_get_short_addr,
+@@ -391,6 +391,16 @@ static int __devinit ieee802154fake_probe(struct platform_device *pdev)
+ 	priv = netdev_priv(dev);
+ 	priv->phy = phy;
+ 
++	/*
++	 * If the name is a format string the caller wants us to do a
++	 * name allocation.
++	 */
++	if (strchr(dev->name, '%')) {
++		err = dev_alloc_name(dev, dev->name);
++		if (err < 0)
++			goto out;
++	}
++
+ 	wpan_phy_set_dev(phy, &pdev->dev);
+ 	SET_NETDEV_DEV(dev, &phy->dev);
+ 
+diff --git a/include/linux/if.h b/include/linux/if.h
+index cffa754..9f402a1 100644
+--- a/include/linux/if.h
++++ b/include/linux/if.h
+@@ -82,6 +82,8 @@
+ #define IFF_TEAM_PORT	0x40000		/* device used as team port */
+ #define IFF_NO_IP_ALIGN	0x80000		/* do not ip-align allocated rx pkts */
+ 
++#define IFF_IEEE802154_COORD 0x400	/* IEEE802.15.4 PAN coordinator */
++
+ #define IF_GET_IFACE	0x0001		/* for querying only */
+ #define IF_GET_PROTO	0x0002
+ 
+diff --git a/include/linux/if_arp.h b/include/linux/if_arp.h
+index 6d722f4..47a57d8 100644
+--- a/include/linux/if_arp.h
++++ b/include/linux/if_arp.h
+@@ -87,6 +87,8 @@
+ #define ARPHRD_IEEE80211_PRISM 802	/* IEEE 802.11 + Prism2 header  */
+ #define ARPHRD_IEEE80211_RADIOTAP 803	/* IEEE 802.11 + radiotap header */
+ #define ARPHRD_IEEE802154	  804
++#define ARPHRD_IEEE802154_MONITOR 805
++#define ARPHRD_SMAC	806		/* Freescale Simple MAC */
+ 
+ #define ARPHRD_PHONET	820		/* PhoNet media type		*/
+ #define ARPHRD_PHONET_PIPE 821		/* PhoNet pipe header		*/
+diff --git a/include/linux/nl802154.h b/include/linux/nl802154.h
+index 33d9f51..a379fc7 100644
+--- a/include/linux/nl802154.h
++++ b/include/linux/nl802154.h
+@@ -68,14 +68,13 @@ enum {
+ 	IEEE802154_ATTR_CHANNEL_PAGE_LIST,
+ 
+ 	IEEE802154_ATTR_PHY_NAME,
++	IEEE802154_ATTR_DEV_TYPE,
+ 
+ 	__IEEE802154_ATTR_MAX,
+ };
+ 
+ #define IEEE802154_ATTR_MAX (__IEEE802154_ATTR_MAX - 1)
+ 
+-extern const struct nla_policy ieee802154_policy[];
+-
+ /* commands */
+ /* REQ should be responded with CONF
+  * and INDIC with RESP
+@@ -126,4 +125,11 @@ enum {
+ 
+ #define IEEE802154_CMD_MAX (__IEEE802154_CMD_MAX - 1)
+ 
++enum {
++	IEEE802154_DEV_WPAN,
++	IEEE802154_DEV_MONITOR,
++	IEEE802154_DEV_SMAC,
++	__IEEE802154_DEV_MAX,
++};
++
+ #endif
+diff --git a/include/net/ieee802154_netdev.h b/include/net/ieee802154_netdev.h
+index 5743055..e12ce9a 100644
+--- a/include/net/ieee802154_netdev.h
++++ b/include/net/ieee802154_netdev.h
+@@ -26,6 +26,8 @@
+ #ifndef IEEE802154_NETDEVICE_H
+ #define IEEE802154_NETDEVICE_H
+ 
++#include <net/af_ieee802154.h>
++
+ /*
+  * A control block of skb passed between the ARPHRD_IEEE802154 device
+  * and other stack parts.
+@@ -81,7 +83,12 @@ struct wpan_phy;
+  * get_phy should increment the reference counting on returned phy.
+  * Use wpan_wpy_put to put that reference.
+  */
++struct simple_mlme_ops {
++	struct wpan_phy *(*get_phy)(const struct net_device *dev);
++};
+ struct ieee802154_mlme_ops {
++	struct simple_mlme_ops wpan_ops;
++
+ 	int (*assoc_req)(struct net_device *dev,
+ 			struct ieee802154_addr *addr,
+ 			u8 channel, u8 page, u8 cap);
+@@ -98,8 +105,6 @@ struct ieee802154_mlme_ops {
+ 	int (*scan_req)(struct net_device *dev,
+ 			u8 type, u32 channels, u8 page, u8 duration);
+ 
+-	struct wpan_phy *(*get_phy)(const struct net_device *dev);
+-
+ 	/*
+ 	 * FIXME: these should become the part of PIB/MIB interface.
+ 	 * However we still don't have IB interface of any kind
+@@ -110,12 +115,18 @@ struct ieee802154_mlme_ops {
+ 	u8 (*get_bsn)(const struct net_device *dev);
+ };
+ 
+-static inline struct ieee802154_mlme_ops *ieee802154_mlme_ops(
++static inline struct simple_mlme_ops *simple_mlme_ops(
+ 		const struct net_device *dev)
+ {
+ 	return dev->ml_priv;
+ }
+ 
++static inline struct ieee802154_mlme_ops *ieee802154_mlme_ops(
++		const struct net_device *dev)
++{
++	return container_of(dev->ml_priv, struct ieee802154_mlme_ops, wpan_ops);
++}
++
+ #endif
+ 
+ 
+diff --git a/include/net/wpan-phy.h b/include/net/wpan-phy.h
+index d86fffd..9e119c5 100644
+--- a/include/net/wpan-phy.h
++++ b/include/net/wpan-phy.h
+@@ -24,17 +24,19 @@
+ #include <linux/netdevice.h>
+ #include <linux/mutex.h>
+ 
++#define WPAN_NUM_PAGES 32
++
+ struct wpan_phy {
+ 	struct mutex pib_lock;
+ 
+ 	/*
+-	 * This is a PIB according to 802.15.4-2006.
++	 * This is a PIB acording to 802.15.4-2006.
+ 	 * We do not provide timing-related variables, as they
+ 	 * aren't used outside of driver
+ 	 */
+ 	u8 current_channel;
+ 	u8 current_page;
+-	u32 channels_supported[32];
++	u32 channels_supported[WPAN_NUM_PAGES];
+ 	u8 transmit_power;
+ 	u8 cca_mode;
+ 
+@@ -42,7 +44,7 @@ struct wpan_phy {
+ 	int idx;
+ 
+ 	struct net_device *(*add_iface)(struct wpan_phy *phy,
+-			const char *name);
++			const char *name, int type);
+ 	void (*del_iface)(struct wpan_phy *phy, struct net_device *dev);
+ 
+ 	char priv[0] __attribute__((__aligned__(NETDEV_ALIGN)));
+diff --git a/net/Kconfig b/net/Kconfig
+index b3904e8..578eb11 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -217,6 +217,8 @@ source "net/econet/Kconfig"
+ source "net/wanrouter/Kconfig"
+ source "net/phonet/Kconfig"
+ source "net/ieee802154/Kconfig"
++source "net/mac802154/Kconfig"
++source "net/zigbee/Kconfig"
+ source "net/sched/Kconfig"
+ source "net/dcb/Kconfig"
+ source "net/dns_resolver/Kconfig"
+diff --git a/net/Makefile b/net/Makefile
+index ad432fa..2a97cde 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -60,6 +60,7 @@ ifneq ($(CONFIG_DCB),)
+ obj-y				+= dcb/
+ endif
+ obj-$(CONFIG_IEEE802154)	+= ieee802154/
++obj-$(CONFIG_MAC802154)		+= mac802154/
+ 
+ ifeq ($(CONFIG_NET),y)
+ obj-$(CONFIG_SYSCTL)		+= sysctl_net.o
+diff --git a/net/ieee802154/Kconfig b/net/ieee802154/Kconfig
+index 7dee650..3dea3c1 100644
+--- a/net/ieee802154/Kconfig
++++ b/net/ieee802154/Kconfig
+@@ -16,3 +16,11 @@ config IEEE802154_6LOWPAN
+ 	depends on IEEE802154 && IPV6
+ 	---help---
+ 	IPv6 compression over IEEE 802.15.4.
++
++config IEEE802154_PROTO_DEBUG
++	bool "IEEE 802.15.4 protocol stack debugging messages"
++	depends on IEEE802154
++	default y
++	help
++	  Say Y here to make the IEEE 802.15.4 protocol stack generate
++	  extensive debugging messages.
+diff --git a/net/ieee802154/Makefile b/net/ieee802154/Makefile
+index d7716d6..e2b6735 100644
+--- a/net/ieee802154/Makefile
++++ b/net/ieee802154/Makefile
+@@ -3,3 +3,6 @@ obj-$(CONFIG_IEEE802154_6LOWPAN) += 6lowpan.o
+ 
+ ieee802154-y := netlink.o nl-mac.o nl-phy.o nl_policy.o wpan-class.o
+ af_802154-y := af_ieee802154.o raw.o dgram.o
++
++ccflags-$(CONFIG_IEEE802154_PROTO_DEBUG) += -DDEBUG
++ccflags-y += -Wall
+diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
+index 1b09eaa..7883fa6 100644
+--- a/net/ieee802154/dgram.c
++++ b/net/ieee802154/dgram.c
+@@ -130,8 +130,7 @@ static int dgram_ioctl(struct sock *sk, int cmd, unsigned long arg)
+ 	switch (cmd) {
+ 	case SIOCOUTQ:
+ 	{
+-		int amount = sk_wmem_alloc_get(sk);
+-
++		int amount = atomic_read(&sk->sk_wmem_alloc);
+ 		return put_user(amount, (int __user *)arg);
+ 	}
+ 
+diff --git a/net/ieee802154/ieee802154.h b/net/ieee802154/ieee802154.h
+index aadec42..e78d6c6 100644
+--- a/net/ieee802154/ieee802154.h
++++ b/net/ieee802154/ieee802154.h
+@@ -21,6 +21,10 @@
+ int __init ieee802154_nl_init(void);
+ void __exit ieee802154_nl_exit(void);
+ 
++#include <net/netlink.h>
++
++extern const struct nla_policy ieee802154_policy[];
++
+ #define IEEE802154_OP(_cmd, _func)			\
+ 	{						\
+ 		.cmd	= _cmd,				\
+diff --git a/net/ieee802154/nl-mac.c b/net/ieee802154/nl-mac.c
+index adaf462..1d23aa6 100644
+--- a/net/ieee802154/nl-mac.c
++++ b/net/ieee802154/nl-mac.c
+@@ -263,7 +263,7 @@ static int ieee802154_nl_fill_iface(struct sk_buff *msg, u32 pid,
+ 	if (!hdr)
+ 		goto out;
+ 
+-	phy = ieee802154_mlme_ops(dev)->get_phy(dev);
++	phy = simple_mlme_ops(dev)->get_phy(dev);
+ 	BUG_ON(!phy);
+ 
+ 	NLA_PUT_STRING(msg, IEEE802154_ATTR_DEV_NAME, dev->name);
+diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
+index c64a38d..76ef7a3 100644
+--- a/net/ieee802154/nl-phy.c
++++ b/net/ieee802154/nl-phy.c
+@@ -57,7 +57,7 @@ static int ieee802154_nl_fill_phy(struct sk_buff *msg, u32 pid,
+ 
+ 	NLA_PUT_U8(msg, IEEE802154_ATTR_PAGE, phy->current_page);
+ 	NLA_PUT_U8(msg, IEEE802154_ATTR_CHANNEL, phy->current_channel);
+-	for (i = 0; i < 32; i++) {
++	for (i = 0; i < WPAN_NUM_PAGES; i++) {
+ 		if (phy->channels_supported[i])
+ 			buf[pages++] = phy->channels_supported[i] | (i << 27);
+ 	}
+@@ -179,6 +179,7 @@ static int ieee802154_add_iface(struct sk_buff *skb,
+ 	const char *devname;
+ 	int rc = -ENOBUFS;
+ 	struct net_device *dev;
++	int type = IEEE802154_DEV_WPAN;
+ 
+ 	pr_debug("%s\n", __func__);
+ 
+@@ -201,6 +202,19 @@ static int ieee802154_add_iface(struct sk_buff *skb,
+ 	if (strlen(devname) >= IFNAMSIZ)
+ 		return -ENAMETOOLONG;
+ 
++	if (info->attrs[IEEE802154_ATTR_HW_ADDR] &&
++	    nla_len(info->attrs[IEEE802154_ATTR_HW_ADDR]) !=
++			IEEE802154_ADDR_LEN) {
++		return -EINVAL;
++	}
++
++	if (info->attrs[IEEE802154_ATTR_DEV_TYPE]) {
++		type = nla_get_u8(info->attrs[IEEE802154_ATTR_DEV_TYPE]);
++		if (type > __IEEE802154_DEV_MAX) {
++			return -EINVAL;
++		}
++	}
++
+ 	phy = wpan_phy_find(name);
+ 	if (!phy)
+ 		return -ENODEV;
+@@ -221,7 +235,7 @@ static int ieee802154_add_iface(struct sk_buff *skb,
+ 		goto nla_put_failure;
+ 	}
+ 
+-	dev = phy->add_iface(phy, devname);
++	dev = phy->add_iface(phy, devname, type);
+ 	if (IS_ERR(dev)) {
+ 		rc = PTR_ERR(dev);
+ 		goto nla_put_failure;
+@@ -288,7 +302,7 @@ static int ieee802154_del_iface(struct sk_buff *skb,
+ 	if (!dev)
+ 		return -ENODEV;
+ 
+-	phy = ieee802154_mlme_ops(dev)->get_phy(dev);
++	phy = simple_mlme_ops(dev)->get_phy(dev);
+ 	BUG_ON(!phy);
+ 
+ 	rc = -EINVAL;
+diff --git a/net/ieee802154/nl_policy.c b/net/ieee802154/nl_policy.c
+index 6adda4d..235cd65 100644
+--- a/net/ieee802154/nl_policy.c
++++ b/net/ieee802154/nl_policy.c
+@@ -28,6 +28,7 @@ const struct nla_policy ieee802154_policy[IEEE802154_ATTR_MAX + 1] = {
+ 	[IEEE802154_ATTR_DEV_NAME] = { .type = NLA_STRING, },
+ 	[IEEE802154_ATTR_DEV_INDEX] = { .type = NLA_U32, },
+ 	[IEEE802154_ATTR_PHY_NAME] = { .type = NLA_STRING, },
++	[IEEE802154_ATTR_DEV_TYPE] = { .type = NLA_U8, },
+ 
+ 	[IEEE802154_ATTR_STATUS] = { .type = NLA_U8, },
+ 	[IEEE802154_ATTR_SHORT_ADDR] = { .type = NLA_U16, },
+diff --git a/net/ieee802154/wpan-class.c b/net/ieee802154/wpan-class.c
+index 1627ef2..380fe1a 100644
+--- a/net/ieee802154/wpan-class.c
++++ b/net/ieee802154/wpan-class.c
+@@ -56,7 +56,7 @@ static ssize_t channels_supported_show(struct device *dev,
+ 	int i, len = 0;
+ 
+ 	mutex_lock(&phy->pib_lock);
+-	for (i = 0; i < 32; i++) {
++	for (i = 0; i < WPAN_NUM_PAGES; i++) {
+ 		ret = snprintf(buf + len, PAGE_SIZE - len,
+ 				"%#09x\n", phy->channels_supported[i]);
+ 		if (ret < 0)
+-- 
+1.7.5.4
+
