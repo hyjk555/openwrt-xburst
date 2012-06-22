@@ -35,9 +35,9 @@ define KernelPackage/mac802154
   TITLE:=MAC802.15.4 support
   KCONFIG:= \
 	CONFIG_MAC802154 \
-	CONFIG_MAC802154_PROTO_DEBUG=y \
+	CONFIG_MAC802154_DEBUG=y \
 	CONFIG_IEEE802154_DRIVERS=y \
-	CONFIG_IEEE802154_DRIVERS_DEBUG=y
+	CONFIG_IEEE802154_DRIVER_DEBUG=y
   DEPENDS:=+kmod-ieee802154
   FILES:=$(LINUX_DIR)/net/mac802154/mac802154.ko
   AUTOLOAD:=$(call AutoLoad,91,mac802154)
@@ -80,7 +80,7 @@ define KernelPackage/fakelb
   AUTOLOAD:=$(call AutoLoad,92,fakelb)
 endef
 
-define KernelPackage/fakehard/description
+define KernelPackage/fakelb/description
   Say Y here to enable the fake driver that can emulate a net
   of several interconnected radio devices.
 endef
@@ -104,11 +104,13 @@ define KernelPackage/spi_atusb
   TITLE:=ATUSB SPI interface
   KCONFIG:=CONFIG_SPI_ATUSB
   DEPENDS:=+kmod-at86rf230 +kmod-usb-core
-  FILES:=$(LINUX_DIR)/drivers/ieee802154/spi_atusb.ko
+  FILES:= \
+	$(LINUX_DIR)/drivers/ieee802154/at86rf230.ko \
+	$(LINUX_DIR)/drivers/ieee802154/spi_atusb.ko
   AUTOLOAD:=$(call AutoLoad,93,at86rf230 spi_atusb)
 endef
 
-define KernelPackage/fakehard/description
+define KernelPackage/spi_atusb/description
   SPI-over-USB driver for the ATUSB IEEE 802.15.4 board.
 endef
 
@@ -122,10 +124,43 @@ define KernelPackage/spi_atben
   FILES:=$(LINUX_DIR)/drivers/ieee802154/spi_atben.ko
 endef
 
-define KernelPackage/fakehard/description
+define KernelPackage/spi_atben/description
   Bit-banging SPI driver for the 8:10 interface of the Ben NanoNote
   when equipped with an ATBEN board.
 endef
 
 $(eval $(call KernelPackage,spi_atben))
 
+define KernelPackage/wpan-serial
+  SUBMENU:=$(WPAN_MENU)
+  TITLE:=Simple LR-WPAN UART driver
+  KCONFIG:=CONFIG_IEEE802154_SERIAL
+  DEPENDS:=+kmod-ieee802154
+  FILES:=$(LINUX_DIR)/drivers/ieee802154/serial.ko
+endef
+
+$(eval $(call KernelPackage,wpan-serial))
+
+define KernelPackage/cc2420
+  SUBMENU:=$(WPAN_MENU)
+  TITLE:=CC2420 driver
+  KCONFIG:=CONFIG_IEEE802154_CC2420 \
+	CONFIG_SPI=y \
+	CONFIG_SPI_MASTER=y
+  DEPENDS:=+kmod-ieee802154
+  FILES:=$(LINUX_DIR)/drivers/ieee802154/cc2420.ko
+endef
+
+$(eval $(call KernelPackage,cc2420))
+
+define KernelPackage/adf7242
+  SUBMENU:=$(WPAN_MENU)
+  TITLE:=ADF7242 transceiver driver
+  KCONFIG:=CONFIG_IEEE802154_ADF7242 \
+	CONFIG_SPI=y \
+	CONFIG_SPI_MASTER=y
+  DEPENDS:=+kmod-mac802154
+  FILES:=$(LINUX_DIR)/drivers/ieee802154/adf7242.ko
+endef
+
+$(eval $(call KernelPackage,adf7242))
