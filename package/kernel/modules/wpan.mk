@@ -105,7 +105,7 @@ define KernelPackage/spi_atusb
   KCONFIG:=CONFIG_SPI_ATUSB
   DEPENDS:=+kmod-at86rf230 +kmod-usb-core
   FILES:=$(LINUX_DIR)/drivers/ieee802154/spi_atusb.ko
-  AUTOLOAD:=$(call AutoLoad,93,spi_atusb)
+  AUTOLOAD:=$(call AutoLoad,93,at86rf230 spi_atusb)
 endef
 
 define KernelPackage/fakehard/description
