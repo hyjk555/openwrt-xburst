@@ -1,4 +1,4 @@
-From 6d184ce0928a5a30e88e3e4b7be4200aa103abc3 Mon Sep 17 00:00:00 2001
+From 942f9ce3dd8dde01c501f7d7840700637eb2d285 Mon Sep 17 00:00:00 2001
 From: Xiangfu <xiangfu@openmobilefree.net>
 Date: Tue, 5 Jun 2012 11:32:52 +0800
 Subject: [PATCH 2/3] 001
@@ -11,7 +11,7 @@ Subject: [PATCH 2/3] 001
  drivers/ieee802154/fakelb.c    |  311 ++++++++++++
  drivers/ieee802154/serial.c    | 1047 ++++++++++++++++++++++++++++++++++++++++
  drivers/ieee802154/spi_atben.c |  421 ++++++++++++++++
- drivers/ieee802154/spi_atusb.c |  750 ++++++++++++++++++++++++++++
+ drivers/ieee802154/spi_atusb.c |  751 ++++++++++++++++++++++++++++
  include/linux/if_ieee802154.h  |    6 +
  include/linux/spi/at86rf230.h  |   34 ++
  include/net/mac802154.h        |  156 ++++++
@@ -35,7 +35,7 @@ Subject: [PATCH 2/3] 001
  net/zigbee/Makefile            |    5 +
  net/zigbee/af_zigbee.c         |  285 +++++++++++
  net/zigbee/dgram.c             |  401 +++++++++++++++
- 31 files changed, 9221 insertions(+), 0 deletions(-)
+ 31 files changed, 9222 insertions(+)
  create mode 100644 drivers/ieee802154/adf7242.c
  create mode 100644 drivers/ieee802154/at86rf230.c
  create mode 100644 drivers/ieee802154/at86rf230.h
@@ -4867,10 +4867,10 @@ index 0000000..431bfe0
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/ieee802154/spi_atusb.c b/drivers/ieee802154/spi_atusb.c
 new file mode 100644
-index 0000000..44a9d03
+index 0000000..b16f5be
 --- /dev/null
 +++ b/drivers/ieee802154/spi_atusb.c
-@@ -0,0 +1,750 @@
+@@ -0,0 +1,751 @@
 +/*
 + * spi_atusb - SPI host look-alike for ATUSB
 + *
@@ -4901,6 +4901,7 @@ index 0000000..44a9d03
 +#include <linux/jiffies.h>
 +#include <linux/timer.h>
 +#include <linux/interrupt.h>
++#include <linux/irq.h>
 +#include <linux/usb.h>
 +#include <linux/spi/spi.h>
 +#include <linux/spi/at86rf230.h>
@@ -5493,8 +5494,8 @@ index 0000000..44a9d03
 +	}
 +
 +	irq_set_chip_data(atusb->slave_irq, atusb);
-+	irq_set_chip_and_handler(atusb->slave_irq, &atusb_irq_chip,
-+	    handle_level_irq);
++	irq_set_chip(atusb->slave_irq, &atusb_irq_chip);
++	__irq_set_handler(atusb->slave_irq, handle_level_irq, 0, NULL);
 +
 +	/* FIXME prepare USB IRQ */
 +
@@ -9476,5 +9477,5 @@ index 0000000..4d9b682
 +};
 +
 -- 
-1.7.5.4
+1.7.9.5
 
