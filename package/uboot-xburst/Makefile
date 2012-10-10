@@ -9,11 +9,11 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=u-boot
-PKG_VERSION:=2010.06
+PKG_VERSION:=2012.10-rc2
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=ftp://ftp.denx.de/pub/u-boot
 PKG_MD5SUM:=
 PKG_TARGETS:=bin
@@ -30,20 +30,7 @@ define uboot/qi_lb60
   TITLE:=U-boot for the qi_lb60 board
 endef
 
-define uboot/avt2
-  TITLE:=U-boot for the avt2 board
-endef
-
-define uboot/sakc
-  TITLE:=U-boot for the sakc board
-endef
-
-define uboot/n516
-  TITLE:=U-boot for the N516 e-book reader
-  CONFIG:=n516_nand
-endef
-
-UBOOTS:=qi_lb60 n516 avt2 sakc
+UBOOTS:=qi_lb60
 
 define Package/uboot/template
 define Package/uboot-xburst-$(1)
@@ -69,12 +56,6 @@ UBOOT_CONFIG:=$(if $(CONFIG),$(CONFIG),$(BUILD_VARIANT))
 UBOOT_IMAGE:=$(if $(IMAGE),$(IMAGE),openwrt-$(BOARD)-$(BUILD_BARIANT)-u-boot.bin)
 endif
 
-define Build/Prepare
-	$(CP) ./files/* $(PKG_BUILD_DIR)
-	find $(PKG_BUILD_DIR) -name .svn | $(XARGS) rm -rf
-	$(call Build/Prepare/Default)
-endef
-
 define Build/Configure
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		$(UBOOT_CONFIG)_config
@@ -83,6 +64,12 @@ endef
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		CROSS_COMPILE=$(TARGET_CROSS)
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		CROSS_COMPILE=$(TARGET_CROSS) spl/u-boot-spl.bin
+	dd if=$(PKG_BUILD_DIR)/spl/u-boot-spl.bin of=$(PKG_BUILD_DIR)/u-boot-spl-tmp.bin conv=sync bs=8192 count=1
+	dd if=$(PKG_BUILD_DIR)/spl/u-boot-spl.bin of=$(PKG_BUILD_DIR)/u-boot-spl-tmp.bin conv=sync,notrunc oflag=append bs=8192 count=1
+	tr '\0' '\377' < /dev/zero | dd of=$(PKG_BUILD_DIR)/u-boot-spl-tmp.bin conv=sync,notrunc oflag=append bs=16384 count=1
+	cat $(PKG_BUILD_DIR)/u-boot-spl-tmp.bin $(PKG_BUILD_DIR)/u-boot.bin > $(PKG_BUILD_DIR)/u-boot-nand.bin
 endef
 
 define Package/uboot/install/template

@@ -1,0 +1,1836 @@
+From eb328666f9381a1bd2059484a4aef024285be045 Mon Sep 17 00:00:00 2001
+From: Xiangfu Liu <xiangfu@openmobilefree.net>
+Date: Fri, 6 Jan 2012 17:05:11 +0800
+Subject: [PATCH 1/5] add qi_lb60 spl code and usbboot code
+
+---
+ arch/mips/cpu/xburst/Makefile     |    7 +-
+ arch/mips/cpu/xburst/cpu.c        |    4 +
+ arch/mips/cpu/xburst/jz4740.c     |   84 ++--
+ arch/mips/cpu/xburst/spl/Makefile |   47 ++
+ arch/mips/cpu/xburst/spl/start.S  |   65 +++
+ arch/mips/lib/Makefile            |    4 +
+ arch/mips/lib/string.c            |   32 ++
+ board/qi/qi_lb60/Makefile         |    5 +
+ board/qi/qi_lb60/qi_lb60-spl.c    |   56 +++
+ board/qi/qi_lb60/qi_lb60.c        |    6 +-
+ board/qi/qi_lb60/u-boot-spl.lds   |   62 +++
+ board/qi/qi_lb60/usbboot.S        |  880 +++++++++++++++++++++++++++++++++++++
+ drivers/mtd/nand/jz4740_nand.c    |   39 +-
+ include/configs/qi_lb60.h         |  173 ++++----
+ 14 files changed, 1319 insertions(+), 145 deletions(-)
+ create mode 100644 arch/mips/cpu/xburst/spl/Makefile
+ create mode 100644 arch/mips/cpu/xburst/spl/start.S
+ create mode 100644 arch/mips/lib/string.c
+ create mode 100644 board/qi/qi_lb60/qi_lb60-spl.c
+ create mode 100644 board/qi/qi_lb60/u-boot-spl.lds
+ create mode 100644 board/qi/qi_lb60/usbboot.S
+
+diff --git a/arch/mips/cpu/xburst/Makefile b/arch/mips/cpu/xburst/Makefile
+index b1f2ae4..ec35e55 100644
+--- a/arch/mips/cpu/xburst/Makefile
++++ b/arch/mips/cpu/xburst/Makefile
+@@ -24,9 +24,12 @@ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)lib$(CPU).o
+ 
++COBJS-y	= cpu.o jz_serial.o
++
++ifneq ($(CONFIG_SPL_BUILD),y)
+ START	= start.o
+-SOBJS-y	=
+-COBJS-y	= cpu.o timer.o jz_serial.o
++COBJS-y += timer.o
++endif
+ 
+ COBJS-$(CONFIG_JZ4740) += jz4740.o
+ 
+diff --git a/arch/mips/cpu/xburst/cpu.c b/arch/mips/cpu/xburst/cpu.c
+index ddcbfaa..1432838 100644
+--- a/arch/mips/cpu/xburst/cpu.c
++++ b/arch/mips/cpu/xburst/cpu.c
+@@ -42,6 +42,8 @@
+ 		:			\
+ 		: "i" (op), "R" (*(unsigned char *)(addr)))
+ 
++#ifndef CONFIG_SPL_BUILD
++
+ void __attribute__((weak)) _machine_restart(void)
+ {
+ 	struct jz4740_wdt *wdt = (struct jz4740_wdt *)JZ4740_WDT_BASE;
+@@ -109,6 +111,8 @@ void invalidate_dcache_range(ulong start_addr, ulong stop)
+ 		cache_op(Hit_Invalidate_D, addr);
+ }
+ 
++#endif
++
+ void flush_icache_all(void)
+ {
+ 	u32 addr, t = 0;
+diff --git a/arch/mips/cpu/xburst/jz4740.c b/arch/mips/cpu/xburst/jz4740.c
+index c0b9817..40ef411 100644
+--- a/arch/mips/cpu/xburst/jz4740.c
++++ b/arch/mips/cpu/xburst/jz4740.c
+@@ -32,31 +32,19 @@ int disable_interrupts(void)
+ 	return 0;
+ }
+ 
+-/*
+- * PLL output clock = EXTAL * NF / (NR * NO)
+- * NF = FD + 2, NR = RD + 2
+- * NO = 1 (if OD = 0), NO = 2 (if OD = 1 or 2), NO = 4 (if OD = 3)
+- */
+ void pll_init(void)
+ {
+ 	struct jz4740_cpm *cpm = (struct jz4740_cpm *)JZ4740_CPM_BASE;
+ 
+-	register unsigned int cfcr, plcr1;
+-	int n2FR[33] = {
+-		0, 0, 1, 2, 3, 0, 4, 0, 5, 0, 0, 0, 6, 0, 0, 0,
+-		7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0,
+-		9
+-	};
+-	int div[5] = {1, 3, 3, 3, 3}; /* divisors of I:S:P:L:M */
+-	int nf, pllout2;
++	register unsigned int cfcr, plcr;
++	unsigned int nf, pllout2;
+ 
+ 	cfcr =	CPM_CPCCR_CLKOEN |
+-		CPM_CPCCR_PCS |
+-		(n2FR[div[0]] << CPM_CPCCR_CDIV_BIT) |
+-		(n2FR[div[1]] << CPM_CPCCR_HDIV_BIT) |
+-		(n2FR[div[2]] << CPM_CPCCR_PDIV_BIT) |
+-		(n2FR[div[3]] << CPM_CPCCR_MDIV_BIT) |
+-		(n2FR[div[4]] << CPM_CPCCR_LDIV_BIT);
++		(0 << CPM_CPCCR_CDIV_BIT) |
++		(2 << CPM_CPCCR_HDIV_BIT) |
++		(2 << CPM_CPCCR_PDIV_BIT) |
++		(2 << CPM_CPCCR_MDIV_BIT) |
++		(2 << CPM_CPCCR_LDIV_BIT);
+ 
+ 	pllout2 = (cfcr & CPM_CPCCR_PCS) ?
+ 		CONFIG_SYS_CPU_SPEED : (CONFIG_SYS_CPU_SPEED / 2);
+@@ -65,15 +53,18 @@ void pll_init(void)
+ 	writel(pllout2 / 48000000 - 1, &cpm->uhccdr);
+ 
+ 	nf = CONFIG_SYS_CPU_SPEED * 2 / CONFIG_SYS_EXTAL;
+-	plcr1 = ((nf - 2) << CPM_CPPCR_PLLM_BIT) | /* FD */
++	plcr = ((nf - 2) << CPM_CPPCR_PLLM_BIT) | /* FD */
+ 		(0 << CPM_CPPCR_PLLN_BIT) |	/* RD=0, NR=2 */
+ 		(0 << CPM_CPPCR_PLLOD_BIT) |	/* OD=0, NO=1 */
+-		(0x20 << CPM_CPPCR_PLLST_BIT) |	/* PLL stable time */
++		(0x32 << CPM_CPPCR_PLLST_BIT) |	/* PLL stable time */
+ 		CPM_CPPCR_PLLEN;		/* enable PLL */
+ 
+ 	/* init PLL */
+ 	writel(cfcr, &cpm->cpccr);
+-	writel(plcr1, &cpm->cppcr);
++	writel(plcr, &cpm->cppcr);
++
++	while (!(readl(&cpm->cppcr) & CPM_CPPCR_PLLS))
++		;
+ }
+ 
+ void sdram_init(void)
+@@ -92,26 +83,14 @@ void sdram_init(void)
+ 		2 << EMC_DMCR_TCL_BIT	/* CAS latency is 3 */
+ 	};
+ 
+-	int div[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
++	unsigned int div[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
+ 
+ 	cpu_clk = CONFIG_SYS_CPU_SPEED;
+-	mem_clk = cpu_clk * div[__cpm_get_cdiv()] / div[__cpm_get_mdiv()];
++	mem_clk = 84000000;
+ 
+ 	writel(0, &emc->bcr);	/* Disable bus release */
+ 	writew(0, &emc->rtcsr);	/* Disable clock for counting */
+ 
+-	/* Fault DMCR value for mode register setting*/
+-#define SDRAM_ROW0	11
+-#define SDRAM_COL0	8
+-#define SDRAM_BANK40	0
+-
+-	dmcr0 = ((SDRAM_ROW0 - 11) << EMC_DMCR_RA_BIT) |
+-		((SDRAM_COL0 - 8) << EMC_DMCR_CA_BIT) |
+-		(SDRAM_BANK40 << EMC_DMCR_BA_BIT) |
+-		(SDRAM_BW16 << EMC_DMCR_BW_BIT) |
+-		EMC_DMCR_EPIN |
+-		cas_latency_dmcr[((SDRAM_CASL == 3) ? 1 : 0)];
+-
+ 	/* Basic DMCR value */
+ 	dmcr = ((SDRAM_ROW - 11) << EMC_DMCR_RA_BIT) |
+ 		((SDRAM_COL - 8) << EMC_DMCR_CA_BIT) |
+@@ -128,36 +107,36 @@ void sdram_init(void)
+ 	if (tmp > 11)
+ 		tmp = 11;
+ 	dmcr |= (tmp - 4) << EMC_DMCR_TRAS_BIT;
+-	tmp = SDRAM_RCD / ns;
+ 
++	tmp = SDRAM_RCD / ns;
+ 	if (tmp > 3)
+ 		tmp = 3;
+ 	dmcr |= tmp << EMC_DMCR_RCD_BIT;
+-	tmp = SDRAM_TPC / ns;
+ 
++	tmp = SDRAM_TPC / ns;
+ 	if (tmp > 7)
+ 		tmp = 7;
+ 	dmcr |= tmp << EMC_DMCR_TPC_BIT;
+-	tmp = SDRAM_TRWL / ns;
+ 
++	tmp = SDRAM_TRWL / ns;
+ 	if (tmp > 3)
+ 		tmp = 3;
+ 	dmcr |= tmp << EMC_DMCR_TRWL_BIT;
+-	tmp = (SDRAM_TRAS + SDRAM_TPC) / ns;
+ 
++	tmp = (SDRAM_TRAS + SDRAM_TPC) / ns;
+ 	if (tmp > 14)
+ 		tmp = 14;
+ 	dmcr |= ((tmp + 1) >> 1) << EMC_DMCR_TRC_BIT;
+ 
+ 	/* SDRAM mode value */
+-	sdmode = EMC_SDMR_BT_SEQ |
+-		 EMC_SDMR_OM_NORMAL |
+-		 EMC_SDMR_BL_4 |
++	sdmode = EMC_SDMR_BT_SEQ	|
++		 EMC_SDMR_OM_NORMAL	|
++		 EMC_SDMR_BL_4		|
+ 		 cas_latency_sdmr[((SDRAM_CASL == 3) ? 1 : 0)];
+ 
+ 	/* Stage 1. Precharge all banks by writing SDMR with DMCR.MRSET=0 */
+ 	writel(dmcr, &emc->dmcr);
+-	writeb(0, JZ4740_EMC_SDMR0 | sdmode);
++	writeb(0, JZ4740_EMC_SDMR0 + sdmode);
+ 
+ 	/* Wait for precharge, > 200us */
+ 	tmp = (cpu_clk / 1000000) * 1000;
+@@ -172,8 +151,8 @@ void sdram_init(void)
+ 	if (tmp > 0xff)
+ 		tmp = 0xff;
+ 	writew(tmp, &emc->rtcor);
++
+ 	writew(0, &emc->rtcnt);
+-	/* Divisor is 64, CKO/64 */
+ 	writew(EMC_RTCSR_CKS_64, &emc->rtcsr);
+ 
+ 	/* Wait for number of auto-refresh cycles */
+@@ -182,13 +161,17 @@ void sdram_init(void)
+ 		;
+ 
+ 	/* Stage 3. Mode Register Set */
++	dmcr0 = (11 << EMC_DMCR_RA_BIT)	|
++		(8 << EMC_DMCR_CA_BIT)	|
++		(0 << EMC_DMCR_BA_BIT)	|
++		EMC_DMCR_EPIN		|
++		(SDRAM_BW16 << EMC_DMCR_BW_BIT) |
++		cas_latency_dmcr[((SDRAM_CASL == 3) ? 1 : 0)];
+ 	writel(dmcr0 | EMC_DMCR_RFSH | EMC_DMCR_MRSET, &emc->dmcr);
+ 	writeb(0, JZ4740_EMC_SDMR0 | sdmode);
+ 
+ 	/* Set back to basic DMCR value */
+ 	writel(dmcr | EMC_DMCR_RFSH | EMC_DMCR_MRSET, &emc->dmcr);
+-
+-	/* everything is ok now */
+ }
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+@@ -232,9 +215,10 @@ void rtc_init(void)
+ phys_size_t initdram(int board_type)
+ {
+ 	struct jz4740_emc *emc = (struct jz4740_emc *)JZ4740_EMC_BASE;
+-	u32 dmcr;
+-	u32 rows, cols, dw, banks;
+-	ulong size;
++
++	unsigned int dmcr;
++	unsigned int rows, cols, dw, banks;
++	unsigned long size;
+ 
+ 	dmcr = readl(&emc->dmcr);
+ 	rows = 11 + ((dmcr & EMC_DMCR_RA_MASK) >> EMC_DMCR_RA_BIT);
+diff --git a/arch/mips/cpu/xburst/spl/Makefile b/arch/mips/cpu/xburst/spl/Makefile
+new file mode 100644
+index 0000000..f45e8c8
+--- /dev/null
++++ b/arch/mips/cpu/xburst/spl/Makefile
+@@ -0,0 +1,47 @@
++#
++# Copyright (C) 2011 Xiangfu Liu <xiangfu@openmobilefree.net>
++#
++# See file CREDITS for list of people who contributed to this
++# project.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation; either version 2 of
++# the License, or (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++# MA 02111-1307 USA
++#
++
++include $(TOPDIR)/config.mk
++
++LIB	= $(obj)lib$(CPU).o
++
++START	= start.o
++SOBJS-y	=
++COBJS-y	=
++
++SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
++OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
++START	:= $(addprefix $(obj),$(START))
++
++all:	$(obj).depend $(START) $(LIB)
++
++$(LIB):	$(OBJS)
++	$(call cmd_link_o_target, $(OBJS))
++
++#########################################################################
++
++# defines $(obj).depend target
++include $(SRCTREE)/rules.mk
++
++sinclude $(obj).depend
++
++#########################################################################
+diff --git a/arch/mips/cpu/xburst/spl/start.S b/arch/mips/cpu/xburst/spl/start.S
+new file mode 100644
+index 0000000..44dd1e0
+--- /dev/null
++++ b/arch/mips/cpu/xburst/spl/start.S
+@@ -0,0 +1,65 @@
++/*
++ *  Startup Code for MIPS32 XBURST CPU-core
++ *
++ *  Copyright (c) 2010 Xiangfu Liu <xiangfu@sharism.cc>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 3 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <config.h>
++#include <version.h>
++#include <asm/regdef.h>
++#include <asm/mipsregs.h>
++#include <asm/addrspace.h>
++#include <asm/cacheops.h>
++
++#include <asm/jz4740.h>
++
++	.set noreorder
++
++	.globl _start
++	.text
++_start:
++	.word JZ4740_NANDBOOT_CFG /* fetched during NAND Boot */
++reset:
++	/*
++	 * STATUS register
++	 * CU0=UM=EXL=IE=0, BEV=ERL=1, IP2~7=1
++	 */
++	li	t0, 0x0040FC04
++	mtc0	t0, CP0_STATUS
++	/*
++	 * CAUSE register
++	 * IV=1, use the specical interrupt vector (0x200)
++	 */
++	li	t1, 0x00800000
++	mtc0	t1, CP0_CAUSE
++
++	bal     1f
++	 nop
++	.word   _GLOBAL_OFFSET_TABLE_
++1:
++	move    gp, ra
++	lw      t1, 0(ra)
++	move	gp, t1
++
++	la	sp, 0x80004000
++	la	t9, nand_spl_boot
++	j	t9
++	nop
+diff --git a/arch/mips/lib/Makefile b/arch/mips/lib/Makefile
+index 967e98a..c1452a2 100644
+--- a/arch/mips/lib/Makefile
++++ b/arch/mips/lib/Makefile
+@@ -34,12 +34,16 @@ LGOBJS	:= $(addprefix $(obj),$(GLSOBJS))
+ 
+ SOBJS-y	+=
+ 
++ifeq ($(CONFIG_SPL_BUILD),y)
++COBJS-y	+= string.o
++else
+ COBJS-y	+= board.o
+ ifeq ($(CONFIG_QEMU_MIPS),y)
+ COBJS-y	+= bootm_qemu_mips.o
+ else
+ COBJS-y	+= bootm.o
+ endif
++endif
+ 
+ SRCS	:= $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
+ OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
+diff --git a/arch/mips/lib/string.c b/arch/mips/lib/string.c
+new file mode 100644
+index 0000000..d59f44a
+--- /dev/null
++++ b/arch/mips/lib/string.c
+@@ -0,0 +1,32 @@
++/*
++ * Copyright (c) 2012 Xiangfu Liu <xiangfu@openmobilefree.net>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++/* copy from lib/string bcopy */
++char * memcpy(const char * src, char * dest, int count)
++{
++	char *tmp = dest;
++
++	while (count--)
++		*tmp++ = *src++;
++
++	return dest;
++}
+diff --git a/board/qi/qi_lb60/Makefile b/board/qi/qi_lb60/Makefile
+index 5dae11b..6dd8c6f 100644
+--- a/board/qi/qi_lb60/Makefile
++++ b/board/qi/qi_lb60/Makefile
+@@ -22,7 +22,12 @@ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)lib$(BOARD).o
+ 
++ifeq ($(CONFIG_SPL_BUILD),y)
++SOBJS	:= usbboot.o
++COBJS	:= $(BOARD)-spl.o
++else
+ COBJS	:= $(BOARD).o
++endif
+ 
+ SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+ OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
+diff --git a/board/qi/qi_lb60/qi_lb60-spl.c b/board/qi/qi_lb60/qi_lb60-spl.c
+new file mode 100644
+index 0000000..f5031aa
+--- /dev/null
++++ b/board/qi/qi_lb60/qi_lb60-spl.c
+@@ -0,0 +1,56 @@
++/*
++ * Authors: Xiangfu Liu <xiangfu@sharism.cc>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 3 of the License, or (at your option) any later version.
++ */
++
++#include <common.h>
++#include <nand.h>
++#include <asm/io.h>
++#include <asm/jz4740.h>
++
++#define KEY_U_OUT       (32 * 2 + 16)
++#define KEY_U_IN        (32 * 3 + 19)
++
++static int is_usb_boot()
++{
++	__gpio_as_input(KEY_U_IN);
++	__gpio_enable_pull(KEY_U_IN);
++	__gpio_as_output(KEY_U_OUT);
++	__gpio_clear_pin(KEY_U_OUT);
++
++	if (__gpio_get_pin(KEY_U_IN) == 0)
++		return 1;
++
++	return 0;
++}
++
++static struct jz4740_emc * emc = (struct jz4740_emc *)JZ4740_EMC_BASE;
++
++void nand_spl_boot(void)
++{
++	uint32_t reg;
++
++	__gpio_as_sdram_16bit_4720();
++	__gpio_as_uart0();
++	__gpio_jtag_to_uart0();
++
++	serial_init();
++	serial_puts("\nQi lb60 SPL\n");
++
++	pll_init();
++	sdram_init();
++
++	if (is_usb_boot()) {
++		serial_puts("[U] pressed, goto USBBOOT mode\n");
++		usb_boot();
++	}
++
++	nand_init();
++
++	serial_puts("\nStarting U-Boot ...\n");
++	nand_boot();
++}
+diff --git a/board/qi/qi_lb60/qi_lb60.c b/board/qi/qi_lb60/qi_lb60.c
+index d975209..553e05d 100644
+--- a/board/qi/qi_lb60/qi_lb60.c
++++ b/board/qi/qi_lb60/qi_lb60.c
+@@ -97,8 +97,10 @@ int board_early_init_f(void)
+ /* U-Boot common routines */
+ int checkboard(void)
+ {
+-	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC, Speed %ld MHz)\n",
+-	       gd->cpu_clk / 1000000);
++	printf("Board: Qi LB60 (Ingenic XBurst Jz4740 SoC)\n");
++	printf(" CPU: %ld \n", gd->cpu_clk);
++	printf(" MEM: %ld \n", gd->mem_clk);
++	printf(" DEV: %ld \n", gd->dev_clk);
+ 
+ 	return 0;
+ }
+diff --git a/board/qi/qi_lb60/u-boot-spl.lds b/board/qi/qi_lb60/u-boot-spl.lds
+new file mode 100644
+index 0000000..cf80c35
+--- /dev/null
++++ b/board/qi/qi_lb60/u-boot-spl.lds
+@@ -0,0 +1,62 @@
++/*
++ * (C) Copyright 2005
++ * Ingenic Semiconductor, <jlwei@ingenic.cn>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++OUTPUT_FORMAT("elf32-tradlittlemips", "elf32-tradlittlemips", "elf32-tradlittlemips")
++
++OUTPUT_ARCH(mips)
++ENTRY(_start)
++SECTIONS
++{
++	. = 0x80000000;
++	. = ALIGN(4);
++	.text :
++	{
++	  *(.text)
++	}
++
++	. = ALIGN(4);
++	.rodata  : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
++
++	. = ALIGN(4);
++	.data  : { *(.data) }
++
++	. = ALIGN(4);
++	.sdata  : { *(.sdata) }
++
++	_gp = ALIGN(16);
++
++	__got_start = .;
++	.got  : { *(.got) }
++	__got_end = .;
++
++	. = .;
++	__u_boot_cmd_start = .;
++	.u_boot_cmd : { *(.u_boot_cmd) }
++	__u_boot_cmd_end = .;
++
++	uboot_end_data = .;
++	num_got_entries = (__got_end - __got_start) >> 2;
++
++	. = ALIGN(4);
++	.sbss  : { *(.sbss) }
++	.bss  : { *(.bss) }
++	uboot_end = .;
++}
++ASSERT(uboot_end <= 0x80002000, "NAND bootstrap too big");
+diff --git a/board/qi/qi_lb60/usbboot.S b/board/qi/qi_lb60/usbboot.S
+new file mode 100644
+index 0000000..eb8faa6
+--- /dev/null
++++ b/board/qi/qi_lb60/usbboot.S
+@@ -0,0 +1,880 @@
++/*
++ *  for jz4740 usb boot
++ *
++ *  Copyright (c) 2009 Author: <jlwei@ingenic.cn>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++    .set noreorder
++    .globl usb_boot
++    .text
++
++//----------------------------------------------------------------------
++// Both NAND and USB boot load data to D-Cache first, then transfer
++// data from D-Cache to I-Cache, and jump to execute the code in I-Cache.
++// So init caches first and then dispatch to a proper boot routine.
++//----------------------------------------------------------------------
++
++.macro load_addr reg addr
++	li \reg, 0x80000000
++	addiu \reg, \reg, \addr
++	la $2, usbboot_begin
++	subu \reg, \reg, $2
++.endm
++
++usb_boot:
++	//--------------------------------------------------------------
++	// Initialize PLL: set ICLK to 84MHz and HCLK to 42MHz.
++	//--------------------------------------------------------------
++	la	$9, 0xB0000000		// CPCCR: Clock Control Register
++	la	$8, 0x42041110		// I:S:M:P=1:2:2:2
++	sw	$8, 0($9)
++
++	la	$9, 0xB0000010		// CPPCR: PLL Control Register
++	la	$8, 0x06000120		// M=12 N=0 D=0 CLK=12*(M+2)/(N+2)
++	sw	$8, 0($9)
++
++	mtc0	$0, $26			// CP0_ERRCTL, restore WST reset state
++	nop
++
++	mtc0	$0, $16			// CP0_CONFIG
++	nop
++
++	// Relocate code to beginning of the ram
++
++	la $2, usbboot_begin
++	la $3, usbboot_end
++	li $4, 0x80000000
++
++1:
++	lw $5, 0($2)
++	sw $5, 0($4)
++	addiu $2, $2, 4
++	bne $2, $3, 1b
++	addiu $4, $4, 4
++
++	li $2, 0x80000000
++	ori $3, $2, 0
++	addiu $3, $3, usbboot_end
++	la $4, usbboot_begin
++	subu $3, $3, $4
++
++
++2:
++	cache	0x0, 0($2)		// Index_Invalidate_I
++	cache	0x1, 0($2)		// Index_Writeback_Inv_D
++	addiu	$2, $2, 32
++	subu $4, $3, $2
++	bgtz	$4, 2b
++	nop
++
++	load_addr $3, usb_boot_return
++
++	jr $3
++
++usbboot_begin:
++
++init_caches:
++	li	$2, 3			// cacheable for kseg0 access
++	mtc0	$2, $16			// CP0_CONFIG
++	nop
++
++	li	$2, 0x20000000		// enable idx-store-data cache insn
++	mtc0	$2, $26			// CP0_ERRCTL
++
++	ori	$2, $28, 0		// start address
++	ori	$3, $2, 0x3fe0		// end address, total 16KB
++	mtc0	$0, $28, 0		// CP0_TAGLO
++	mtc0	$0, $28, 1		// CP0_DATALO
++cache_clear_a_line:
++	cache	0x8, 0($2)		// Index_Store_Tag_I
++	cache	0x9, 0($2)		// Index_Store_Tag_D
++	bne	$2, $3, cache_clear_a_line
++	addiu	$2, $2, 32		// increment CACHE_LINE_SIZE
++
++	ori	$2, $28, 0		// start address
++	ori	$3, $2, 0x3fe0		// end address, total 16KB
++	la	$4, 0x1ffff000		// physical address and 4KB page mask
++cache_alloc_a_line:
++	and	$5, $2, $4
++	ori	$5, $5, 1		// V bit of the physical tag
++	mtc0	$5, $28, 0		// CP0_TAGLO
++	cache	0x8, 0($2)		// Index_Store_Tag_I
++	cache	0x9, 0($2)		// Index_Store_Tag_D
++	bne	$2, $3, cache_alloc_a_line
++	addiu	$2, $2, 32		// increment CACHE_LINE_SIZE
++
++	nop
++	nop
++	nop
++	//--------------------------------------------------------------
++	// Transfer data from dcache to icache, then jump to icache.
++	//
++	// Input parameters:
++	//
++	// $19: data length in bytes
++	// $20: jump target address
++	//--------------------------------------------------------------
++xfer_d2i:
++
++	ori	$8, $20, 0
++	addu	$9, $8, $19		// total 16KB
++
++1:
++	cache	0x0, 0($8)		// Index_Invalidate_I
++	cache	0x1, 0($8)		// Index_Writeback_Inv_D
++	bne	$8, $9, 1b
++	addiu	$8, $8, 32
++
++	// flush write-buffer
++	sync
++
++	// Invalidate BTB
++	mfc0	$8, $16, 7		// CP0_CONFIG
++	nop
++	ori	$8, 2
++	mtc0	$8, $16, 7
++	nop
++
++	// Overwrite config to disable ram initalisation
++	li $2, 0xff
++	sb $2, 20($20)
++
++	jalr	$20
++	nop
++
++icache_return:
++	//--------------------------------------------------------------
++	// User code can return to here after executing itself in 
++	// icache, by jumping to $31.
++	//--------------------------------------------------------------
++	b	usb_boot_return
++	nop
++
++
++usb_boot_return:
++	//--------------------------------------------------------------
++	// Enable the USB PHY
++	//--------------------------------------------------------------
++	la	$9, 0xB0000024		// CPM_SCR
++	lw	$8, 0($9)
++	ori	$8, 0x40		// USBPHY_ENABLE
++	sw	$8, 0($9)
++
++	//--------------------------------------------------------------
++	// Initialize USB registers
++	//--------------------------------------------------------------
++	la	$27, 0xb3040000		// USB registers base address
++
++	sb	$0, 0x0b($27)		// INTRUSBE: disable common USB interrupts
++	sh	$0, 0x06($27)		// INTRINE: disable EPIN interrutps
++	sh	$0, 0x08($27)		// INTROUTE: disable EPOUT interrutps
++
++	li	$9, 0x61
++	sb	$9, 0x01($27)		// POWER: HSENAB | SUSPENDM | SOFTCONN
++
++	//--------------------------------------------------------------
++	// Initialize USB states
++	//--------------------------------------------------------------
++	li	$22, 0			// set EP0 to IDLE state
++	li	$23, 1			// no data stage
++
++	//--------------------------------------------------------------
++	// Main loop of polling the usb commands
++	//--------------------------------------------------------------
++usb_command_loop:
++	lbu	$9, 0x0a($27)		// read INTRUSB
++	andi	$9, 0x04		// check USB_INTR_RESET
++	beqz	$9, check_intr_ep0in
++	nop
++
++	//--------------------------------------------------------------
++ 	// 1. Handle USB reset interrupt
++	//--------------------------------------------------------------
++handle_reset_intr:
++	lbu	$9, 0x01($27)		// read POWER
++	andi	$9, 0x10		// test HS_MODE
++	bnez	$9, _usb_set_maxpktsize
++	li	$9, 512			// max packet size of HS mode
++	li	$9, 64			// max packet size of FS mode
++
++_usb_set_maxpktsize:
++	li	$8, 1
++	sb	$8, 0x0e($27)		// set INDEX 1
++
++	sh	$9, 0x10($27)		// INMAXP
++	sb	$0, 0x13($27)		// INCSRH
++	sh	$9, 0x14($27)		// OUTMAXP
++	sb	$0, 0x17($27)		// OUTCSRH
++
++_usb_flush_fifo:
++	li	$8, 0x48		// INCSR_CDT && INCSR_FF
++	sb	$8, 0x12($27)		// INCSR
++	li	$8, 0x90		// OUTCSR_CDT && OUTCSR_FF
++	sb	$8, 0x16($27)		// OUTCSR
++
++	li	$22, 0			// set EP0 to IDLE state
++	li	$23, 1			// no data stage
++
++	//--------------------------------------------------------------
++	// 2. Check and handle EP0 interrupt
++	//--------------------------------------------------------------
++check_intr_ep0in:
++	lhu	$10, 0x02($27)		// read INTRIN
++	andi	$9, $10, 0x1		// check EP0 interrupt
++	beqz	$9, check_intr_ep1in
++	nop
++
++handle_ep0_intr:
++	sb	$0, 0x0e($27)		// set INDEX 0
++	lbu	$11, 0x12($27)		// read CSR0
++
++	andi	$9, $11, 0x04		// check SENTSTALL
++	beqz	$9, _ep0_setupend
++	nop
++
++_ep0_sentstall:
++	andi	$9, $11, 0xdb
++	sb	$9, 0x12($27)		// clear SENDSTALL and SENTSTALL
++	li	$22, 0			// set EP0 to IDLE state
++
++_ep0_setupend:
++	andi	$9, $11, 0x10		// check SETUPEND
++	beqz	$9, ep0_idle_state
++	nop
++
++	ori	$9, $11, 0x80
++	sb	$9, 0x12($27)		// set SVDSETUPEND
++	li	$22, 0			// set EP0 to IDLE state
++
++ep0_idle_state:
++	bnez	$22, ep0_tx_state
++	nop
++
++	//--------------------------------------------------------------
++	// 2.1 Handle EP0 IDLE state interrupt
++	//--------------------------------------------------------------
++	andi	$9, $11, 0x01		// check OUTPKTRDY
++	beqz	$9, check_intr_ep1in
++	nop
++
++	//--------------------------------------------------------------
++	// Read 8-bytes setup packet from the FIFO
++	//--------------------------------------------------------------
++	lw	$25, 0x20($27)		// first word of setup packet
++	lw	$26, 0x20($27)		// second word of setup packet
++
++	andi	$9, $25, 0x60		// bRequestType & USB_TYPE_MASK
++	beqz	$9, _ep0_std_req
++	nop
++
++	//--------------------------------------------------------------
++	// 2.1.1 Vendor-specific setup request
++	//--------------------------------------------------------------
++_ep0_vend_req:
++	li	$22, 0			// set EP0 to IDLE state
++	li	$23, 1			// NoData = 1
++
++	andi	$9, $25, 0xff00		// check bRequest
++	srl	$9, $9, 8
++	beqz	$9, __ep0_get_cpu_info
++	sub	$8, $9, 0x1
++	beqz	$8, __ep0_set_data_address
++	sub	$8, $9, 0x2
++	beqz	$8, __ep0_set_data_length
++	sub	$8, $9, 0x3
++	beqz	$8, __ep0_flush_caches
++	sub	$8, $9, 0x4
++	beqz	$8, __ep0_prog_start1
++	sub	$8, $9, 0x5
++	beqz	$8, __ep0_prog_start2
++	nop
++	b	_ep0_idle_state_fini	// invalid request
++	nop
++
++__ep0_get_cpu_info:
++	load_addr $20, cpu_info_data	// data pointer to transfer
++	li	$21, 8			// bytes left to transfer
++	li	$22, 1			// set EP0 to TX state
++	li	$23, 0			// NoData = 0
++
++	b	_ep0_idle_state_fini
++	nop
++
++__ep0_set_data_address:
++	li	$9, 0xffff0000
++	and	$9, $25, $9
++	andi	$8, $26, 0xffff
++	or	$20, $9, $8		// data address of next transfer
++
++	b	_ep0_idle_state_fini
++	nop
++
++__ep0_set_data_length:
++	li	$9, 0xffff0000
++	and	$9, $25, $9
++	andi	$8, $26, 0xffff
++	or	$21, $9, $8		// data length of next transfer
++
++	li	$9, 0x48		// SVDOUTPKTRDY and DATAEND
++	sb	$9, 0x12($27)		// CSR0
++
++	// We must write packet to FIFO before EP1-IN interrupt here.
++	b	handle_epin1_intr
++	nop
++
++__ep0_flush_caches:
++	// Flush dcache and invalidate icache.
++	li	$8, 0x80000000
++	addi	$9, $8, 0x3fe0		// total 16KB
++
++1:
++	cache	0x0, 0($8)		// Index_Invalidate_I
++	cache	0x1, 0($8)		// Index_Writeback_Inv_D
++	bne	$8, $9, 1b
++	addiu	$8, $8, 32
++
++	// flush write-buffer
++	sync
++
++	// Invalidate BTB
++	mfc0	$8, $16, 7		// CP0_CONFIG
++	nop
++	ori	$8, 2
++	mtc0	$8, $16, 7
++	nop
++
++	b	_ep0_idle_state_fini
++	nop
++
++__ep0_prog_start1:
++	li	$9, 0x48		// SVDOUTPKTRDY and DATAEND
++	sb	$9, 0x12($27)		// CSR0
++
++	li	$9, 0xffff0000
++	and	$9, $25, $9
++	andi	$8, $26, 0xffff
++	or	$20, $9, $8		// target address
++
++	b	xfer_d2i
++	li	$19, 0x2000		// 16KB data length
++
++__ep0_prog_start2:
++	li	$9, 0x48		// SVDOUTPKTRDY and DATAEND
++	sb	$9, 0x12($27)		// CSR0
++
++	li	$9, 0xffff0000
++	and	$9, $25, $9
++	andi	$8, $26, 0xffff
++	or	$20, $9, $8		// target address
++
++	jalr	$20			// jump, and place the return address in $31
++	nop
++
++__ep0_prog_start2_return:
++	// User code can return to here after executing itself, by jumping to $31.
++	b	usb_boot_return
++	nop
++
++	//--------------------------------------------------------------
++	// 2.1.2 Standard setup request
++	//--------------------------------------------------------------
++_ep0_std_req:
++	andi	$12, $25, 0xff00	// check bRequest
++	srl	$12, $12, 8
++	sub	$9, $12, 0x05		// check USB_REQ_SET_ADDRESS
++	bnez	$9, __ep0_req_set_config
++	nop
++
++	//--------------------------------------------------------------
++	// Handle USB_REQ_SET_ADDRESS
++	//--------------------------------------------------------------
++__ep0_req_set_addr:
++	srl	$9, $25, 16		// get wValue
++	sb	$9, 0x0($27)		// set FADDR
++	li	$23, 1			// NoData = 1
++	b	_ep0_idle_state_fini
++	nop
++
++__ep0_req_set_config:
++	sub	$9, $12, 0x09		// check USB_REQ_SET_CONFIGURATION
++	bnez	$9, __ep0_req_get_desc
++	nop
++
++	//--------------------------------------------------------------
++	// Handle USB_REQ_SET_CONFIGURATION
++	//--------------------------------------------------------------
++	li	$23, 1			// NoData = 1
++	b	_ep0_idle_state_fini
++	nop
++
++__ep0_req_get_desc:
++	sub	$9, $12, 0x06		// check USB_REQ_GET_DESCRIPTOR
++	bnez	$9, _ep0_idle_state_fini
++	li	$23, 1			// NoData = 1
++
++	//--------------------------------------------------------------
++	// Handle USB_REQ_GET_DESCRIPTOR
++	//--------------------------------------------------------------
++	li	$23, 0			// NoData = 0
++
++	srl	$9, $25, 24		// wValue >> 8
++	sub	$8, $9, 0x01		// check USB_DT_DEVICE
++	beqz	$8, ___ep0_get_dev_desc
++	srl	$21, $26, 16		// get wLength
++	sub	$8, $9, 0x02		// check USB_DT_CONFIG
++	beqz	$8, ___ep0_get_conf_desc
++	sub	$8, $9, 0x03		// check USB_DT_STRING
++	beqz	$8, ___ep0_get_string_desc
++	sub	$8, $9, 0x06		// check USB_DT_DEVICE_QUALIFIER
++	beqz	$8, ___ep0_get_dev_qualifier
++	nop
++	b	_ep0_idle_state_fini
++	nop
++
++___ep0_get_dev_desc:
++	load_addr	$20, device_desc	// data pointer
++	li	$22, 1			// set EP0 to TX state
++	sub	$8, $21, 18
++	blez	$8, _ep0_idle_state_fini // wLength <= 18
++	nop
++	li	$21, 18			// max length of device_desc
++	b	_ep0_idle_state_fini
++	nop
++
++___ep0_get_dev_qualifier:
++	load_addr	$20, dev_qualifier	// data pointer
++	li	$22, 1			// set EP0 to TX state
++	sub	$8, $21, 10
++	blez	$8, _ep0_idle_state_fini // wLength <= 10
++	nop
++	li	$21, 10			// max length of dev_qualifier
++	b	_ep0_idle_state_fini
++	nop
++
++___ep0_get_conf_desc:
++	load_addr	$20, config_desc_fs	// data pointer of FS mode
++	lbu	$8, 0x01($27)		// read POWER
++	andi	$8, 0x10		// test HS_MODE
++	beqz	$8, ___ep0_get_conf_desc2
++	nop
++	load_addr $20, config_desc_hs	// data pointer of HS mode
++
++___ep0_get_conf_desc2:
++	li	$22, 1			// set EP0 to TX state
++	sub	$8, $21, 32
++	blez	$8, _ep0_idle_state_fini // wLength <= 32
++	nop
++	li	$21, 32			// max length of config_desc
++	b	_ep0_idle_state_fini
++	nop
++
++___ep0_get_string_desc:
++	li	$22, 1			// set EP0 to TX state
++
++	srl	$9, $25, 16		// wValue & 0xff
++	andi	$9, 0xff
++
++	sub	$8, $9, 1
++	beqz	$8, ___ep0_get_string_manufacture
++	sub	$8, $9, 2
++	beqz	$8, ___ep0_get_string_product
++	nop
++
++___ep0_get_string_lang_ids:
++	load_addr	$20, string_lang_ids	// data pointer
++	b	_ep0_idle_state_fini
++	li	$21, 4			// data length
++
++___ep0_get_string_manufacture:
++	load_addr	$20, string_manufacture	// data pointer
++	b	_ep0_idle_state_fini
++	li	$21, 16			// data length
++
++___ep0_get_string_product:
++	load_addr	$20, string_product	// data pointer
++	b	_ep0_idle_state_fini
++	li	$21, 46			// data length
++
++_ep0_idle_state_fini:
++	li	$9, 0x40		// SVDOUTPKTRDY
++	beqz	$23, _ep0_idle_state_fini2
++	nop
++	ori	$9, $9, 0x08		// DATAEND
++_ep0_idle_state_fini2:
++	sb	$9, 0x12($27)		// CSR0
++	beqz	$22, check_intr_ep1in
++	nop
++
++	//--------------------------------------------------------------
++	// 2.2 Handle EP0 TX state interrupt
++	//--------------------------------------------------------------
++ep0_tx_state:
++	sub	$9, $22, 1
++	bnez	$9, check_intr_ep1in
++	nop
++
++	sub	$9, $21, 64		// max packetsize
++	blez	$9, _ep0_tx_state2	// data count <= 64
++	ori	$19, $21, 0
++	li	$19, 64
++
++_ep0_tx_state2:
++	beqz	$19, _ep0_tx_state3	// send ZLP
++	ori	$18, $19, 0		// record bytes to be transferred
++	sub	$21, $21, $19		// decrement data count
++
++_ep0_fifo_write_loop:
++	lbu	$9, 0($20)		// read data
++	sb	$9, 0x20($27)		// load FIFO
++	sub	$19, $19, 1		// decrement counter
++	bnez	$19, _ep0_fifo_write_loop
++	addi	$20, $20, 1		// increment data pointer
++
++	sub	$9, $18, 64		// max packetsize
++	beqz	$9, _ep0_tx_state4
++	nop
++
++_ep0_tx_state3:
++	// transferred bytes < max packetsize
++	li	$9, 0x0a		// set INPKTRDY and DATAEND
++	sb	$9, 0x12($27)		// CSR0
++	li	$22, 0			// set EP0 to IDLE state
++	b	check_intr_ep1in
++	nop
++
++_ep0_tx_state4:
++	// transferred bytes == max packetsize
++	li	$9, 0x02		// set INPKTRDY
++	sb	$9, 0x12($27)		// CSR0
++	b	check_intr_ep1in
++	nop
++
++	//--------------------------------------------------------------
++	// 3. Check and handle EP1 BULK-IN interrupt
++	//--------------------------------------------------------------
++check_intr_ep1in:
++	andi	$9, $10, 0x2		// check EP1 IN interrupt
++	beqz	$9, check_intr_ep1out
++	nop
++
++handle_epin1_intr:
++	li	$9, 1
++	sb	$9, 0x0e($27)		// set INDEX 1
++	lbu	$9, 0x12($27)		// read INCSR
++
++	andi	$8, $9, 0x2		// check INCSR_FFNOTEMPT
++	bnez	$8, _epin1_tx_state4
++	nop
++
++_epin1_write_fifo:
++	lhu	$9, 0x10($27)		// get INMAXP
++	sub	$8, $21, $9
++	blez	$8, _epin1_tx_state1	// bytes left <= INMAXP
++	ori	$19, $21, 0
++	ori	$19, $9, 0
++
++_epin1_tx_state1:
++	beqz	$19, _epin1_tx_state4	// No data
++	nop
++
++	sub	$21, $21, $19		// decrement data count
++
++	srl	$5, $19, 2		// # of word
++	andi	$6, $19, 0x3		// # of byte
++	beqz	$5, _epin1_tx_state2
++	nop
++
++_epin1_fifo_write_word:
++	lw	$9, 0($20)		// read data from source address
++	sw	$9, 0x24($27)		// write FIFO
++	sub	$5, $5, 1		// decrement counter
++	bnez	$5, _epin1_fifo_write_word
++	addiu	$20, $20, 4		// increment dest address
++
++_epin1_tx_state2:
++	beqz	$6, _epin1_tx_state3
++	nop
++
++_epin1_fifo_write_byte:
++	lbu	$9, 0($20)		// read data from source address
++	sb	$9, 0x24($27)		// write FIFO
++	sub	$6, $6, 1		// decrement counter
++	bnez	$6, _epin1_fifo_write_byte
++	addiu	$20, $20, 1		// increment dest address
++
++_epin1_tx_state3:
++	li	$9, 0x1
++	sb	$9, 0x12($27)		// INCSR, set INPKTRDY
++
++_epin1_tx_state4:
++	// nop
++
++	//--------------------------------------------------------------
++	// 4. Check and handle EP1 BULK-OUT interrupt
++	//--------------------------------------------------------------
++check_intr_ep1out:
++	lhu	$9, 0x04($27)		// read INTROUT
++	andi	$9, 0x2
++	beqz	$9, check_status_next
++	nop
++
++handle_epout1_intr:
++	li	$9, 1
++	sb	$9, 0x0e($27)		// set INDEX 1
++
++	lbu	$9, 0x16($27)		// read OUTCSR
++	andi	$9, 0x1			// check OUTPKTRDY
++	beqz	$9, check_status_next
++	nop
++
++_epout1_read_fifo:
++	lhu	$19, 0x18($27)		// read OUTCOUNT
++	srl	$5, $19, 2		// # of word
++	andi	$6, $19, 0x3		// # of byte
++	beqz	$5, _epout1_rx_state1
++	nop
++
++_epout1_fifo_read_word:
++	lw	$9, 0x24($27)		// read FIFO
++	sw	$9, 0($20)		// store to dest address
++	sub	$5, $5, 1		// decrement counter
++	bnez	$5, _epout1_fifo_read_word
++	addiu	$20, $20, 4		// increment dest address
++
++_epout1_rx_state1:
++	beqz	$6, _epout1_rx_state2
++	nop
++
++_epout1_fifo_read_byte:
++	lbu	$9, 0x24($27)		// read FIFO
++	sb	$9, 0($20)		// store to dest address
++	sub	$6, $6, 1		// decrement counter
++	bnez	$6, _epout1_fifo_read_byte
++	addiu	$20, $20, 1		// increment dest address
++
++_epout1_rx_state2:
++	sb	$0, 0x16($27)		// clear OUTPKTRDY
++
++check_status_next:
++	b	usb_command_loop
++	nop
++
++//--------------------------------------------------------------
++// Device/Configuration/Interface/Endpoint/String Descriptors
++//--------------------------------------------------------------
++
++	.align	2
++device_desc:
++	.byte	0x12		// bLength
++	.byte	0x01		// bDescriptorType
++	.byte	0x00		// bcdUSB
++	.byte	0x02		// bcdUSB
++	.byte	0x00		// bDeviceClass
++	.byte	0x00		// bDeviceSubClass
++	.byte	0x00		// bDeviceProtocol
++	.byte	0x40		// bMaxPacketSize0
++	.byte	0x1a		// idVendor
++	.byte	0x60		// idVendor
++	.byte	0x40		// idProduct
++	.byte	0x47		// idProduct
++	.byte	0x00		// bcdDevice
++	.byte	0x01		// bcdDevice
++	.byte	0x01		// iManufacturer
++	.byte	0x02		// iProduct
++	.byte	0x00		// iSerialNumber
++	.byte	0x01		// bNumConfigurations
++
++	.align	2
++dev_qualifier:
++	.byte	0x0a		// bLength
++	.byte	0x06		// bDescriptorType
++	.byte	0x00		// bcdUSB
++	.byte	0x02		// bcdUSB
++	.byte	0x00		// bDeviceClass
++	.byte	0x00		// bDeviceSubClass
++	.byte	0x00		// bDeviceProtocol
++	.byte	0x40		// bMaxPacketSize0
++	.byte	0x01		// bNumConfigurations
++	.byte	0x00		// bRESERVED
++
++	.align	2
++config_desc_hs:
++	.byte	0x09		// bLength
++	.byte	0x02		// bDescriptorType
++	.byte	0x20		// wTotalLength
++	.byte	0x00		// wTotalLength
++	.byte	0x01		// bNumInterfaces
++	.byte	0x01		// bConfigurationValue
++	.byte	0x00		// iConfiguration
++	.byte	0xc0		// bmAttributes
++	.byte	0x01		// MaxPower
++intf_desc_hs:
++	.byte	0x09		// bLength
++	.byte	0x04		// bDescriptorType
++	.byte	0x00		// bInterfaceNumber
++	.byte	0x00		// bAlternateSetting
++	.byte	0x02		// bNumEndpoints
++	.byte	0xff		// bInterfaceClass
++	.byte	0x00		// bInterfaceSubClass
++	.byte	0x50		// bInterfaceProtocol
++	.byte	0x00		// iInterface
++ep1_desc_hs:
++	.byte	0x07		// bLength
++	.byte	0x05		// bDescriptorType
++	.byte	0x01		// bEndpointAddress
++	.byte	0x02		// bmAttributes
++	.byte	0x00		// wMaxPacketSize
++	.byte	0x02		// wMaxPacketSize
++	.byte	0x00		// bInterval
++ep2_desc_hs:
++	.byte	0x07		// bLength
++	.byte	0x05		// bDescriptorType
++	.byte	0x81		// bEndpointAddress
++	.byte	0x02		// bmAttributes
++	.byte	0x00		// wMaxPacketSize
++	.byte	0x02		// wMaxPacketSize
++	.byte	0x00		// bInterval
++
++	.align	2
++config_desc_fs:
++	.byte	0x09		// bLength
++	.byte	0x02		// bDescriptorType
++	.byte	0x20		// wTotalLength
++	.byte	0x00		// wTotalLength
++	.byte	0x01		// bNumInterfaces
++	.byte	0x01		// bConfigurationValue
++	.byte	0x00		// iConfiguration
++	.byte	0xc0		// bmAttributes
++	.byte	0x01		// MaxPower
++intf_desc_fs:
++	.byte	0x09		// bLength
++	.byte	0x04		// bDescriptorType
++	.byte	0x00		// bInterfaceNumber
++	.byte	0x00		// bAlternateSetting
++	.byte	0x02		// bNumEndpoints
++	.byte	0xff		// bInterfaceClass
++	.byte	0x00		// bInterfaceSubClass
++	.byte	0x50		// bInterfaceProtocol
++	.byte	0x00		// iInterface
++ep1_desc_fs:
++	.byte	0x07		// bLength
++	.byte	0x05		// bDescriptorType
++	.byte	0x01		// bEndpointAddress
++	.byte	0x02		// bmAttributes
++	.byte	0x40		// wMaxPacketSize
++	.byte	0x00		// wMaxPacketSize
++	.byte	0x00		// bInterval
++ep2_desc_fs:
++	.byte	0x07		// bLength
++	.byte	0x05		// bDescriptorType
++	.byte	0x81		// bEndpointAddress
++	.byte	0x02		// bmAttributes
++	.byte	0x40		// wMaxPacketSize
++	.byte	0x00		// wMaxPacketSize
++	.byte	0x00		// bInterval
++
++	.align	2
++string_lang_ids:
++	.byte	0x04
++	.byte	0x03
++	.byte	0x09
++	.byte	0x04
++
++	.align	2
++string_manufacture:
++	.byte	0x10
++	.byte	0x03
++	.byte	0x49
++	.byte	0x00
++	.byte	0x6e
++	.byte	0x00
++	.byte	0x67
++	.byte	0x00
++	.byte	0x65
++	.byte	0x00
++	.byte	0x6e
++	.byte	0x00
++	.byte	0x69
++	.byte	0x00
++	.byte	0x63
++	.byte	0x00
++
++	.align	2
++string_product:
++	.byte	0x2e
++	.byte	0x03
++	.byte	0x4a
++	.byte	0x00
++	.byte	0x5a
++	.byte	0x00
++	.byte	0x34
++	.byte	0x00
++	.byte	0x37
++	.byte	0x00
++	.byte	0x34
++	.byte	0x00
++	.byte	0x30
++	.byte	0x00
++	.byte	0x20
++	.byte	0x00
++	.byte	0x55
++	.byte	0x00
++	.byte	0x53
++	.byte	0x00
++	.byte	0x42
++	.byte	0x00
++	.byte	0x20
++	.byte	0x00
++	.byte	0x42
++	.byte	0x00
++	.byte	0x6f
++	.byte	0x00
++	.byte	0x6f
++	.byte	0x00
++	.byte	0x74
++	.byte	0x00
++	.byte	0x20
++	.byte	0x00
++	.byte	0x44
++	.byte	0x00
++	.byte	0x65
++	.byte	0x00
++	.byte	0x76
++	.byte	0x00
++	.byte	0x69
++	.byte	0x00
++	.byte	0x63
++	.byte	0x00
++	.byte	0x65
++	.byte	0x00
++
++	.align	2
++cpu_info_data:
++	.byte	0x4a
++	.byte	0x5a
++	.byte	0x34
++	.byte	0x37
++	.byte	0x34
++	.byte	0x30
++	.byte	0x56
++	.byte	0x31
++usbboot_end:
++
++    .set reorder
+diff --git a/drivers/mtd/nand/jz4740_nand.c b/drivers/mtd/nand/jz4740_nand.c
+index 3ec34f3..4ab2229 100644
+--- a/drivers/mtd/nand/jz4740_nand.c
++++ b/drivers/mtd/nand/jz4740_nand.c
+@@ -15,6 +15,9 @@
+ #include <asm/io.h>
+ #include <asm/jz4740.h>
+ 
++#ifdef CONFIG_SPL_BUILD
++#define printf(arg...) do {} while (0)
++#endif
+ #define JZ_NAND_DATA_ADDR ((void __iomem *)0xB8000000)
+ #define JZ_NAND_CMD_ADDR (JZ_NAND_DATA_ADDR + 0x8000)
+ #define JZ_NAND_ADDR_ADDR (JZ_NAND_DATA_ADDR + 0x10000)
+@@ -176,7 +179,7 @@ static int jz_nand_rs_correct_data(struct mtd_info *mtd, u_char *dat,
+ 		for (k = 0; k < 9; k++)
+ 			writeb(read_ecc[k], &emc->nfpar[k]);
+ 	}
+-	/* Set PRDY */
++
+ 	writel(readl(&emc->nfecr) | EMC_NFECR_PRDY, &emc->nfecr);
+ 
+ 	/* Wait for completion */
+@@ -184,7 +187,7 @@ static int jz_nand_rs_correct_data(struct mtd_info *mtd, u_char *dat,
+ 		status = readl(&emc->nfints);
+ 	} while (!(status & EMC_NFINTS_DECF));
+ 
+-	/* disable ecc */
++	/* Disable ECC */
+ 	writel(readl(&emc->nfecr) & ~EMC_NFECR_ECCE, &emc->nfecr);
+ 
+ 	/* Check decoding */
+@@ -192,7 +195,7 @@ static int jz_nand_rs_correct_data(struct mtd_info *mtd, u_char *dat,
+ 		return 0;
+ 
+ 	if (status & EMC_NFINTS_UNCOR) {
+-		printf("uncorrectable ecc\n");
++		printf("JZ4740 uncorrectable ECC\n");
+ 		return -1;
+ 	}
+ 
+@@ -230,6 +233,32 @@ static int jz_nand_rs_correct_data(struct mtd_info *mtd, u_char *dat,
+ 	return errcnt;
+ }
+ 
++#ifdef CONFIG_SPL_BUILD
++static void jz_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
++{
++	int i;
++	struct nand_chip *this = mtd->priv;
++
++#if (JZ4740_NANDBOOT_CFG == JZ4740_NANDBOOT_B16R3) || \
++	(JZ4740_NANDBOOT_CFG == JZ4740_NANDBOOT_B16R2)
++	for (i = 0; i < len; i += 2)
++		buf[i] = readw(this->IO_ADDR_R);
++#elif (JZ4740_NANDBOOT_CFG == JZ4740_NANDBOOT_B8R3) || \
++	(JZ4740_NANDBOOT_CFG == JZ4740_NANDBOOT_B8R2)
++	for (i = 0; i < len; i++)
++		buf[i] = readb(this->IO_ADDR_R);
++#else
++	#error JZ4740_NANDBOOT_CFG not defined or wrong
++#endif
++}
++
++static uint8_t jz_nand_read_byte(struct mtd_info *mtd)
++{
++	struct nand_chip *this = mtd->priv;
++	return readb(this->IO_ADDR_R);
++}
++#endif
++
+ /*
+  * Main initialization routine
+  */
+@@ -254,6 +283,10 @@ int board_nand_init(struct nand_chip *nand)
+ 	nand->ecc.size		= CONFIG_SYS_NAND_ECCSIZE;
+ 	nand->ecc.bytes		= CONFIG_SYS_NAND_ECCBYTES;
+ 	nand->ecc.layout	= &qi_lb60_ecclayout_2gb;
++#ifdef CONFIG_SPL_BUILD
++	nand->read_byte		= jz_nand_read_byte;
++	nand->read_buf		= jz_nand_read_buf;
++#endif
+ 	nand->chip_delay	= 50;
+ 	nand->options		= NAND_USE_FLASH_BBT;
+ 
+diff --git a/include/configs/qi_lb60.h b/include/configs/qi_lb60.h
+index 4bb5bbc..d4449ac 100644
+--- a/include/configs/qi_lb60.h
++++ b/include/configs/qi_lb60.h
+@@ -1,5 +1,5 @@
+ /*
+- * Authors: Xiangfu Liu <xiangfu.z@gmail.com>
++ * Authors: Xiangfu Liu <xiangfu@openmobilefree.net>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -14,7 +14,6 @@
+ #define CONFIG_SYS_LITTLE_ENDIAN
+ #define CONFIG_JZSOC		/* Jz SoC */
+ #define CONFIG_JZ4740		/* Jz4740 SoC */
+-#define CONFIG_NAND_JZ4740
+ 
+ #define CONFIG_SYS_CPU_SPEED	336000000	/* CPU clock: 336 MHz */
+ #define CONFIG_SYS_EXTAL	12000000	/* EXTAL freq: 12 MHz */
+@@ -24,24 +23,43 @@
+ #define CONFIG_SYS_UART_BASE	JZ4740_UART0_BASE /* Base of the UART channel */
+ #define CONFIG_BAUDRATE		57600
+ 
++#define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
++#define CONFIG_BOOTDELAY	0
++#define CONFIG_BOOTARGS "mem=32M console=tty0 console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
++#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x280000;bootm"
++
++/*
++ * Miscellaneous configurable options
++ */
++#define CONFIG_SYS_SDRAM_BASE		0x80000000	/* Cached addr */
++#define CONFIG_SYS_INIT_SP_OFFSET	0x400000
++#define CONFIG_SYS_LOAD_ADDR		0x80600000
++#define CONFIG_SYS_MEMTEST_START	0x80100000
++#define CONFIG_SYS_MEMTEST_END		0x80A00000
++#define CONFIG_SYS_TEXT_BASE		0x80100000
++#define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
++
++#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
++#define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
++
++#define CONFIG_SYS_CBSIZE	256 /* Console I/O Buffer Size */
++#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
++
++#define CONFIG_SYS_LONGHELP
++#define CONFIG_SYS_MAXARGS	16
++#define CONFIG_SYS_PROMPT	"NanoNote# "
++
+ #define CONFIG_SKIP_LOWLEVEL_INIT
+ #define CONFIG_BOARD_EARLY_INIT_F
+ #define CONFIG_SYS_NO_FLASH
+ #define CONFIG_SYS_FLASH_BASE	0 /* init flash_base as 0 */
+-#define CONFIG_ENV_OVERWRITE
+-
+-#define CONFIG_BOOTP_MASK	(CONFIG_BOOTP_DEFAUL)
+-#define CONFIG_BOOTDELAY	0
+-#define CONFIG_BOOTARGS		"mem=32M console=tty0 console=ttyS0,57600n8 ubi.mtd=2 rootfstype=ubifs root=ubi0:rootfs rw rootwait"
+-#define CONFIG_BOOTCOMMAND	"nand read 0x80600000 0x400000 0x200000;bootm"
+ 
+ /*
+- * Command line configuration.
++ * Command line configuration
+  */
+ #define CONFIG_CMD_BOOTD	/* bootd			*/
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_ECHO		/* echo arguments		*/
+-
+ #define CONFIG_CMD_LOADB	/* loadb			*/
+ #define CONFIG_CMD_LOADS	/* loads			*/
+ #define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop mtest */
+@@ -58,45 +76,16 @@
+ #define CONFIG_LOADS_ECHO	1	/* echo on for serial download */
+ 
+ /*
+- * Miscellaneous configurable options
+- */
+-#define CONFIG_SYS_MAXARGS 16
+-#define CONFIG_SYS_LONGHELP
+-#define CONFIG_SYS_PROMPT "NanoNote# "
+-#define CONFIG_SYS_CBSIZE 256 /* Console I/O Buffer Size */
+-#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+-
+-#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
+-#define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
+-
+-#define CONFIG_SYS_SDRAM_BASE		0x80000000	/* Cached addr */
+-#define CONFIG_SYS_INIT_SP_OFFSET	0x400000
+-#define CONFIG_SYS_LOAD_ADDR		0x80600000
+-#define CONFIG_SYS_MEMTEST_START	0x80100000
+-#define CONFIG_SYS_MEMTEST_END		0x80800000
+-
+-/*
+- * Environment
++ * NAND driver configuration
+  */
+-#define CONFIG_ENV_IS_IN_NAND		/* use NAND for environment vars */
+-
+-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
+-/*
+- * if board nand flash is 1GB, set to 1
+- * if board nand flash is 2GB, set to 2
+- * for change the PAGE_SIZE and BLOCK_SIZE
+- * will delete when there is no 1GB flash
+- */
+-#define NANONOTE_NAND_SIZE	2
+-
+-#define CONFIG_SYS_NAND_PAGE_SIZE	(2048 * NANONOTE_NAND_SIZE)
+-#define CONFIG_SYS_NAND_BLOCK_SIZE	(256 * NANONOTE_NAND_SIZE << 10)
+-/* nand bad block was marked at this page in a block, start from 0 */
++#define CONFIG_NAND_JZ4740
++#define CONFIG_SYS_NAND_PAGE_SIZE	4096
++#define CONFIG_SYS_NAND_BLOCK_SIZE	(512 << 10)
++/* NAND bad block was marked at this page in a block, start from 0 */
+ #define CONFIG_SYS_NAND_BADBLOCK_PAGE	127
+ #define CONFIG_SYS_NAND_PAGE_COUNT	128
+ #define CONFIG_SYS_NAND_BAD_BLOCK_POS	0
+-/* ECC offset position in oob area, default value is 6 if it isn't defined */
+-#define CONFIG_SYS_NAND_ECC_POS		(6 * NANONOTE_NAND_SIZE)
++#define CONFIG_SYS_NAND_ECC_POS		12
+ #define CONFIG_SYS_NAND_ECCSIZE		512
+ #define CONFIG_SYS_NAND_ECCBYTES	9
+ #define CONFIG_SYS_NAND_ECCPOS		\
+@@ -115,10 +104,9 @@
+ #define CONFIG_SYS_ONENAND_BASE		CONFIG_SYS_NAND_BASE
+ #define CONFIG_SYS_MAX_NAND_DEVICE	1
+ #define CONFIG_SYS_NAND_SELECT_DEVICE	1 /* nand driver supports mutipl.*/
+-#define CONFIG_NAND_SPL_TEXT_BASE	0x80000000
+ 
+ /*
+- * IPL (Initial Program Loader, integrated inside CPU)
++ * IPL (Initial Program Loader, integrated inside Ingenic Xburst JZ4740 CPU)
+  * Will load first 8k from NAND (SPL) into cache and execute it from there.
+  *
+  * SPL (Secondary Program Loader)
+@@ -130,77 +118,86 @@
+  * NUB (NAND U-Boot)
+  * This NAND U-Boot (NUB) is a special U-Boot version which can be started
+  * from RAM. Therefore it mustn't (re-)configure the SDRAM controller.
+- *
+  */
++
++/*
++ * NAND SPL configuration
++ */
++#define CONFIG_SPL
++#define CONFIG_SPL_NAND_LOAD
++#define CONFIG_SPL_NAND_SIMPLE
++#define CONFIG_SPL_NAND_SUPPORT
++#define CONFIG_SPL_TEXT_BASE	0x80000000
++#define CONFIG_SPL_START_S_PATH	"arch/mips/cpu/xburst/spl"
++
++#define CONFIG_SYS_NAND_5_ADDR_CYCLE
++#define CONFIG_SYS_NAND_HW_ECC_OOBFIRST
++#define JZ4740_NANDBOOT_CFG		JZ4740_NANDBOOT_B8R3
++
+ #define CONFIG_SYS_NAND_U_BOOT_DST	0x80100000 /* Load NUB to this addr */
+ #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_NAND_U_BOOT_DST
+-/* Start NUB from this addr*/
++					/* Start NUB from this addr */
++#define CONFIG_SYS_NAND_U_BOOT_OFFS (32  << 10) /* Offset of NUB */
++#define CONFIG_SYS_NAND_U_BOOT_SIZE (256 << 10) /* Size of NUB */
+ 
+ /*
+- * Define the partitioning of the NAND chip (only RAM U-Boot is needed here)
++ * Environment configuration
+  */
+-#define CONFIG_SYS_NAND_U_BOOT_OFFS (256 << 10) /* Offset to RAM U-Boot image */
+-#define CONFIG_SYS_NAND_U_BOOT_SIZE (512 << 10) /* Size of RAM U-Boot image */
+-
++#define CONFIG_ENV_OVERWRITE
++#define CONFIG_ENV_IS_IN_NAND
+ #define CONFIG_ENV_SIZE		(4 << 10)
+ #define CONFIG_ENV_OFFSET	\
+ 	(CONFIG_SYS_NAND_BLOCK_SIZE + CONFIG_SYS_NAND_U_BOOT_SIZE)
+ #define CONFIG_ENV_OFFSET_REDUND \
+ 	(CONFIG_ENV_OFFSET  + CONFIG_SYS_NAND_BLOCK_SIZE)
+ 
+-#define CONFIG_SYS_TEXT_BASE	0x80100000
+-#define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_TEXT_BASE
+-
+ /*
+- * SDRAM Info.
++ * CPU cache configuration
+  */
+-#define CONFIG_NR_DRAM_BANKS	1
++#define CONFIG_SYS_DCACHE_SIZE		16384
++#define CONFIG_SYS_ICACHE_SIZE		16384
++#define CONFIG_SYS_CACHELINE_SIZE	32
+ 
+ /*
+- * Cache Configuration
++ * SDRAM configuration
+  */
+-#define CONFIG_SYS_DCACHE_SIZE	16384
+-#define CONFIG_SYS_ICACHE_SIZE	16384
+-#define CONFIG_SYS_CACHELINE_SIZE	32
++#define CONFIG_NR_DRAM_BANKS	1
++
++#define SDRAM_BW16		1	/* Data bus width: 0-32bit, 1-16bit */
++#define SDRAM_BANK4		1	/* Banks each chip: 0-2bank, 1-4bank */
++#define SDRAM_ROW		13	/* Row address: 11 to 13 */
++#define SDRAM_COL		9	/* Column address: 8 to 12 */
++#define SDRAM_CASL		2	/* CAS latency: 2 or 3 */
++#define SDRAM_TRAS		45	/* RAS# Active Time */
++#define SDRAM_RCD		20	/* RAS# to CAS# Delay */
++#define SDRAM_TPC		20	/* RAS# Precharge Time */
++#define SDRAM_TRWL		7	/* Write Latency Time */
++#define SDRAM_TREF		15625	/* Refresh period: 8192 cycles/64ms */
+ 
+ /*
+- * GPIO definition
++ * GPIO configuration
+  */
+-#define GPIO_LCD_CS	(2 * 32 + 21)
+-#define GPIO_AMP_EN	(3 * 32 + 4)
++#define GPIO_LCD_CS		(2 * 32 + 21)
++#define GPIO_AMP_EN		(3 * 32 + 4)
+ 
+-#define GPIO_SDPW_EN	(3 * 32 + 2)
+-#define GPIO_SD_DETECT	(3 * 32 + 0)
++#define GPIO_SDPW_EN		(3 * 32 + 2)
++#define GPIO_SD_DETECT		(3 * 32 + 0)
+ 
+-#define GPIO_BUZZ_PWM	(3 * 32 + 27)
+-#define GPIO_USB_DETECT	(3 * 32 + 28)
++#define GPIO_BUZZ_PWM		(3 * 32 + 27)
++#define GPIO_USB_DETECT		(3 * 32 + 28)
+ 
+-#define GPIO_AUDIO_POP	(1 * 32 + 29)
+-#define GPIO_COB_TEST	(1 * 32 + 30)
++#define GPIO_AUDIO_POP		(1 * 32 + 29)
++#define GPIO_COB_TEST		(1 * 32 + 30)
+ 
+ #define GPIO_KEYOUT_BASE	(2 * 32 + 10)
+-#define GPIO_KEYIN_BASE	(3 * 32 + 18)
+-#define GPIO_KEYIN_8	(3 * 32 + 26)
++#define GPIO_KEYIN_BASE		(3 * 32 + 18)
++#define GPIO_KEYIN_8		(3 * 32 + 26)
+ 
+-#define GPIO_SD_CD_N	GPIO_SD_DETECT		/* SD Card insert detect */
++#define GPIO_SD_CD_N		GPIO_SD_DETECT	/* SD Card insert detect */
+ #define GPIO_SD_VCC_EN_N	GPIO_SDPW_EN	/* SD Card Power Enable */
+ 
+ #define SPEN	GPIO_LCD_CS	/* LCDCS :Serial command enable      */
+ #define SPDA	(2 * 32 + 22)	/* LCDSCL:Serial command clock input */
+ #define SPCK	(2 * 32 + 23)	/* LCDSDA:Serial command data input  */
+ 
+-/* SDRAM paramters */
+-#define SDRAM_BW16		1	/* Data bus width: 0-32bit, 1-16bit */
+-#define SDRAM_BANK4		1	/* Banks each chip: 0-2bank, 1-4bank */
+-#define SDRAM_ROW		13	/* Row address: 11 to 13 */
+-#define SDRAM_COL		9	/* Column address: 8 to 12 */
+-#define SDRAM_CASL		2	/* CAS latency: 2 or 3 */
+-
+-/* SDRAM Timings, unit: ns */
+-#define SDRAM_TRAS		45	/* RAS# Active Time */
+-#define SDRAM_RCD		20	/* RAS# to CAS# Delay */
+-#define SDRAM_TPC		20	/* RAS# Precharge Time */
+-#define SDRAM_TRWL		7	/* Write Latency Time */
+-#define SDRAM_TREF		15625	/* Refresh period: 8192 cycles/64ms */
+-
+ #endif
+-- 
+1.7.9.5
+
